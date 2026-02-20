@@ -1,0 +1,6 @@
+.env
+config.local.env
+logs/*.jsonl
+!logs/.gitkeep
+__pycache__/
+*.pyc
