@@ -1,6 +1,9 @@
 .env
 config.local.env
 logs/*.jsonl
+logs/*.log
 !logs/.gitkeep
+logs/session_state.json
+logs/bridge.pid
 __pycache__/
 *.pyc
