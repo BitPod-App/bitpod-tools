@@ -201,14 +201,11 @@ Recommended in Codex UI: tilde commands (`~...`)
 ./bridge_chat.sh chat "~recover"
 ```
 
-Plain-text aliases (no `/`, no `@`):
+Quote-safe invocation (no shell escaping issues):
 
 ```bash
-./bridge_chat.sh chat "gpt: review this plan and suggest 3 actions"
-./bridge_chat.sh chat "codex: sanity-check this plan"
-./bridge_chat.sh chat "help:"
-./bridge_chat.sh chat "options:"
-./bridge_chat.sh chat "session: Let's plan the rollout"
+printf "%s" "~gpt it's working?" | ./bridge_chat.sh chat --stdin
+printf "%s" "~session Let's plan next sprint" | ./bridge_chat.sh chat --stdin
 ```
 
 Add non-GPT messages (for agents/humans):

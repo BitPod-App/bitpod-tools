@@ -35,6 +35,10 @@ def append_event(log_file: Path, event: dict[str, Any]) -> None:
 
 def print_timeline_line(ts: str, speaker: str, text: str) -> None:
     _ = ts  # Timestamp is retained in JSONL logs but hidden from chat output.
+    # Keep system/status lines clean in chat output.
+    if speaker == "system":
+        print(text)
+        return
     print(f"{speaker}: {text}")
 
 
@@ -442,7 +446,17 @@ def build_chat_parser(subparsers: argparse._SubParsersAction) -> None:
         "chat",
         help="Route one raw chat message using slash-command aliases or default team posting",
     )
-    chat.add_argument("message", help="Raw message text (e.g. '/session Plan rollout' or '@gpt review this')")
+    chat.add_argument(
+        "message",
+        nargs="?",
+        default=None,
+        help="Raw message text (e.g. '/session Plan rollout' or '@gpt review this')",
+    )
+    chat.add_argument(
+        "--stdin",
+        action="store_true",
+        help="Read raw message from stdin (safe for quotes/apostrophes)",
+    )
     chat.add_argument("--session", default=None, help="Optional session id override")
     chat.add_argument("--from", dest="from_actor", default="user", help="Actor label")
     chat.add_argument("--log-file", default=str(DEFAULT_LOG), help="Session chat JSONL log file")
@@ -1272,33 +1286,19 @@ def run_session(args: argparse.Namespace) -> int:
 def run_options(args: argparse.Namespace) -> int:
     session = _resolve_session(args.session)
     _set_active_session(session)
-    print("system: Bridge GPT options")
-    print("system: Recommended (tilde mode):")
-    print("system: ~help | ~options            -> show this list")
-    print("system: ~session <kickoff prompt>   -> switch session + kickoff GPT")
-    print("system: ~gpt <message>              -> GPT relay")
-    print("system: ~codex <message>            -> Codex mention")
-    print("system: ~cj <message>               -> mention cj in team chat")
-    print("system: ~taylor <message>           -> mention taylor in team chat")
-    print("system: ~end                        -> finalize active session memory")
-    print("system: ~recover                    -> recover stale sessions")
-    print("system: Plain-text aliases:")
-    print("system: help: | options:            -> show this list")
-    print("system: session: <kickoff prompt>   -> switch session + kickoff GPT")
-    print("system: gpt: <message>              -> GPT relay")
-    print("system: codex: <message>            -> Codex mention")
-    print("system: team message                -> normal team post")
-    print("system: Legacy/advanced:")
-    print("system: team message with @gpt      -> team post + GPT relay")
-    print("system: team message with @codex    -> team post + Codex acknowledgment")
-    print("system: gpt> <message>              -> GPT relay (legacy plain-text alias)")
-    print("system: /gpt <message>              -> explicit GPT relay")
-    print("system: /ask <message>              -> alias for /gpt")
-    print("system: /codex <message>            -> explicit Codex mention")
-    print("system: /session <kickoff prompt>   -> end previous session, start new one, send kickoff to GPT")
-    print("system: /end                        -> finalize active session memory")
-    print("system: /recover                    -> recover stale sessions after interruption")
-    print(f"system: active session: {session}")
+    print("Bridge GPT | Actions Legend")
+    print("Bridge GPT | Session Commands:")
+    print("Bridge GPT | ~session <kickoff prompt> (sets the goal, subject, or topic for team chat session w/ GPT)")
+    print("Bridge GPT | ~session <switch prompt> (ends session, memory logs tagged, bundled and sent, starts new session + topic)")
+    print("Bridge GPT | ~recover (recover stale, dead, or interrupted team sessions, makes sure memories do not get lost)")
+    print("Bridge GPT | ~end (finalize active session team chat, logs memories by tag, relaying some away along with GPT)")
+    print("Bridge GPT | Messages & Chat:")
+    print("Bridge GPT | <message> (sends to team chat, anyone can reply or ignore, but will be logged in session memory)")
+    print("Bridge GPT | ~gpt <message> (technically relays message to ChatGPT, effectively works as @GPT in team chat)")
+    print("Bridge GPT | ~codex <message> (@direct message to Codex, quick short replies)")
+    print("Bridge GPT | ~cj <message> (@mentions CJ in team chat, may reply eventually, extremely elaborately)")
+    print("Bridge GPT | ~taylor <message> (@direct message to Taylor in team chat, longer replies)")
+    print(f"Bridge GPT | active session: {session}")
     return 0
 
 
@@ -1350,14 +1350,14 @@ def _chat_recover_args(args: argparse.Namespace) -> argparse.Namespace:
 
 
 def run_chat(args: argparse.Namespace) -> int:
-    raw = args.message.strip()
+    if bool(getattr(args, "stdin", False)):
+        raw = sys.stdin.read()
+    else:
+        raw = args.message or ""
+    raw = raw.strip()
     if not raw:
-        print("system: Empty message.")
+        print("Bridge GPT | Empty message. Usage: chat <message> or chat --stdin")
         return 2
-
-    lower = raw.lower()
-    if lower in {"help:", "options:"}:
-        return run_options(argparse.Namespace(session=args.session, log_file=args.log_file))
 
     if raw.startswith("~"):
         parts = raw[1:].split(maxsplit=1)
@@ -1371,7 +1371,7 @@ def run_chat(args: argparse.Namespace) -> int:
             return run_recover(_chat_recover_args(args))
         if tcmd == "session":
             if not trest:
-                print("system: Usage: ~session <kickoff prompt>")
+                print("Bridge GPT | Usage: ~session <kickoff prompt>")
                 return 2
             return run_session(
                 argparse.Namespace(
@@ -1390,58 +1390,12 @@ def run_chat(args: argparse.Namespace) -> int:
             )
         if tcmd in {"gpt", "codex", "cj", "taylor"}:
             if not trest:
-                print(f"system: Usage: ~{tcmd} <message>")
+                print(f"Bridge GPT | Usage: ~{tcmd} <message>")
                 return 2
             return run_team(_chat_team_args(args, f"@{tcmd} {trest}"))
-        print(f"system: Unknown command: ~{tcmd}" if tcmd else "system: Unknown command: ~")
-        print("system: Try ~help")
+        print(f"Bridge GPT | Unknown command: ~{tcmd}" if tcmd else "Bridge GPT | Unknown command: ~")
+        print("Bridge GPT | Try ~help")
         return 2
-
-    if lower.startswith("session:"):
-        rest = raw[len("session:") :].strip()
-        if not rest:
-            print("system: Usage: session: <kickoff prompt>")
-            return 2
-        return run_session(
-            argparse.Namespace(
-                kickoff_prompt=rest,
-                session=None,
-                log_file=args.log_file,
-                memory_store=args.memory_store,
-                memory_items=12,
-                extract_max_tokens=1000,
-                sync_max_tokens=500,
-                model=args.model,
-                memory_pointer=DEFAULT_MEMORY_POINTER,
-                kickoff_max_tokens=1200,
-                show_raw=False,
-            )
-        )
-
-    if lower.startswith("gpt:"):
-        rest = raw[4:].strip()
-        if not rest:
-            print("system: Usage: gpt: <message>")
-            return 2
-        return run_team(_chat_team_args(args, f"@gpt {rest}"))
-    if lower.startswith("codex:"):
-        rest = raw[6:].strip()
-        if not rest:
-            print("system: Usage: codex: <message>")
-            return 2
-        return run_team(_chat_team_args(args, f"@codex {rest}"))
-    if lower.startswith("gpt>"):
-        rest = raw[4:].strip()
-        if not rest:
-            print("system: Usage: gpt> <message>")
-            return 2
-        return run_team(_chat_team_args(args, f"@gpt {rest}"))
-    if lower.startswith("codex>"):
-        rest = raw[6:].strip()
-        if not rest:
-            print("system: Usage: codex> <message>")
-            return 2
-        return run_team(_chat_team_args(args, f"@codex {rest}"))
 
     if not raw.startswith("/"):
         return run_team(_chat_team_args(args, raw))
@@ -1458,7 +1412,7 @@ def run_chat(args: argparse.Namespace) -> int:
         return run_recover(_chat_recover_args(args))
     if cmd == "/session":
         if not rest:
-            print("system: Usage: /session <kickoff prompt>")
+            print("Bridge GPT | Usage: /session <kickoff prompt>")
             return 2
         return run_session(
             argparse.Namespace(
@@ -1477,22 +1431,22 @@ def run_chat(args: argparse.Namespace) -> int:
         )
     if cmd in {"/gpt", "/ask"}:
         if not rest:
-            print("system: Usage: /gpt <message> (or /ask <message>)")
+            print("Bridge GPT | Usage: /gpt <message> (or /ask <message>)")
             return 2
         return run_team(_chat_team_args(args, f"@gpt {rest}"))
     if cmd == "/codex":
         if not rest:
-            print("system: Usage: /codex <message>")
+            print("Bridge GPT | Usage: /codex <message>")
             return 2
         return run_team(_chat_team_args(args, f"@codex {rest}"))
     if cmd == "/team":
         if not rest:
-            print("system: Usage: /team <message>")
+            print("Bridge GPT | Usage: /team <message>")
             return 2
         return run_team(_chat_team_args(args, rest))
 
-    print(f"system: Unknown command: {cmd}")
-    print("system: Try /help")
+    print(f"Bridge GPT | Unknown command: {cmd}")
+    print("Bridge GPT | Try /help")
     return 2
 
 
