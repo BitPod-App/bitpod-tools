@@ -1372,6 +1372,7 @@ def run_sync(args: argparse.Namespace) -> int:
     log_file = Path(args.log_file)
     session = _resolve_session(args.session)
     viewer = str(getattr(args, "from_actor", "user") or "user").strip() or "user"
+    quiet_noop = bool(getattr(args, "quiet_noop", False))
 
     events = iter_events(log_file)
     state = _load_view_state()
@@ -1397,7 +1398,8 @@ def run_sync(args: argparse.Namespace) -> int:
             max_ts = ts
 
     if not new_messages:
-        print("Bridge GPT | No new GPT messages for this session.")
+        if not quiet_noop:
+            print("Bridge GPT | No new GPT messages for this session.")
         return 0
 
     for event in new_messages:
@@ -1421,6 +1423,18 @@ def run_chat(args: argparse.Namespace) -> int:
     if not raw:
         print("Bridge GPT | Empty message. Usage: chat <message> or chat --stdin")
         return 2
+
+    # Opportunistically pull newly logged GPT messages so users do not need
+    # to run ~sync manually after every terminal-side interaction.
+    if raw.strip().lower() not in {"~sync", "/sync"}:
+        run_sync(
+            argparse.Namespace(
+                session=args.session,
+                log_file=args.log_file,
+                from_actor=args.from_actor,
+                quiet_noop=True,
+            )
+        )
 
     if raw.startswith("~"):
         # Accept punctuation right after command names, e.g. "~gpt, hello"

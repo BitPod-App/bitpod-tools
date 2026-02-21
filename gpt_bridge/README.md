@@ -42,6 +42,31 @@ source .env
 set +a
 ```
 
+## 60-second runbook
+
+START (one time per machine boot/session):
+
+```bash
+cd /Users/cjarguello/bitpod-app/tools/gpt_bridge
+set -a; source .env; set +a
+./bridge_ctl.sh start --session team
+cloudflared tunnel run gpt-bridge
+```
+
+CHAT (Codex chat):
+
+- `~session <topic>`
+- `~gpt <message>`
+- `~sync` (manual pull; most new GPT messages are now auto-pulled on your next chat command)
+- `~end`
+
+STOP:
+
+```bash
+cd /Users/cjarguello/bitpod-app/tools/gpt_bridge
+./bridge_ctl.sh stop --session team
+```
+
 ## Model selection
 
 Default model behavior:
