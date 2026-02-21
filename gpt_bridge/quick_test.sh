@@ -16,6 +16,22 @@ set +a
 SESSION="quick-test-$(date +%s)"
 FAILED=0
 PING_OK=0
+BRIDGE_URL="${GPT_BRIDGE_URL:-http://127.0.0.1:8787/ask}"
+
+bridge_host() {
+  local host
+  host="$(printf '%s' "$BRIDGE_URL" | sed -nE 's#^[a-zA-Z]+://([^/:]+).*#\1#p')"
+  if [[ -z "${host:-}" ]]; then
+    host="127.0.0.1"
+  fi
+  printf '%s' "$host"
+}
+
+is_local_bridge_url() {
+  local host
+  host="$(bridge_host)"
+  [[ "$host" == "127.0.0.1" || "$host" == "localhost" || "$host" == "::1" ]]
+}
 
 run_step() {
   local label="$1"
@@ -41,7 +57,12 @@ run_step() {
   return $status
 }
 
-run_step "start bridge" ./bridge_ctl.sh start --session "$SESSION" || true
+if is_local_bridge_url; then
+  run_step "start bridge" ./bridge_ctl.sh start --session "$SESSION" || true
+else
+  echo "Bridge GPT | Step: start bridge"
+  echo "Bridge GPT | Skipped local start (remote endpoint: $BRIDGE_URL)"
+fi
 run_step "kickoff session" ./bridge_chat.sh chat "~session Quick GPT smoke test ($SESSION)" || true
 
 PING_OUTPUT=""

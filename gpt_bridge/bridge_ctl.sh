@@ -60,6 +60,21 @@ check_bridge() {
   [[ "$code" != "000" ]]
 }
 
+bridge_host() {
+  local host
+  host="$(printf '%s' "$BRIDGE_URL" | sed -nE 's#^[a-zA-Z]+://([^/:]+).*#\1#p')"
+  if [[ -z "${host:-}" ]]; then
+    host="127.0.0.1"
+  fi
+  printf '%s' "$host"
+}
+
+is_local_bridge_url() {
+  local host
+  host="$(bridge_host)"
+  [[ "$host" == "127.0.0.1" || "$host" == "localhost" || "$host" == "::1" ]]
+}
+
 bridge_port() {
   local port
   port="$(printf '%s' "$BRIDGE_URL" | sed -nE 's#.*:([0-9]+)/.*#\1#p')"
@@ -80,6 +95,12 @@ start_bridge() {
   if check_bridge; then
     echo "Bridge GPT | Active"
     return 0
+  fi
+
+  if ! is_local_bridge_url; then
+    echo "Bridge GPT | Start skipped (remote managed endpoint: $BRIDGE_URL)" >&2
+    echo "Bridge GPT | Ensure the remote bridge service is running." >&2
+    return 1
   fi
 
   : "${OPENAI_API_KEY:?OPENAI_API_KEY is required (set in .env)}"
@@ -106,6 +127,11 @@ start_bridge() {
 }
 
 stop_bridge() {
+  if ! is_local_bridge_url; then
+    echo "Bridge GPT | Stop skipped (remote managed endpoint: $BRIDGE_URL)"
+    return 0
+  fi
+
   local stopped=0
   if [[ -f "$PID_FILE" ]]; then
     local pid

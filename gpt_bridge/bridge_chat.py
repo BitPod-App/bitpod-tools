@@ -1419,9 +1419,14 @@ def run_chat(args: argparse.Namespace) -> int:
         return 2
 
     if raw.startswith("~"):
-        parts = raw[1:].split(maxsplit=1)
-        tcmd = parts[0].lower() if parts and parts[0] else ""
-        trest = parts[1].strip() if len(parts) > 1 else ""
+        # Accept punctuation right after command names, e.g. "~gpt, hello"
+        m = re.match(r"^~(?P<cmd>[A-Za-z0-9_-]+)(?:[,:;.!?])?\s*(?P<rest>.*)$", raw)
+        if not m:
+            print("Bridge GPT | Unknown command format.")
+            print("Bridge GPT | Try ~help")
+            return 2
+        tcmd = m.group("cmd").lower()
+        trest = (m.group("rest") or "").strip()
         if tcmd in {"help", "options"}:
             return run_options(argparse.Namespace(session=args.session, log_file=args.log_file))
         if tcmd == "sync":

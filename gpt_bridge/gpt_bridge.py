@@ -37,6 +37,12 @@ class BridgeConfig:
     def __init__(self) -> None:
         self.host = os.getenv("GPT_BRIDGE_HOST", DEFAULT_HOST)
         self.port = int(os.getenv("GPT_BRIDGE_PORT", str(DEFAULT_PORT)))
+        self.allow_nonlocalhost = os.getenv("GPT_BRIDGE_ALLOW_NONLOCALHOST", "").strip().lower() in {
+            "1",
+            "true",
+            "yes",
+            "on",
+        }
         self.model = os.getenv("GPT_BRIDGE_MODEL", DEFAULT_MODEL)
         self.openai_api_key = os.getenv("OPENAI_API_KEY", "").strip()
         self.bridge_token = os.getenv("GPT_BRIDGE_TOKEN", "").strip()
@@ -44,8 +50,10 @@ class BridgeConfig:
         self.log_file = Path(os.getenv("GPT_BRIDGE_LOG_FILE", "logs/bridge.jsonl"))
 
     def validate_startup(self) -> None:
-        if self.host != "127.0.0.1":
-            raise RuntimeError("GPT_BRIDGE_HOST must be exactly 127.0.0.1")
+        if self.host != "127.0.0.1" and not self.allow_nonlocalhost:
+            raise RuntimeError(
+                "GPT_BRIDGE_HOST must be 127.0.0.1 unless GPT_BRIDGE_ALLOW_NONLOCALHOST=1 is set"
+            )
         if not self.openai_api_key:
             raise RuntimeError("OPENAI_API_KEY is required")
         if not (self.bridge_token or self.bridge_shared_secret):

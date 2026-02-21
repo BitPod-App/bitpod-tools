@@ -1,10 +1,10 @@
 # GPT Bridge (B1)
 
-Local HTTP bridge so Codex workflows can call GPT directly.
+HTTP bridge so Codex workflows can call GPT directly (local or remote-managed endpoint).
 
 ## Files
 
-- `gpt_bridge.py`: local HTTP service (`POST /ask`)
+- `gpt_bridge.py`: HTTP service (`POST /ask`)
 - `schemas.py`: request/response schema classes
 - `ask_gpt.py`: CLI wrapper (JSON to stdout)
 - `ask_gpt.sh`: shell wrapper for easy scripting
@@ -64,7 +64,35 @@ Per-request override:
 python3 gpt_bridge.py
 ```
 
-Service binds only to `127.0.0.1` and rejects startup on any other host.
+By default it binds to `127.0.0.1`.
+For remote hosting, set:
+
+```bash
+export GPT_BRIDGE_ALLOW_NONLOCALHOST=1
+export GPT_BRIDGE_HOST=0.0.0.0
+```
+
+Then run:
+
+```bash
+python3 gpt_bridge.py
+```
+
+## Option 2: Remote-managed endpoint (no per-message terminal loop)
+
+Point clients to a shared URL:
+
+```bash
+export GPT_BRIDGE_URL="https://your-bridge.example.com/ask"
+export GPT_BRIDGE_TOKEN="your_bridge_token"
+```
+
+Notes:
+
+- `bridge_ctl.sh start` is local-only; for remote URL it will not spawn a local process.
+- `bridge_ctl.sh stop` is local-only; for remote URL it is a no-op.
+- `ask_once.sh` will not try to start local bridge when `GPT_BRIDGE_URL` is remote.
+- Keep auth enabled (`GPT_BRIDGE_TOKEN` and/or `GPT_BRIDGE_SHARED_SECRET`).
 
 ## HTTP usage
 
@@ -310,7 +338,7 @@ python3 gpt_bridge_mcp.py
 Exposed tool:
 
 - `gpt_bridge_ask`
-  - Forwards to local bridge `POST /ask`
+  - Forwards to bridge `POST /ask` via `GPT_BRIDGE_URL`
   - Input fields: `task_type`, `message`, `context`, `constraints`, `meta`
   - Output: JSON text of the `GPTResponse`
 

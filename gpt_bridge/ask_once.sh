@@ -30,17 +30,38 @@ check_bridge() {
   [[ "$code" != "000" ]]
 }
 
-if ! check_bridge; then
-  mkdir -p "$SCRIPT_DIR/logs"
-  nohup python3 "$SCRIPT_DIR/gpt_bridge.py" >>"$START_LOG" 2>&1 &
-  echo "$!" > "$PID_FILE"
+bridge_host() {
+  local host
+  host="$(printf '%s' "$BRIDGE_URL" | sed -nE 's#^[a-zA-Z]+://([^/:]+).*#\1#p')"
+  if [[ -z "${host:-}" ]]; then
+    host="127.0.0.1"
+  fi
+  printf '%s' "$host"
+}
 
-  for _ in {1..20}; do
-    if check_bridge; then
-      break
-    fi
-    sleep 0.25
-  done
+is_local_bridge_url() {
+  local host
+  host="$(bridge_host)"
+  [[ "$host" == "127.0.0.1" || "$host" == "localhost" || "$host" == "::1" ]]
+}
+
+if ! check_bridge; then
+  if is_local_bridge_url; then
+    mkdir -p "$SCRIPT_DIR/logs"
+    nohup python3 "$SCRIPT_DIR/gpt_bridge.py" >>"$START_LOG" 2>&1 &
+    echo "$!" > "$PID_FILE"
+
+    for _ in {1..20}; do
+      if check_bridge; then
+        break
+      fi
+      sleep 0.25
+    done
+  else
+    echo "Remote bridge unreachable: $BRIDGE_URL" >&2
+    echo "Start or fix the remote bridge service, then retry." >&2
+    exit 1
+  fi
 fi
 
 if ! check_bridge; then
