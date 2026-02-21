@@ -1411,6 +1411,10 @@ def run_sync(args: argparse.Namespace) -> int:
 def run_chat(args: argparse.Namespace) -> int:
     if bool(getattr(args, "stdin", False)):
         raw = sys.stdin.read()
+    elif not args.message and not sys.stdin.isatty():
+        # Convenience mode: if message arg is omitted and stdin is piped,
+        # consume stdin automatically (no --stdin flag required).
+        raw = sys.stdin.read()
     else:
         raw = args.message or ""
     raw = raw.strip()

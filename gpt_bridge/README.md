@@ -237,6 +237,12 @@ printf "%s" "~gpt it's working?" | ./bridge_chat.sh chat --stdin
 printf "%s" "~session Let's plan next sprint" | ./bridge_chat.sh chat --stdin
 ```
 
+`chat` also auto-reads piped stdin when message arg is omitted:
+
+```bash
+printf "%s" "~gpt it's working?" | ./bridge_chat.sh chat
+```
+
 Add non-GPT messages (for agents/humans):
 
 ```bash
