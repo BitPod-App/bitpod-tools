@@ -338,6 +338,23 @@ Each request/response is appended as JSONL to:
 
 Each record includes timestamp and request ID.
 
+## One-command quick test
+
+Run this from `gpt_bridge/`:
+
+```bash
+./quick_test.sh
+```
+
+What it does:
+
+- Loads `.env`
+- Starts bridge
+- Starts a fresh `~session ...`
+- Sends `~gpt reply with exactly: pong`
+- Ends session
+- Prints `QUICK TEST: PASS` or `QUICK TEST: FAIL`
+
 ## Basic smoke checks (B1)
 
 1. Start server in one terminal:
