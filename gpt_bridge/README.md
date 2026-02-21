@@ -194,6 +194,7 @@ Recommended in Codex UI: tilde commands (`~...`)
 ./bridge_chat.sh chat "~options"
 ./bridge_chat.sh chat "~session Let's plan the rollout"
 ./bridge_chat.sh chat "~gpt review this diff"
+./bridge_chat.sh chat "~sync"
 ./bridge_chat.sh chat "~codex sanity-check this plan"
 ./bridge_chat.sh chat "~cj please review this"
 ./bridge_chat.sh chat "~taylor please review this"
@@ -354,6 +355,12 @@ What it does:
 - Sends `~gpt reply with exactly: pong`
 - Ends session
 - Prints `QUICK TEST: PASS` or `QUICK TEST: FAIL`
+
+If you send GPT messages from Terminal and want to pull GPT replies into Codex chat view:
+
+```bash
+./bridge_chat.sh chat "~sync"
+```
 
 ## Basic smoke checks (B1)
 

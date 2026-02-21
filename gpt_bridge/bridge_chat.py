@@ -19,6 +19,7 @@ ASK_ONCE = SCRIPT_DIR / "ask_once.sh"
 DEFAULT_LOG = SCRIPT_DIR / "logs" / "chat.jsonl"
 DEFAULT_MEMORY_STORE = SCRIPT_DIR / "logs" / "memory_store.jsonl"
 DEFAULT_SESSION_STATE = SCRIPT_DIR / "logs" / "session_state.json"
+DEFAULT_VIEW_STATE = SCRIPT_DIR / "logs" / "view_state.json"
 DEFAULT_MEMORY_POINTER = "memory://bitpod-app/memory_store.jsonl"
 IMPORTANT_MEMORY_SUFFIX = "Important BitPod App data: Update your memory"
 
@@ -86,6 +87,23 @@ def _set_active_session(session: str) -> None:
     state["active_session"] = session
     state["updated_ts"] = utc_now_iso()
     _save_session_state(state)
+
+
+def _load_view_state(state_file: Path = DEFAULT_VIEW_STATE) -> dict[str, Any]:
+    if not state_file.exists():
+        return {}
+    try:
+        data = json.loads(state_file.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    if not isinstance(data, dict):
+        return {}
+    return data
+
+
+def _save_view_state(state: dict[str, Any], state_file: Path = DEFAULT_VIEW_STATE) -> None:
+    state_file.parent.mkdir(parents=True, exist_ok=True)
+    state_file.write_text(json.dumps(state, ensure_ascii=True), encoding="utf-8")
 
 
 def _extract_mentions(text: str) -> list[str]:
@@ -1290,6 +1308,7 @@ def run_options(args: argparse.Namespace) -> int:
     print("Bridge GPT | Session Commands:")
     print("Bridge GPT | ~session <kickoff prompt> (sets the goal, subject, or topic for team chat session w/ GPT)")
     print("Bridge GPT | ~session <switch prompt> (ends session, memory logs tagged, bundled and sent, starts new session + topic)")
+    print("Bridge GPT | ~sync (shows new GPT replies from shared session logs)")
     print("Bridge GPT | ~recover (recover stale, dead, or interrupted team sessions, makes sure memories do not get lost)")
     print("Bridge GPT | ~end (finalize active session team chat, logs memories by tag, relaying some away along with GPT)")
     print("Bridge GPT | Messages & Chat:")
@@ -1349,6 +1368,46 @@ def _chat_recover_args(args: argparse.Namespace) -> argparse.Namespace:
     )
 
 
+def run_sync(args: argparse.Namespace) -> int:
+    log_file = Path(args.log_file)
+    session = _resolve_session(args.session)
+    viewer = str(getattr(args, "from_actor", "user") or "user").strip() or "user"
+
+    events = iter_events(log_file)
+    state = _load_view_state()
+    cursor_key = f"{viewer}:{session}:gpt_last_ts"
+    last_seen = state.get(cursor_key)
+    if not isinstance(last_seen, str):
+        last_seen = ""
+
+    new_messages: list[dict[str, Any]] = []
+    max_ts = last_seen
+    for event in events:
+        if event.get("session") != session:
+            continue
+        if event.get("kind") != "message":
+            continue
+        if str(event.get("actor", "")).strip().lower() != "gpt":
+            continue
+        ts = str(event.get("ts", ""))
+        if last_seen and ts <= last_seen:
+            continue
+        new_messages.append(event)
+        if not max_ts or ts > max_ts:
+            max_ts = ts
+
+    if not new_messages:
+        print("Bridge GPT | No new GPT messages for this session.")
+        return 0
+
+    for event in new_messages:
+        print_timeline_line(str(event.get("ts", "")), "GPT", str(event.get("text", "")))
+
+    state[cursor_key] = max_ts
+    _save_view_state(state)
+    return 0
+
+
 def run_chat(args: argparse.Namespace) -> int:
     if bool(getattr(args, "stdin", False)):
         raw = sys.stdin.read()
@@ -1365,6 +1424,8 @@ def run_chat(args: argparse.Namespace) -> int:
         trest = parts[1].strip() if len(parts) > 1 else ""
         if tcmd in {"help", "options"}:
             return run_options(argparse.Namespace(session=args.session, log_file=args.log_file))
+        if tcmd == "sync":
+            return run_sync(argparse.Namespace(session=args.session, log_file=args.log_file, from_actor=args.from_actor))
         if tcmd == "end":
             return run_end(_chat_end_args(args))
         if tcmd == "recover":
@@ -1406,6 +1467,8 @@ def run_chat(args: argparse.Namespace) -> int:
 
     if cmd in {"/help", "/options"}:
         return run_options(argparse.Namespace(session=args.session, log_file=args.log_file))
+    if cmd == "/sync":
+        return run_sync(argparse.Namespace(session=args.session, log_file=args.log_file, from_actor=args.from_actor))
     if cmd == "/end":
         return run_end(_chat_end_args(args))
     if cmd == "/recover":
