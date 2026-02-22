@@ -19,11 +19,17 @@ ASK_ONCE = SCRIPT_DIR / "ask_once.sh"
 DEFAULT_LOG = SCRIPT_DIR / "logs" / "chat.jsonl"
 DEFAULT_MEMORY_STORE = SCRIPT_DIR / "logs" / "memory_store.jsonl"
 DEFAULT_SESSION_STATE = SCRIPT_DIR / "logs" / "session_state.json"
+DEFAULT_SESSION_INDEX = SCRIPT_DIR / "logs" / "session_index.json"
 DEFAULT_VIEW_STATE = SCRIPT_DIR / "logs" / "view_state.json"
 DEFAULT_MEMORY_POINTER = "memory://bitpod-app/memory_store.jsonl"
 IMPORTANT_MEMORY_SUFFIX = "Important BitPod App data: Update your memory"
 TAYLOR_CONTRACT_PATH = "~/.agents/skills/taylor/SKILL.md"
 DEFAULT_TAYLOR_QA_ARTIFACT_ROOT = SCRIPT_DIR.parent.parent / "artifacts" / "taylor_qa"
+INTENT_VALUES = {"chat", "ask", "plan", "decide", "review"}
+INTENT_EARLY_SECONDS = 90
+INTENT_EARLY_USER_MESSAGES = 3
+SESSION_HARD_CAP_SECONDS = 40 * 60
+SESSION_IDLE_ROLLOVER_SECONDS = 20 * 60
 
 
 def utc_now_iso() -> str:
@@ -89,6 +95,292 @@ def _set_active_session(session: str) -> None:
     state["active_session"] = session
     state["updated_ts"] = utc_now_iso()
     _save_session_state(state)
+
+
+def _get_active_session_only(state_file: Path = DEFAULT_SESSION_STATE) -> str | None:
+    state = _load_session_state(state_file)
+    active = state.get("active_session")
+    if isinstance(active, str) and active.strip():
+        return active.strip()
+    return None
+
+
+def _load_session_index(index_file: Path = DEFAULT_SESSION_INDEX) -> dict[str, Any]:
+    if not index_file.exists():
+        return {"sessions": {}, "updated_ts": utc_now_iso()}
+    try:
+        data = json.loads(index_file.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {"sessions": {}, "updated_ts": utc_now_iso()}
+    if not isinstance(data, dict):
+        return {"sessions": {}, "updated_ts": utc_now_iso()}
+    sessions = data.get("sessions")
+    if not isinstance(sessions, dict):
+        data["sessions"] = {}
+    return data
+
+
+def _save_session_index(index: dict[str, Any], index_file: Path = DEFAULT_SESSION_INDEX) -> None:
+    index_file.parent.mkdir(parents=True, exist_ok=True)
+    index["updated_ts"] = utc_now_iso()
+    index_file.write_text(json.dumps(index, ensure_ascii=True), encoding="utf-8")
+
+
+def _canonical_intent(intent: str | None, fallback: str = "chat") -> str:
+    if not isinstance(intent, str):
+        return fallback
+    normalized = intent.strip().lower()
+    if normalized in INTENT_VALUES:
+        return normalized
+    return fallback
+
+
+def _topic_from_message(text: str, max_words: int = 10) -> str:
+    cleaned = re.sub(r"\s+", " ", text.strip())
+    cleaned = re.sub(r"^[~@/][^\s]+\s*", "", cleaned)
+    words = re.findall(r"[A-Za-z0-9][A-Za-z0-9'\-]*", cleaned)
+    if not words:
+        return "general"
+    return " ".join(words[:max_words]).lower()
+
+
+def _get_session_record(session_id: str, index_file: Path = DEFAULT_SESSION_INDEX) -> dict[str, Any] | None:
+    index = _load_session_index(index_file)
+    sessions = index.get("sessions", {})
+    rec = sessions.get(session_id)
+    if isinstance(rec, dict):
+        return rec
+    return None
+
+
+def _upsert_session_record(
+    *,
+    session_id: str,
+    intent: str = "chat",
+    topic: str | None = None,
+    owner: str = "CJ",
+    created_by: str = "CLI",
+    conversation_id: str | None = None,
+    prev_session_id: str | None = None,
+    chapter_index: int = 1,
+    pinned: bool = False,
+    state: str = "OPEN",
+    index_file: Path = DEFAULT_SESSION_INDEX,
+) -> dict[str, Any]:
+    index = _load_session_index(index_file)
+    sessions = index.setdefault("sessions", {})
+    existing = sessions.get(session_id, {}) if isinstance(sessions.get(session_id), dict) else {}
+    now = utc_now_iso()
+    rec: dict[str, Any] = {
+        "session_id": session_id,
+        "state": state,
+        "conversation_id": conversation_id or existing.get("conversation_id") or session_id,
+        "prev_session_id": prev_session_id if prev_session_id is not None else existing.get("prev_session_id"),
+        "chapter_index": int(chapter_index if chapter_index > 0 else existing.get("chapter_index", 1)),
+        "intent": _canonical_intent(intent, _canonical_intent(existing.get("intent"), "chat")),
+        "topic": topic if isinstance(topic, str) and topic.strip() else existing.get("topic"),
+        "topic_inherited": bool(existing.get("topic_inherited", False)),
+        "owner": owner,
+        "created_by": created_by,
+        "started_at": existing.get("started_at") or now,
+        "last_activity_at": existing.get("last_activity_at") or now,
+        "closed_at": existing.get("closed_at"),
+        "close_reason": existing.get("close_reason"),
+        "user_message_count": int(existing.get("user_message_count", 0)),
+        "segment_count": int(existing.get("segment_count", 1)),
+        "pinned": bool(existing.get("pinned", pinned)),
+        "metadata": existing.get("metadata", {}),
+        "finalize": existing.get("finalize", {}),
+    }
+    sessions[session_id] = rec
+    _save_session_index(index, index_file)
+    return rec
+
+
+def _touch_session_activity(
+    *,
+    session_id: str,
+    user_message: bool,
+    message_text: str | None = None,
+    index_file: Path = DEFAULT_SESSION_INDEX,
+) -> dict[str, Any]:
+    rec = _upsert_session_record(session_id=session_id, index_file=index_file)
+    rec["last_activity_at"] = utc_now_iso()
+    if user_message:
+        rec["user_message_count"] = int(rec.get("user_message_count", 0)) + 1
+        if (not isinstance(rec.get("topic"), str) or not str(rec.get("topic")).strip()) and isinstance(message_text, str) and message_text.strip():
+            rec["topic"] = _topic_from_message(message_text)
+            rec["topic_inherited"] = False
+    index = _load_session_index(index_file)
+    sessions = index.setdefault("sessions", {})
+    sessions[session_id] = rec
+    _save_session_index(index, index_file)
+    return rec
+
+
+def _mark_session_closed(
+    *,
+    session_id: str,
+    close_reason: str,
+    finalize_digest: str | None = None,
+    summary_status: str = "OK",
+    index_file: Path = DEFAULT_SESSION_INDEX,
+) -> None:
+    rec = _upsert_session_record(session_id=session_id, index_file=index_file)
+    rec["state"] = "CLOSED"
+    rec["closed_at"] = utc_now_iso()
+    rec["close_reason"] = close_reason
+    finalize = rec.get("finalize", {})
+    if not isinstance(finalize, dict):
+        finalize = {}
+    finalize["finalized"] = True
+    finalize["finalized_at"] = utc_now_iso()
+    finalize["summary_status"] = summary_status
+    if isinstance(finalize_digest, str) and finalize_digest:
+        finalize["finalize_digest"] = finalize_digest
+    rec["finalize"] = finalize
+    index = _load_session_index(index_file)
+    sessions = index.setdefault("sessions", {})
+    sessions[session_id] = rec
+    _save_session_index(index, index_file)
+
+
+def _open_linked_session(
+    *,
+    new_session_id: str,
+    previous_session_id: str | None,
+    intent: str,
+    topic: str | None,
+    created_by: str = "CLI",
+    index_file: Path = DEFAULT_SESSION_INDEX,
+) -> dict[str, Any]:
+    prev = _get_session_record(previous_session_id, index_file) if isinstance(previous_session_id, str) and previous_session_id else None
+    conversation_id = prev.get("conversation_id") if isinstance(prev, dict) else None
+    chapter_index = int(prev.get("chapter_index", 0)) + 1 if isinstance(prev, dict) else 1
+    rec = _upsert_session_record(
+        session_id=new_session_id,
+        intent=intent,
+        topic=topic if isinstance(topic, str) and topic.strip() else (prev.get("topic") if isinstance(prev, dict) else None),
+        created_by=created_by,
+        conversation_id=conversation_id,
+        prev_session_id=previous_session_id,
+        chapter_index=chapter_index,
+        index_file=index_file,
+    )
+    if isinstance(prev, dict) and isinstance(prev.get("topic"), str) and not topic:
+        rec["topic_inherited"] = True
+        index = _load_session_index(index_file)
+        sessions = index.setdefault("sessions", {})
+        sessions[new_session_id] = rec
+        _save_session_index(index, index_file)
+    return rec
+
+
+def _derive_linked_session_id(conversation_id: str, chapter_index: int) -> str:
+    base = re.sub(r"[^A-Za-z0-9]+", "-", conversation_id.lower()).strip("-")
+    if not base:
+        base = "team"
+    return f"{base}-c{chapter_index}-{int(time.time())}"
+
+
+def _seconds_since(ts_value: Any) -> float | None:
+    parsed = _parse_iso_ts(ts_value)
+    if parsed is None:
+        return None
+    return (datetime.now(timezone.utc) - parsed).total_seconds()
+
+
+def _is_early_intent_window(record: dict[str, Any]) -> bool:
+    user_count = int(record.get("user_message_count", 0))
+    session_age = _seconds_since(record.get("started_at"))
+    if user_count < INTENT_EARLY_USER_MESSAGES:
+        return True
+    if session_age is None:
+        return True
+    return session_age <= INTENT_EARLY_SECONDS
+
+
+def _create_linked_chapter(
+    *,
+    previous_session: str,
+    new_intent: str,
+    log_file: Path,
+    memory_store: Path,
+    model: str | None,
+    reason: str,
+    memory_pointer: str = DEFAULT_MEMORY_POINTER,
+) -> str:
+    prev = _get_session_record(previous_session) or _upsert_session_record(session_id=previous_session)
+    topic = prev.get("topic") if isinstance(prev.get("topic"), str) else None
+    finalized, finalize_msg = _finalize_session_memory(
+        session=previous_session,
+        log_file=log_file,
+        memory_store=memory_store,
+        memory_items=12,
+        extract_max_tokens=1000,
+        sync_max_tokens=500,
+        model=model,
+        sync_to_gpt=True,
+        memory_pointer=memory_pointer,
+        show_raw=False,
+        reason=reason,
+    )
+    if not finalized and not str(finalize_msg).startswith("No messages found"):
+        _log_status(log_file, previous_session, f"Bridge GPT | Carrying forward without finalize: {finalize_msg}")
+    if not finalized and str(finalize_msg).startswith("No messages found"):
+        _mark_session_closed(session_id=previous_session, close_reason=reason, summary_status="NO_MESSAGES")
+
+    conversation_id = str(prev.get("conversation_id") or previous_session)
+    chapter_index = int(prev.get("chapter_index", 1)) + 1
+    new_session = _derive_linked_session_id(conversation_id, chapter_index)
+    rec = _open_linked_session(
+        new_session_id=new_session,
+        previous_session_id=previous_session,
+        intent=new_intent,
+        topic=topic,
+        created_by="CLI",
+    )
+    _set_active_session(new_session)
+    _log_status(
+        log_file,
+        new_session,
+        (
+            f"Bridge GPT | Started linked chapter {rec.get('chapter_index', chapter_index)} "
+            f"(intent={rec.get('intent', new_intent)}, reason={reason})."
+        ),
+    )
+    return new_session
+
+
+def _rollover_if_needed(
+    *,
+    session: str,
+    log_file: Path,
+    memory_store: Path,
+    model: str | None,
+) -> str:
+    rec = _get_session_record(session) or _upsert_session_record(session_id=session)
+    age = _seconds_since(rec.get("started_at"))
+    idle = _seconds_since(rec.get("last_activity_at"))
+    if age is not None and age >= SESSION_HARD_CAP_SECONDS:
+        return _create_linked_chapter(
+            previous_session=session,
+            new_intent=_canonical_intent(rec.get("intent"), "chat"),
+            log_file=log_file,
+            memory_store=memory_store,
+            model=model,
+            reason="hard_cap_rollover",
+        )
+    if idle is not None and idle >= SESSION_IDLE_ROLLOVER_SECONDS:
+        return _create_linked_chapter(
+            previous_session=session,
+            new_intent=_canonical_intent(rec.get("intent"), "chat"),
+            log_file=log_file,
+            memory_store=memory_store,
+            model=model,
+            reason="idle_rollover",
+        )
+    return session
 
 
 def _load_view_state(state_file: Path = DEFAULT_VIEW_STATE) -> dict[str, Any]:
@@ -996,6 +1288,12 @@ def _finalize_session_memory(
 
     digest = _transcript_digest(transcript)
     if _is_digest_finalized(events, session, digest):
+        _mark_session_closed(
+            session_id=session,
+            close_reason=reason,
+            finalize_digest=digest,
+            summary_status="ALREADY_FINALIZED",
+        )
         return False, f"Session '{session}' is already finalized for current transcript."
 
     _log_status(log_file, session, "Bridge GPT | Ending session and extracting memory...")
@@ -1020,6 +1318,12 @@ def _finalize_session_memory(
             reason=reason,
             items_saved=0,
             synced_to_gpt=False,
+        )
+        _mark_session_closed(
+            session_id=session,
+            close_reason=reason,
+            finalize_digest=digest,
+            summary_status="NO_ITEMS",
         )
         if show_raw:
             print(json.dumps(extract_response, ensure_ascii=True))
@@ -1067,6 +1371,12 @@ def _finalize_session_memory(
         reason=reason,
         items_saved=saved,
         synced_to_gpt=synced,
+    )
+    _mark_session_closed(
+        session_id=session,
+        close_reason=reason,
+        finalize_digest=digest,
+        summary_status="OK",
     )
     if show_raw:
         print(json.dumps(extract_response, ensure_ascii=True))
@@ -1343,6 +1653,13 @@ def run_send(args: argparse.Namespace) -> int:
     log_file = Path(args.log_file)
     memory_store = Path(args.memory_store)
     session = _resolve_session(args.session)
+    session = _rollover_if_needed(
+        session=session,
+        log_file=log_file,
+        memory_store=memory_store,
+        model=args.model,
+    )
+    _upsert_session_record(session_id=session, intent="chat")
     _set_active_session(session)
 
     if args.task_type == "qa_check" and not args.taylor_qa:
@@ -1370,6 +1687,7 @@ def run_send(args: argparse.Namespace) -> int:
         if recovered > 0:
             _log_status(log_file, session, f"Bridge GPT | Recovered {recovered} stale session(s).")
 
+    _touch_session_activity(session_id=session, user_message=True, message_text=args.message)
     return _send_to_gpt(
         log_file=log_file,
         memory_store=memory_store,
@@ -1393,6 +1711,13 @@ def run_send(args: argparse.Namespace) -> int:
 def run_post(args: argparse.Namespace) -> int:
     log_file = Path(args.log_file)
     session = _resolve_session(args.session)
+    session = _rollover_if_needed(
+        session=session,
+        log_file=log_file,
+        memory_store=Path(DEFAULT_MEMORY_STORE),
+        model=None,
+    )
+    _upsert_session_record(session_id=session, intent="chat")
     _set_active_session(session)
     ts = utc_now_iso()
     mentions = _extract_mentions(args.text)
@@ -1408,6 +1733,7 @@ def run_post(args: argparse.Namespace) -> int:
         },
     )
     print_timeline_line(ts, args.from_actor, args.text)
+    _touch_session_activity(session_id=session, user_message=True, message_text=args.text)
     return 0
 
 
@@ -1452,6 +1778,13 @@ def run_end(args: argparse.Namespace) -> int:
 def run_team(args: argparse.Namespace) -> int:
     log_file = Path(args.log_file)
     session = _resolve_session(args.session)
+    session = _rollover_if_needed(
+        session=session,
+        log_file=log_file,
+        memory_store=Path(args.memory_store),
+        model=args.model,
+    )
+    _upsert_session_record(session_id=session, intent="chat")
     _set_active_session(session)
     ts = utc_now_iso()
     mentions = _extract_mentions(args.text)
@@ -1467,6 +1800,7 @@ def run_team(args: argparse.Namespace) -> int:
         },
     )
     print_timeline_line(ts, args.from_actor, args.text)
+    _touch_session_activity(session_id=session, user_message=True, message_text=args.text)
 
     if "codex" in mentions:
         codex_text = f"@{args.from_actor} acknowledged by Codex. I saw your message."
@@ -1511,6 +1845,7 @@ def run_session(args: argparse.Namespace) -> int:
     new_session = args.session.strip() if isinstance(args.session, str) and args.session.strip() else _slugify_session_label(args.kickoff_prompt)
 
     if current_session != new_session:
+        prev = _get_session_record(current_session) or _upsert_session_record(session_id=current_session)
         _finalize_session_memory(
             session=current_session,
             log_file=log_file,
@@ -1524,6 +1859,15 @@ def run_session(args: argparse.Namespace) -> int:
             show_raw=False,
             reason="session_switch",
         )
+        _open_linked_session(
+            new_session_id=new_session,
+            previous_session_id=current_session,
+            intent="chat",
+            topic=prev.get("topic") if isinstance(prev.get("topic"), str) else None,
+            created_by="CLI",
+        )
+    else:
+        _upsert_session_record(session_id=new_session, intent="chat")
 
     _set_active_session(new_session)
     _log_status(log_file, new_session, f"Bridge GPT | Active session set: {new_session}")
@@ -1549,8 +1893,12 @@ def run_options(args: argparse.Namespace) -> int:
     _set_active_session(session)
     print("Bridge GPT | Actions Legend")
     print("Bridge GPT | Session Commands:")
+    print("Bridge GPT | ~start | ~new (start linked chapter without immediate GPT relay)")
     print("Bridge GPT | ~session <kickoff prompt> (sets the goal, subject, or topic for team chat session w/ GPT)")
     print("Bridge GPT | ~session <switch prompt> (ends session, memory logs tagged, bundled and sent, starts new session + topic)")
+    print("Bridge GPT | ~status (show session/chapter/intent/topic/timers)")
+    print("Bridge GPT | ~intent <chat|ask|plan|decide|review> (early update in-place, late creates linked chapter)")
+    print("Bridge GPT | ~topic \"<text>\" (set session topic explicitly)")
     print("Bridge GPT | ~sync (shows new GPT replies from shared session logs)")
     print("Bridge GPT | ~recover (recover stale, dead, or interrupted team sessions, makes sure memories do not get lost)")
     print("Bridge GPT | ~end (finalize active session team chat, logs memories by tag, relaying some away along with GPT)")
@@ -1654,53 +2002,170 @@ def run_sync(args: argparse.Namespace) -> int:
     return 0
 
 
+def _print_invalid_command() -> int:
+    print("Invalid command. Type ~help for options.")
+    return 2
+
+
+def _print_no_active_session() -> int:
+    print("There is no active session. Type ~start to begin, or ~help for options.")
+    return 2
+
+
+def _require_active_session(args: argparse.Namespace) -> str | None:
+    if isinstance(args.session, str) and args.session.strip():
+        return args.session.strip()
+    return _get_active_session_only()
+
+
+def _status_line_for_session(session: str) -> str:
+    rec = _get_session_record(session) or _upsert_session_record(session_id=session, intent="chat")
+    seg_age = _seconds_since(rec.get("started_at"))
+    total_age = seg_age
+    seg_age_s = f"{int(seg_age)}s" if isinstance(seg_age, (float, int)) else "n/a"
+    total_age_s = f"{int(total_age)}s" if isinstance(total_age, (float, int)) else "n/a"
+    chapter = int(rec.get("chapter_index", 1))
+    next_cap = "n/a"
+    if isinstance(seg_age, (float, int)):
+        next_cap = f"{max(0, int(SESSION_HARD_CAP_SECONDS - seg_age))}s"
+    next_idle = "n/a"
+    idle_age = _seconds_since(rec.get("last_activity_at"))
+    if isinstance(idle_age, (float, int)):
+        next_idle = f"{max(0, int(SESSION_IDLE_ROLLOVER_SECONDS - idle_age))}s"
+    finalize = rec.get("finalize", {})
+    pending = "yes"
+    if isinstance(finalize, dict) and finalize.get("finalized"):
+        pending = "no"
+    return (
+        f"session={session} chapter={chapter} intent={rec.get('intent', 'chat')} "
+        f"topic={rec.get('topic', 'general')} elapsed_segment={seg_age_s} total_session={total_age_s} "
+        f"segments={chapter} next_cap={next_cap} next_idle={next_idle} memory_pending={pending}"
+    )
+
+
 def run_chat(args: argparse.Namespace) -> int:
     if bool(getattr(args, "stdin", False)):
         raw = sys.stdin.read()
     elif not args.message and not sys.stdin.isatty():
-        # Convenience mode: if message arg is omitted and stdin is piped,
-        # consume stdin automatically (no --stdin flag required).
         raw = sys.stdin.read()
     else:
         raw = args.message or ""
     raw = raw.strip()
     if not raw:
-        print("Bridge GPT | Empty message. Usage: chat <message> or chat --stdin")
-        return 2
-
-    # Opportunistically pull newly logged GPT messages so users do not need
-    # to run ~sync manually after every terminal-side interaction.
-    if raw.strip().lower() not in {"~sync", "/sync"}:
-        run_sync(
-            argparse.Namespace(
-                session=args.session,
-                log_file=args.log_file,
-                from_actor=args.from_actor,
-                quiet_noop=True,
-            )
-        )
+        return _print_invalid_command()
 
     if raw.startswith("~"):
-        # Accept punctuation right after command names, e.g. "~gpt, hello"
         m = re.match(r"^~(?P<cmd>[A-Za-z0-9_-]+)(?:[,:;.!?])?\s*(?P<rest>.*)$", raw)
         if not m:
-            print("Bridge GPT | Unknown command format.")
-            print("Bridge GPT | Try ~help")
-            return 2
+            return _print_invalid_command()
         tcmd = m.group("cmd").lower()
         trest = (m.group("rest") or "").strip()
+        session_scoped = {"end", "status", "intent", "continue", "resume", "topic"}
+        if tcmd in session_scoped and _require_active_session(args) is None:
+            return _print_no_active_session()
+        if tcmd not in {"sync", "start", "new"}:
+            run_sync(
+                argparse.Namespace(
+                    session=args.session,
+                    log_file=args.log_file,
+                    from_actor=args.from_actor,
+                    quiet_noop=True,
+                )
+            )
+
         if tcmd in {"help", "options"}:
             return run_options(argparse.Namespace(session=args.session, log_file=args.log_file))
         if tcmd == "sync":
             return run_sync(argparse.Namespace(session=args.session, log_file=args.log_file, from_actor=args.from_actor))
+        if tcmd in {"start", "new"}:
+            current = _get_active_session_only()
+            prompt_basis = trest if trest else f"chapter-{int(time.time())}"
+            if current:
+                new_session = _create_linked_chapter(
+                    previous_session=current,
+                    new_intent="chat",
+                    log_file=Path(args.log_file),
+                    memory_store=Path(args.memory_store),
+                    model=args.model,
+                    reason="manual_new_session",
+                )
+            else:
+                new_session = _slugify_session_label(prompt_basis)
+                _upsert_session_record(
+                    session_id=new_session,
+                    intent="chat",
+                    topic=trest if trest else None,
+                    conversation_id=new_session,
+                    chapter_index=1,
+                    created_by="CLI",
+                )
+                _set_active_session(new_session)
+                _log_status(Path(args.log_file), new_session, "Bridge GPT | Session started (chapter 1, intent=chat).")
+            return 0
+        if tcmd in {"continue", "resume"}:
+            session = _require_active_session(args)
+            if not session:
+                return _print_no_active_session()
+            print(f"Bridge GPT | Continuing active session: {session}")
+            return 0
+        if tcmd == "status":
+            session = _require_active_session(args)
+            if not session:
+                return _print_no_active_session()
+            print(f"Bridge GPT | {_status_line_for_session(session)}")
+            return 0
+        if tcmd == "intent":
+            if not trest:
+                return _print_invalid_command()
+            new_intent = _canonical_intent(trest, "")
+            if new_intent not in INTENT_VALUES:
+                return _print_invalid_command()
+            session = _require_active_session(args)
+            if not session:
+                return _print_no_active_session()
+            rec = _get_session_record(session) or _upsert_session_record(session_id=session, intent="chat")
+            if _is_early_intent_window(rec):
+                _upsert_session_record(
+                    session_id=session,
+                    intent=new_intent,
+                    topic=rec.get("topic") if isinstance(rec.get("topic"), str) else None,
+                )
+                _log_status(Path(args.log_file), session, f"Bridge GPT | Intent updated in current chapter: {new_intent}.")
+                return 0
+            new_session = _create_linked_chapter(
+                previous_session=session,
+                new_intent=new_intent,
+                log_file=Path(args.log_file),
+                memory_store=Path(args.memory_store),
+                model=args.model,
+                reason="intent_change",
+            )
+            _log_status(Path(args.log_file), new_session, "Bridge GPT | Segment kickoff: intent change created linked chapter.")
+            return 0
+        if tcmd == "topic":
+            if not trest:
+                return _print_invalid_command()
+            session = _require_active_session(args)
+            if not session:
+                return _print_no_active_session()
+            topic = trest.strip().strip('"').strip("'")
+            if not topic:
+                return _print_invalid_command()
+            rec = _get_session_record(session) or {}
+            _upsert_session_record(
+                session_id=session,
+                intent=_canonical_intent(rec.get("intent"), "chat"),
+                topic=topic,
+            )
+            _log_status(Path(args.log_file), session, f"Bridge GPT | Topic set: {topic}")
+            return 0
         if tcmd == "end":
             return run_end(_chat_end_args(args))
         if tcmd == "recover":
             return run_recover(_chat_recover_args(args))
         if tcmd == "session":
             if not trest:
-                print("Bridge GPT | Usage: ~session <kickoff prompt>")
-                return 2
+                return _print_invalid_command()
             return run_session(
                 argparse.Namespace(
                     kickoff_prompt=trest,
@@ -1718,12 +2183,9 @@ def run_chat(args: argparse.Namespace) -> int:
             )
         if tcmd in {"gpt", "codex", "cj", "taylor"}:
             if not trest:
-                print(f"Bridge GPT | Usage: ~{tcmd} <message>")
-                return 2
+                return _print_invalid_command()
             return run_team(_chat_team_args(args, f"@{tcmd} {trest}"))
-        print(f"Bridge GPT | Unknown command: ~{tcmd}" if tcmd else "Bridge GPT | Unknown command: ~")
-        print("Bridge GPT | Try ~help")
-        return 2
+        return _print_invalid_command()
 
     if not raw.startswith("/"):
         return run_team(_chat_team_args(args, raw))
@@ -1731,22 +2193,35 @@ def run_chat(args: argparse.Namespace) -> int:
     parts = raw.split(maxsplit=1)
     cmd = parts[0].lower()
     rest = parts[1].strip() if len(parts) > 1 else ""
+    if cmd in {"/end", "/status", "/intent", "/continue", "/resume", "/topic"} and _require_active_session(args) is None:
+        return _print_no_active_session()
+    if cmd not in {"/sync", "/start", "/new"}:
+        run_sync(
+            argparse.Namespace(
+                session=args.session,
+                log_file=args.log_file,
+                from_actor=args.from_actor,
+                quiet_noop=True,
+            )
+        )
 
     if cmd in {"/help", "/options"}:
         return run_options(argparse.Namespace(session=args.session, log_file=args.log_file))
     if cmd == "/sync":
         return run_sync(argparse.Namespace(session=args.session, log_file=args.log_file, from_actor=args.from_actor))
     if cmd == "/end":
+        if _require_active_session(args) is None:
+            return _print_no_active_session()
         return run_end(_chat_end_args(args))
     if cmd == "/recover":
         return run_recover(_chat_recover_args(args))
-    if cmd == "/session":
-        if not rest:
-            print("Bridge GPT | Usage: /session <kickoff prompt>")
-            return 2
+    if cmd in {"/session", "/start", "/new"}:
+        if not rest and cmd == "/session":
+            return _print_invalid_command()
+        kickoff = rest if rest else f"chapter-{int(time.time())}"
         return run_session(
             argparse.Namespace(
-                kickoff_prompt=rest,
+                kickoff_prompt=kickoff,
                 session=None,
                 log_file=args.log_file,
                 memory_store=args.memory_store,
@@ -1761,23 +2236,17 @@ def run_chat(args: argparse.Namespace) -> int:
         )
     if cmd in {"/gpt", "/ask"}:
         if not rest:
-            print("Bridge GPT | Usage: /gpt <message> (or /ask <message>)")
-            return 2
+            return _print_invalid_command()
         return run_team(_chat_team_args(args, f"@gpt {rest}"))
     if cmd == "/codex":
         if not rest:
-            print("Bridge GPT | Usage: /codex <message>")
-            return 2
+            return _print_invalid_command()
         return run_team(_chat_team_args(args, f"@codex {rest}"))
     if cmd == "/team":
         if not rest:
-            print("Bridge GPT | Usage: /team <message>")
-            return 2
+            return _print_invalid_command()
         return run_team(_chat_team_args(args, rest))
-
-    print(f"Bridge GPT | Unknown command: {cmd}")
-    print("Bridge GPT | Try /help")
-    return 2
+    return _print_invalid_command()
 
 
 def run_recover(args: argparse.Namespace) -> int:
