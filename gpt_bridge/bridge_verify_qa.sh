@@ -97,6 +97,7 @@ else:
     sha = ""
 
 bridge_match = None
+bridge_header = {}
 for row in bridge_events:
     meta = row.get("request", {}).get("meta", {})
     if not isinstance(meta, dict):
@@ -108,6 +109,7 @@ for row in bridge_events:
         continue
     if "MODE: TAYLOR_QA" in message:
         bridge_match = row
+        bridge_header = parse_header(message)
         break
 
 checks.append((bridge_match is not None, "Header present in bridge request log"))
@@ -151,9 +153,13 @@ for ok, label in checks:
     if not ok:
         all_ok = False
 
-if req_header:
-    print(f"INFO: Request bundle path = {req_header.get('BUNDLE_PATH', '<missing>')}")
-    print(f"INFO: Request bundle sha256 = {req_header.get('BUNDLE_SHA256', '<missing>')}")
+# Print bundle info even on FAIL when available from either chat or bridge logs.
+info_bundle_path = req_header.get("BUNDLE_PATH") or bridge_header.get("BUNDLE_PATH")
+info_bundle_sha = req_header.get("BUNDLE_SHA256") or bridge_header.get("BUNDLE_SHA256")
+if info_bundle_path:
+    print(f"INFO: Request bundle path = {info_bundle_path}")
+if info_bundle_sha:
+    print(f"INFO: Request bundle sha256 = {info_bundle_sha}")
 if footer:
     print(f"INFO: QA result = {footer.get('TAYLOR_QA_RESULT', '<missing>')}")
     print(f"INFO: QA output path = {footer.get('QA_OUTPUT_PATH', '<missing>')}")

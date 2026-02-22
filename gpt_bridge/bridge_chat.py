@@ -173,6 +173,8 @@ def _parse_footer_fields(text: str) -> dict[str, str]:
         "QA_RUN_ID": r"(?m)^QA_RUN_ID:\s*(.+?)\s*$",
         "QA_OUTPUT_PATH": r"(?m)^QA_OUTPUT_PATH:\s*(.+?)\s*$",
         "BUNDLE_SHA256": r"(?m)^BUNDLE_SHA256:\s*([a-fA-F0-9]{64})\s*$",
+        "FOOTER_SYNTHETIC": r"(?m)^FOOTER_SYNTHETIC:\s*(.+?)\s*$",
+        "FOOTER_MISSING_FROM_GPT": r"(?m)^FOOTER_MISSING_FROM_GPT:\s*(.+?)\s*$",
     }
     for key, pattern in patterns.items():
         match = re.search(pattern, text)
@@ -1248,12 +1250,16 @@ def _send_to_gpt(
             footer["QA_OUTPUT_PATH"] = str(taylor_meta["qa_output_path"])
         if "TAYLOR_QA_RESULT" not in footer:
             footer["TAYLOR_QA_RESULT"] = "DEGRADED"
+            footer["FOOTER_SYNTHETIC"] = "true"
+            footer["FOOTER_MISSING_FROM_GPT"] = "true"
             gpt_text = (
                 f"{gpt_text.rstrip()}\n\n"
                 f"TAYLOR_QA_RESULT: {footer['TAYLOR_QA_RESULT']}\n"
                 f"QA_RUN_ID: {footer['QA_RUN_ID']}\n"
                 f"QA_OUTPUT_PATH: {footer['QA_OUTPUT_PATH']}\n"
                 f"BUNDLE_SHA256: {footer['BUNDLE_SHA256']}\n"
+                f"FOOTER_SYNTHETIC: {footer['FOOTER_SYNTHETIC']}\n"
+                f"FOOTER_MISSING_FROM_GPT: {footer['FOOTER_MISSING_FROM_GPT']}\n"
             )
         _write_taylor_qa_artifacts(
             qa_output_dir=Path(footer["QA_OUTPUT_PATH"]),

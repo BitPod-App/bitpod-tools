@@ -74,6 +74,9 @@ cd /Users/cjarguello/bitpod-app/tools/gpt_bridge
   --session pr-review-<id>
 ```
 
+Hash integrity note:
+- `BUNDLE_SHA256` is computed from the exact raw bytes of the bundle file on disk (binary read, no newline normalization, no post-processing).
+
 - Verify QA run (primary path):
 
 ```bash
