@@ -60,6 +60,26 @@ CHAT (Codex chat):
 - `~sync` (manual pull; most new GPT messages are now auto-pulled on your next chat command)
 - `~end`
 
+TAYLOR QA (auditable):
+
+- Build a deterministic review bundle first (in repo): `bash scripts/make_review_bundle.sh`
+- Send QA request via bridge with enforced header/hash/footer + artifact writes:
+
+```bash
+cd /Users/cjarguello/bitpod-app/tools/gpt_bridge
+./bridge_chat.sh send "Line-by-line QA review this bundle." \
+  --task-type qa_check \
+  --taylor-qa \
+  --bundle-path /absolute/path/to/review_bundle.md \
+  --session pr-review-<id>
+```
+
+- Verify QA run (primary path):
+
+```bash
+./bridge_verify_qa.sh pr-review-<id>
+```
+
 STOP:
 
 ```bash
@@ -218,6 +238,30 @@ What it does:
   - `Bridge GPT | Authenticating...`
   - `Bridge GPT | Sending prompt...`
   - `GPT Bridge | Active`
+
+## How To Prove Taylor QA Ran
+
+Primary path:
+
+```bash
+cd /Users/cjarguello/bitpod-app/tools/gpt_bridge
+./bridge_verify_qa.sh <session_id>
+```
+
+Verifier checks:
+- request header in logs (`MODE: TAYLOR_QA`, `CONTRACT_PATH`, `BUNDLE_SHA256`)
+- request payload + GPT response presence
+- response footer (`TAYLOR_QA_RESULT`, `QA_RUN_ID`, `QA_OUTPUT_PATH`, `BUNDLE_SHA256`)
+- hash match between request and response
+- QA artifacts on disk (`qa_review.md`, `acceptance_criteria_checklist.md`, `risk_notes.md`)
+
+Manual fallback (secondary only):
+- `./bridge_chat.sh tail --session <session_id> --lines 120`
+- `rg` on `logs/bridge.jsonl` and `logs/chat.jsonl`
+
+Migration note (honest limitation):
+- For older sessions without `MODE`/`CONTRACT_PATH`/`BUNDLE_SHA256`, you can prove GPT received payload.
+- You cannot prove Taylor QA mode was used for those older sessions.
 - Appends raw GPT response JSON for verification
 
 Team-first routing:

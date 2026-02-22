@@ -22,6 +22,8 @@ DEFAULT_SESSION_STATE = SCRIPT_DIR / "logs" / "session_state.json"
 DEFAULT_VIEW_STATE = SCRIPT_DIR / "logs" / "view_state.json"
 DEFAULT_MEMORY_POINTER = "memory://bitpod-app/memory_store.jsonl"
 IMPORTANT_MEMORY_SUFFIX = "Important BitPod App data: Update your memory"
+TAYLOR_CONTRACT_PATH = "~/.agents/skills/taylor/SKILL.md"
+DEFAULT_TAYLOR_QA_ARTIFACT_ROOT = SCRIPT_DIR.parent.parent / "artifacts" / "taylor_qa"
 
 
 def utc_now_iso() -> str:
@@ -125,6 +127,100 @@ def _strip_gpt_mentions(text: str) -> str:
     return text.strip()
 
 
+def _sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as f:
+        for chunk in iter(lambda: f.read(65536), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _build_taylor_qa_message(
+    *,
+    base_message: str,
+    session: str,
+    bundle_path: Path,
+    bundle_sha256: str,
+    qa_run_id: str,
+    qa_output_dir: Path,
+) -> str:
+    header = "\n".join(
+        [
+            "MODE: TAYLOR_QA",
+            f"CONTRACT_PATH: {TAYLOR_CONTRACT_PATH}",
+            f"BUNDLE_PATH: {bundle_path}",
+            f"BUNDLE_SHA256: {bundle_sha256}",
+            f"SESSION: {session}",
+        ]
+    )
+    footer_contract = "\n".join(
+        [
+            "At the end of your response, include this exact footer format:",
+            "TAYLOR_QA_RESULT: PASS|FAIL|DEGRADED",
+            f"QA_RUN_ID: {qa_run_id}",
+            f"QA_OUTPUT_PATH: {qa_output_dir}",
+            f"BUNDLE_SHA256: {bundle_sha256}",
+            "Do not omit footer keys.",
+        ]
+    )
+    return f"{header}\n\n{base_message.strip()}\n\n{footer_contract}"
+
+
+def _parse_footer_fields(text: str) -> dict[str, str]:
+    fields: dict[str, str] = {}
+    patterns = {
+        "TAYLOR_QA_RESULT": r"(?m)^TAYLOR_QA_RESULT:\s*(.+?)\s*$",
+        "QA_RUN_ID": r"(?m)^QA_RUN_ID:\s*(.+?)\s*$",
+        "QA_OUTPUT_PATH": r"(?m)^QA_OUTPUT_PATH:\s*(.+?)\s*$",
+        "BUNDLE_SHA256": r"(?m)^BUNDLE_SHA256:\s*([a-fA-F0-9]{64})\s*$",
+    }
+    for key, pattern in patterns.items():
+        match = re.search(pattern, text)
+        if match:
+            fields[key] = match.group(1).strip()
+    return fields
+
+
+def _write_taylor_qa_artifacts(
+    *,
+    qa_output_dir: Path,
+    gpt_text: str,
+    footer_fields: dict[str, str],
+) -> None:
+    qa_output_dir.mkdir(parents=True, exist_ok=True)
+    result = footer_fields.get("TAYLOR_QA_RESULT", "DEGRADED")
+    qa_run_id = footer_fields.get("QA_RUN_ID", "missing")
+    bundle_sha = footer_fields.get("BUNDLE_SHA256", "missing")
+
+    qa_review = (
+        "# Taylor QA Review\n\n"
+        f"- Result: `{result}`\n"
+        f"- QA Run ID: `{qa_run_id}`\n"
+        f"- Bundle SHA256: `{bundle_sha}`\n\n"
+        "## GPT Output\n\n"
+        f"{gpt_text.strip()}\n"
+    )
+    (qa_output_dir / "qa_review.md").write_text(qa_review, encoding="utf-8")
+
+    lower = gpt_text.lower()
+    has_severity = "severity" in lower
+    has_patch = "patch" in lower or "diff" in lower
+    has_risks = "risk" in lower or "unknown" in lower
+    checklist = (
+        "# Acceptance Criteria Checklist\n\n"
+        f"- [{'x' if has_severity else ' '}] Findings by severity are present.\n"
+        f"- [{'x' if has_patch else ' '}] Suggested patch/edits are present.\n"
+        f"- [{'x' if has_risks else ' '}] Residual risks/unknowns are present.\n"
+    )
+    (qa_output_dir / "acceptance_criteria_checklist.md").write_text(checklist, encoding="utf-8")
+
+    risk_lines = [line.strip() for line in gpt_text.splitlines() if "risk" in line.lower() or "unknown" in line.lower()]
+    if not risk_lines:
+        risk_lines = ["No explicit risks/unknowns were extracted from GPT output."]
+    risk_notes = "# Risk Notes\n\n" + "\n".join(f"- {line}" for line in risk_lines[:30]) + "\n"
+    (qa_output_dir / "risk_notes.md").write_text(risk_notes, encoding="utf-8")
+
+
 def _slugify_session_label(text: str) -> str:
     base = re.sub(r"[^A-Za-z0-9]+", "-", text.lower()).strip("-")
     if not base:
@@ -216,6 +312,27 @@ def build_send_parser(subparsers: argparse._SubParsersAction) -> None:
         type=int,
         default=500,
         help="Sync max tokens used during auto-recover",
+    )
+    send.add_argument(
+        "--taylor-qa",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Enable auditable Taylor QA mode (requires --bundle-path)",
+    )
+    send.add_argument(
+        "--bundle-path",
+        default=None,
+        help="Absolute or relative path to review bundle markdown",
+    )
+    send.add_argument(
+        "--qa-run-id",
+        default=None,
+        help="Optional stable QA run id (defaults to session + unix time)",
+    )
+    send.add_argument(
+        "--qa-output-root",
+        default=str(DEFAULT_TAYLOR_QA_ARTIFACT_ROOT),
+        help="Root directory for Taylor QA artifacts",
     )
 
 
@@ -1008,20 +1125,59 @@ def _send_to_gpt(
     show_raw: bool,
     log_user_message: bool,
     preface_status: str | None = None,
+    taylor_qa: bool = False,
+    bundle_path: str | None = None,
+    qa_run_id: str | None = None,
+    qa_output_root: str | None = None,
 ) -> int:
+    effective_message = message
+    taylor_meta: dict[str, Any] = {}
+    if taylor_qa:
+        if not bundle_path or not bundle_path.strip():
+            _log_error(log_file, session, "Bridge GPT | Taylor QA mode requires --bundle-path.")
+            return 1
+        bundle = Path(bundle_path).expanduser()
+        if not bundle.is_absolute():
+            bundle = (Path.cwd() / bundle).resolve()
+        if not bundle.exists() or not bundle.is_file():
+            _log_error(log_file, session, f"Bridge GPT | Missing bundle file: {bundle}")
+            return 1
+        bundle_sha256 = _sha256_file(bundle)
+        run_id = qa_run_id.strip() if isinstance(qa_run_id, str) and qa_run_id.strip() else f"{session}-{int(time.time())}"
+        output_root = Path(qa_output_root).expanduser() if qa_output_root else DEFAULT_TAYLOR_QA_ARTIFACT_ROOT
+        if not output_root.is_absolute():
+            output_root = (Path.cwd() / output_root).resolve()
+        output_dir = output_root / run_id
+        effective_message = _build_taylor_qa_message(
+            base_message=message,
+            session=session,
+            bundle_path=bundle,
+            bundle_sha256=bundle_sha256,
+            qa_run_id=run_id,
+            qa_output_dir=output_dir,
+        )
+        taylor_meta = {
+            "mode": "TAYLOR_QA",
+            "contract_path": TAYLOR_CONTRACT_PATH,
+            "bundle_path": str(bundle),
+            "bundle_sha256": bundle_sha256,
+            "qa_run_id": run_id,
+            "qa_output_path": str(output_dir),
+        }
+
     if log_user_message:
         started = utc_now_iso()
-        append_event(
-            log_file,
-            {
-                "ts": started,
-                "session": session,
-                "actor": from_actor,
-                "kind": "message",
-                "text": message,
-            },
-        )
-        print_timeline_line(started, from_actor, message)
+        user_event = {
+            "ts": started,
+            "session": session,
+            "actor": from_actor,
+            "kind": "message",
+            "text": effective_message,
+        }
+        if taylor_meta:
+            user_event["taylor_qa"] = taylor_meta
+        append_event(log_file, user_event)
+        print_timeline_line(started, from_actor, effective_message)
 
     memory_context = ""
     if use_memory:
@@ -1053,11 +1209,15 @@ def _send_to_gpt(
 
     try:
         response = _run_ask_once(
-            message=message,
+            message=effective_message,
             task_type=task_type,
             max_tokens=max_tokens,
             json_only=True,
-            meta={"session": session, "workflow": "bridge_chat_send"},
+            meta={
+                "session": session,
+                "workflow": "bridge_chat_send",
+                **({"taylor_qa": taylor_meta} if taylor_meta else {}),
+            },
             model=model,
             context_text=memory_context if memory_context else None,
         )
@@ -1077,18 +1237,42 @@ def _send_to_gpt(
         return 1
 
     gpt_text = extract_gpt_text(response)
+    if taylor_qa:
+        footer = _parse_footer_fields(gpt_text)
+        expected_sha = str(taylor_meta.get("bundle_sha256", ""))
+        if footer.get("BUNDLE_SHA256") != expected_sha:
+            footer["BUNDLE_SHA256"] = expected_sha
+        if "QA_RUN_ID" not in footer and isinstance(taylor_meta.get("qa_run_id"), str):
+            footer["QA_RUN_ID"] = str(taylor_meta["qa_run_id"])
+        if "QA_OUTPUT_PATH" not in footer and isinstance(taylor_meta.get("qa_output_path"), str):
+            footer["QA_OUTPUT_PATH"] = str(taylor_meta["qa_output_path"])
+        if "TAYLOR_QA_RESULT" not in footer:
+            footer["TAYLOR_QA_RESULT"] = "DEGRADED"
+            gpt_text = (
+                f"{gpt_text.rstrip()}\n\n"
+                f"TAYLOR_QA_RESULT: {footer['TAYLOR_QA_RESULT']}\n"
+                f"QA_RUN_ID: {footer['QA_RUN_ID']}\n"
+                f"QA_OUTPUT_PATH: {footer['QA_OUTPUT_PATH']}\n"
+                f"BUNDLE_SHA256: {footer['BUNDLE_SHA256']}\n"
+            )
+        _write_taylor_qa_artifacts(
+            qa_output_dir=Path(footer["QA_OUTPUT_PATH"]),
+            gpt_text=gpt_text,
+            footer_fields=footer,
+        )
+
     reply_ts = utc_now_iso()
-    append_event(
-        log_file,
-        {
-            "ts": reply_ts,
-            "session": session,
-            "actor": "gpt",
-            "kind": "message",
-            "text": gpt_text,
-            "raw": response,
-        },
-    )
+    gpt_event = {
+        "ts": reply_ts,
+        "session": session,
+        "actor": "gpt",
+        "kind": "message",
+        "text": gpt_text,
+        "raw": response,
+    }
+    if taylor_meta:
+        gpt_event["taylor_qa"] = taylor_meta
+    append_event(log_file, gpt_event)
     active_ts = utc_now_iso()
     append_event(
         log_file,
@@ -1112,6 +1296,13 @@ def run_send(args: argparse.Namespace) -> int:
     memory_store = Path(args.memory_store)
     session = _resolve_session(args.session)
     _set_active_session(session)
+
+    if args.task_type == "qa_check" and not args.taylor_qa:
+        _log_error(log_file, session, "Bridge GPT | qa_check requires --taylor-qa and --bundle-path for auditable QA.")
+        return 1
+    if args.taylor_qa and args.task_type != "qa_check":
+        _log_status(log_file, session, "Bridge GPT | Forcing task_type=qa_check for Taylor QA mode.")
+        args.task_type = "qa_check"
 
     if args.auto_recover:
         recovered = _recover_sessions(
@@ -1144,6 +1335,10 @@ def run_send(args: argparse.Namespace) -> int:
         memory_items=args.memory_items,
         show_raw=bool(args.show_raw),
         log_user_message=True,
+        taylor_qa=bool(args.taylor_qa),
+        bundle_path=args.bundle_path,
+        qa_run_id=args.qa_run_id,
+        qa_output_root=args.qa_output_root,
     )
 
 
@@ -1317,6 +1512,7 @@ def run_options(args: argparse.Namespace) -> int:
     print("Bridge GPT | ~codex <message> (@direct message to Codex, quick short replies)")
     print("Bridge GPT | ~cj <message> (@mentions CJ in team chat, may reply eventually, extremely elaborately)")
     print("Bridge GPT | ~taylor <message> (@direct message to Taylor in team chat, longer replies)")
+    print("Bridge GPT | Taylor QA verify: ./bridge_verify_qa.sh <session_id>")
     print(f"Bridge GPT | active session: {session}")
     return 0
 
