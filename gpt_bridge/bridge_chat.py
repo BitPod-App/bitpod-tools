@@ -160,6 +160,9 @@ def _build_taylor_qa_message(
             f"QA_RUN_ID: {qa_run_id}",
             f"QA_OUTPUT_PATH: {qa_output_dir}",
             f"BUNDLE_SHA256: {bundle_sha256}",
+            "FOOTER_COMPLIANT: true|false",
+            "FOOTER_SYNTHETIC: false",
+            "FOOTER_MISSING_FROM_GPT: false",
             "Do not omit footer keys.",
         ]
     )
@@ -173,6 +176,7 @@ def _parse_footer_fields(text: str) -> dict[str, str]:
         "QA_RUN_ID": r"(?m)^QA_RUN_ID:\s*(.+?)\s*$",
         "QA_OUTPUT_PATH": r"(?m)^QA_OUTPUT_PATH:\s*(.+?)\s*$",
         "BUNDLE_SHA256": r"(?m)^BUNDLE_SHA256:\s*([a-fA-F0-9]{64})\s*$",
+        "FOOTER_COMPLIANT": r"(?m)^FOOTER_COMPLIANT:\s*(.+?)\s*$",
         "FOOTER_SYNTHETIC": r"(?m)^FOOTER_SYNTHETIC:\s*(.+?)\s*$",
         "FOOTER_MISSING_FROM_GPT": r"(?m)^FOOTER_MISSING_FROM_GPT:\s*(.+?)\s*$",
     }
@@ -188,6 +192,8 @@ def _write_taylor_qa_artifacts(
     qa_output_dir: Path,
     gpt_text: str,
     footer_fields: dict[str, str],
+    taylor_meta: dict[str, Any],
+    session: str,
 ) -> None:
     qa_output_dir.mkdir(parents=True, exist_ok=True)
     result = footer_fields.get("TAYLOR_QA_RESULT", "DEGRADED")
@@ -221,6 +227,22 @@ def _write_taylor_qa_artifacts(
         risk_lines = ["No explicit risks/unknowns were extracted from GPT output."]
     risk_notes = "# Risk Notes\n\n" + "\n".join(f"- {line}" for line in risk_lines[:30]) + "\n"
     (qa_output_dir / "risk_notes.md").write_text(risk_notes, encoding="utf-8")
+
+    manifest = {
+        "mode": "BRIDGE",
+        "session_id": session,
+        "qa_run_id": qa_run_id,
+        "bundle_path": str(taylor_meta.get("bundle_path", "")),
+        "bundle_sha256": bundle_sha,
+        "contract_path": str(taylor_meta.get("contract_path", TAYLOR_CONTRACT_PATH)),
+        "qa_output_path": str(qa_output_dir),
+        "footer_compliant": str(footer_fields.get("FOOTER_COMPLIANT", "false")).lower() == "true",
+        "footer_synthetic": str(footer_fields.get("FOOTER_SYNTHETIC", "false")).lower() == "true",
+        "footer_missing_from_gpt": str(footer_fields.get("FOOTER_MISSING_FROM_GPT", "false")).lower() == "true",
+        "timestamp": utc_now_iso(),
+        "result": result,
+    }
+    (qa_output_dir / "qa_run_manifest.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
 
 
 def _slugify_session_label(text: str) -> str:
@@ -1241,6 +1263,16 @@ def _send_to_gpt(
     gpt_text = extract_gpt_text(response)
     if taylor_qa:
         footer = _parse_footer_fields(gpt_text)
+        has_full_footer_from_gpt = all(
+            key in footer
+            for key in ["TAYLOR_QA_RESULT", "QA_RUN_ID", "QA_OUTPUT_PATH", "BUNDLE_SHA256"]
+        )
+        if has_full_footer_from_gpt and "FOOTER_COMPLIANT" not in footer:
+            footer["FOOTER_COMPLIANT"] = "true"
+        if has_full_footer_from_gpt and "FOOTER_SYNTHETIC" not in footer:
+            footer["FOOTER_SYNTHETIC"] = "false"
+        if has_full_footer_from_gpt and "FOOTER_MISSING_FROM_GPT" not in footer:
+            footer["FOOTER_MISSING_FROM_GPT"] = "false"
         expected_sha = str(taylor_meta.get("bundle_sha256", ""))
         if footer.get("BUNDLE_SHA256") != expected_sha:
             footer["BUNDLE_SHA256"] = expected_sha
@@ -1250,6 +1282,7 @@ def _send_to_gpt(
             footer["QA_OUTPUT_PATH"] = str(taylor_meta["qa_output_path"])
         if "TAYLOR_QA_RESULT" not in footer:
             footer["TAYLOR_QA_RESULT"] = "DEGRADED"
+            footer["FOOTER_COMPLIANT"] = "false"
             footer["FOOTER_SYNTHETIC"] = "true"
             footer["FOOTER_MISSING_FROM_GPT"] = "true"
             gpt_text = (
@@ -1258,13 +1291,22 @@ def _send_to_gpt(
                 f"QA_RUN_ID: {footer['QA_RUN_ID']}\n"
                 f"QA_OUTPUT_PATH: {footer['QA_OUTPUT_PATH']}\n"
                 f"BUNDLE_SHA256: {footer['BUNDLE_SHA256']}\n"
+                f"FOOTER_COMPLIANT: {footer['FOOTER_COMPLIANT']}\n"
                 f"FOOTER_SYNTHETIC: {footer['FOOTER_SYNTHETIC']}\n"
                 f"FOOTER_MISSING_FROM_GPT: {footer['FOOTER_MISSING_FROM_GPT']}\n"
             )
+        elif "FOOTER_COMPLIANT" not in footer:
+            footer["FOOTER_COMPLIANT"] = "true"
+        if "FOOTER_SYNTHETIC" not in footer:
+            footer["FOOTER_SYNTHETIC"] = "false"
+        if "FOOTER_MISSING_FROM_GPT" not in footer:
+            footer["FOOTER_MISSING_FROM_GPT"] = "false"
         _write_taylor_qa_artifacts(
             qa_output_dir=Path(footer["QA_OUTPUT_PATH"]),
             gpt_text=gpt_text,
             footer_fields=footer,
+            taylor_meta=taylor_meta,
+            session=session,
         )
 
     reply_ts = utc_now_iso()

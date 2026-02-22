@@ -257,6 +257,7 @@ Verifier checks:
 - response footer (`TAYLOR_QA_RESULT`, `QA_RUN_ID`, `QA_OUTPUT_PATH`, `BUNDLE_SHA256`)
 - hash match between request and response
 - QA artifacts on disk (`qa_review.md`, `acceptance_criteria_checklist.md`, `risk_notes.md`)
+  - plus `qa_run_manifest.json` (mode/session/hash/footer flags)
 
 Manual fallback (secondary only):
 - `./bridge_chat.sh tail --session <session_id> --lines 120`

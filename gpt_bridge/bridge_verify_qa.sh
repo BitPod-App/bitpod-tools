@@ -141,11 +141,13 @@ if qa_path:
     checks.append(((qa_path / "qa_review.md").exists(), "qa_review.md exists"))
     checks.append(((qa_path / "acceptance_criteria_checklist.md").exists(), "acceptance_criteria_checklist.md exists"))
     checks.append(((qa_path / "risk_notes.md").exists(), "risk_notes.md exists"))
+    checks.append(((qa_path / "qa_run_manifest.json").exists(), "qa_run_manifest.json exists"))
 else:
     checks.append((False, "QA_OUTPUT_PATH exists"))
     checks.append((False, "qa_review.md exists"))
     checks.append((False, "acceptance_criteria_checklist.md exists"))
     checks.append((False, "risk_notes.md exists"))
+    checks.append((False, "qa_run_manifest.json exists"))
 
 all_ok = True
 for ok, label in checks:

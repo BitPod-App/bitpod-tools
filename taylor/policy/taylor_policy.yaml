@@ -1,0 +1,11 @@
+version: 1
+name: taylor_policy
+canonical_contract_path: ~/.agents/skills/taylor/SKILL.md
+references:
+  - ~/.agents/skills/taylor/references/taylor-agent-contract.md
+  - ~/.agents/skills/taylor/references/report-template.md
+  - ~/.agents/skills/taylor/references/bridge-gpt-team-sessions.md
+qa_modes:
+  local: true
+  bridge: true
+  chat: true
