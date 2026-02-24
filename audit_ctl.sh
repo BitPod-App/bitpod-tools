@@ -2,6 +2,8 @@
 set -euo pipefail
 
 ROOT="/Users/cjarguello/bitpod-app"
+# Guardrail: this runner is read-only. It never renames/moves/deletes files.
+# Rename cleanup is a separate manual workflow (quarantine first, then decide).
 NOW="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
 print_header() {
