@@ -193,9 +193,12 @@ run_quick() {
   local legacy_bucket_hits
   legacy_bucket_hits="$(find "$ROOT/local-workspace" -type d \( -name 'incoming-clutter' -o -name 'working-files' -o -name 'trash-delete' -o -name 'handoffs' -o -name 'reference-candidates' \) 2>/dev/null | wc -l | tr -d ' ')"
   echo "- legacy_workspace_dir_hits=$legacy_bucket_hits"
+  local unexpected_local_children
+  unexpected_local_children="$(find "$ROOT/local-workspace" -maxdepth 1 -mindepth 1 -type d -exec basename {} \; | rg -v '^(local-working-files|local-trash-delete|local-handoffs|local-cj-pm-only)$' | wc -l | tr -d ' ')"
+  echo "- unexpected_local_workspace_children=$unexpected_local_children"
 
   # Stop gate heuristic for quick mode.
-  if [[ "$likely_dups" -le 25 && "$legacy_bucket_hits" -eq 0 ]]; then
+  if [[ "$likely_dups" -le 25 && "$legacy_bucket_hits" -eq 0 && "$unexpected_local_children" -eq 0 ]]; then
     echo "quick_gate=STOP_OK"
     return 0
   fi
