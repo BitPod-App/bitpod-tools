@@ -44,14 +44,25 @@ run_quick() {
   local incoming=0
   local trash=0
   local refs=0
+  local refs_active=0
+  local refs_archive=0
+  local refs_trash=0
   local pm=0
   [[ -d "$ROOT/local-workspace/incoming-clutter" ]] && incoming="$(find "$ROOT/local-workspace/incoming-clutter" -type f | wc -l | tr -d ' ')"
   [[ -d "$ROOT/local-workspace/trash-delete" ]] && trash="$(find "$ROOT/local-workspace/trash-delete" -type f | wc -l | tr -d ' ')"
-  [[ -d "$ROOT/local-workspace/working-files/reference-candidates" ]] && refs="$(find "$ROOT/local-workspace/working-files/reference-candidates" -type f | wc -l | tr -d ' ')"
+  if [[ -d "$ROOT/local-workspace/working-files/reference-candidates" ]]; then
+    refs="$(find "$ROOT/local-workspace/working-files/reference-candidates" -type f | wc -l | tr -d ' ')"
+    [[ -d "$ROOT/local-workspace/working-files/reference-candidates/active" ]] && refs_active="$(find "$ROOT/local-workspace/working-files/reference-candidates/active" -type f | wc -l | tr -d ' ')"
+    [[ -d "$ROOT/local-workspace/working-files/reference-candidates/archive" ]] && refs_archive="$(find "$ROOT/local-workspace/working-files/reference-candidates/archive" -type f | wc -l | tr -d ' ')"
+    [[ -d "$ROOT/local-workspace/working-files/reference-candidates/trash" ]] && refs_trash="$(find "$ROOT/local-workspace/working-files/reference-candidates/trash" -type f | wc -l | tr -d ' ')"
+  fi
   [[ -d "$ROOT/local-workspace/local-cj-pm-only" ]] && pm="$(find "$ROOT/local-workspace/local-cj-pm-only" -type f | wc -l | tr -d ' ')"
   echo "- incoming_files=$incoming"
   echo "- trash_files=$trash"
   echo "- working_ref_files=$refs"
+  echo "  - working_ref_active_files=$refs_active"
+  echo "  - working_ref_archive_files=$refs_archive"
+  echo "  - working_ref_trash_files=$refs_trash"
   echo "- pm_only_files=$pm"
 
   echo "[likely duplicates estimate]"
@@ -59,8 +70,9 @@ run_quick() {
   local tmp_local="/tmp/audit_ctl_local_names.txt"
   find "$ROOT/docs" "$ROOT/bitpod" "$ROOT/bitregime-core" "$ROOT/taylor-runtime" "$ROOT/tools" -type f 2>/dev/null \
     | xargs -I{} basename "{}" | sort -u > "$tmp_canon"
-  if [[ -d "$ROOT/local-workspace" ]]; then
-    find "$ROOT/local-workspace" -type f 2>/dev/null | xargs -I{} basename "{}" | sort -u > "$tmp_local"
+  local ref_candidates_root="$ROOT/local-workspace/working-files/reference-candidates"
+  if [[ -d "$ref_candidates_root" ]]; then
+    find "$ref_candidates_root" -type f 2>/dev/null | xargs -I{} basename "{}" | sort -u > "$tmp_local"
   else
     : > "$tmp_local"
   fi
@@ -68,8 +80,13 @@ run_quick() {
   likely_dups="$(comm -12 "$tmp_canon" "$tmp_local" | wc -l | tr -d ' ')"
   echo "- likely_duplicate_filename_count=$likely_dups"
 
+  echo "[reference bucket hygiene]"
+  local legacy_bucket_hits
+  legacy_bucket_hits="$(find "$ROOT/local-workspace/working-files/reference-candidates" -type d \( -name 'source-*' -o -name 'taylor-2.0' -o -name 'Taylor 2.0' \) 2>/dev/null | wc -l | tr -d ' ')"
+  echo "- legacy_bucket_dir_hits=$legacy_bucket_hits"
+
   # Stop gate heuristic for quick mode.
-  if [[ "$incoming" -eq 0 && "$likely_dups" -le 25 ]]; then
+  if [[ "$incoming" -eq 0 && "$likely_dups" -le 25 && "$legacy_bucket_hits" -eq 0 ]]; then
     echo "quick_gate=STOP_OK"
     return 0
   fi
@@ -79,8 +96,9 @@ run_quick() {
 
 run_medium() {
   print_header "T2 Medium"
-  local incoming="$ROOT/local-workspace/working-files/reference-candidates"
-  if [[ ! -d "$incoming" ]]; then
+  local active="$ROOT/local-workspace/working-files/reference-candidates/active"
+  local archive="$ROOT/local-workspace/working-files/reference-candidates/archive"
+  if [[ ! -d "$active" && ! -d "$archive" ]]; then
     echo "medium_note=no reference-candidates folder"
     echo "medium_gate=STOP_OK"
     return 0
@@ -88,7 +106,7 @@ run_medium() {
 
   local tmp_in="/tmp/audit_ctl_in_sha.txt"
   local tmp_canon="/tmp/audit_ctl_canon_sha.txt"
-  find "$incoming" -type f -name '*.md' -print0 2>/dev/null | xargs -0 shasum -a 256 | sort > "$tmp_in" || true
+  find "$active" "$archive" -type f -name '*.md' -print0 2>/dev/null | xargs -0 shasum -a 256 | sort > "$tmp_in" || true
   find "$ROOT/docs" "$ROOT/bitpod" "$ROOT/bitregime-core" "$ROOT/taylor-runtime" "$ROOT/tools" -type f -name '*.md' -print0 2>/dev/null \
     | xargs -0 shasum -a 256 | sort > "$tmp_canon" || true
 
