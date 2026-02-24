@@ -23,43 +23,63 @@ has_phrase() {
 
 repo_sync_status() {
   local repo_path="$1"
+  local require_fresh="$2"
   local name
   name="$(basename "$repo_path")"
-  local branch upstream dirty ahead behind
+  local branch upstream dirty ahead behind head_sha upstream_sha head_eq_upstream remote_fresh
   branch="$(cd "$repo_path" && git rev-parse --abbrev-ref HEAD)"
   upstream="$(cd "$repo_path" && git rev-parse --abbrev-ref --symbolic-full-name @{u} 2>/dev/null || true)"
   dirty="$(cd "$repo_path" && git status --porcelain | wc -l | tr -d ' ')"
   ahead=0
   behind=0
+  head_sha="$(cd "$repo_path" && git rev-parse HEAD)"
+  upstream_sha=""
+  head_eq_upstream="unknown"
+  remote_fresh="false"
+
+  if [[ "$require_fresh" -eq 1 ]]; then
+    (cd "$repo_path" && git fetch --all --prune >/dev/null 2>&1 || true)
+    remote_fresh="true"
+  fi
+
   if [[ -n "$upstream" ]]; then
     local ab
     ab="$(cd "$repo_path" && git rev-list --left-right --count HEAD...@{u})"
     ahead="$(printf '%s' "$ab" | awk '{print $1}')"
     behind="$(printf '%s' "$ab" | awk '{print $2}')"
+    upstream_sha="$(cd "$repo_path" && git rev-parse @{u})"
+    if [[ "$head_sha" == "$upstream_sha" ]]; then
+      head_eq_upstream="true"
+    else
+      head_eq_upstream="false"
+    fi
   fi
 
   local label reason
   if [[ -z "$upstream" ]]; then
-    label="N/A (no upstream)"
+    label="UNVERIFIABLE"
     reason="cannot verify remote parity"
-  elif [[ "$ahead" -eq 0 && "$behind" -eq 0 && "$dirty" -eq 0 ]]; then
-    label="1:1 COMPLETE MATCH"
-    reason="no diff found"
-  elif [[ "$ahead" -eq 0 && "$behind" -eq 0 && "$dirty" -gt 0 ]]; then
+  elif [[ "$dirty" -gt 0 ]]; then
     label="NOT 1:1"
     reason="local changes only"
-  elif [[ "$dirty" -eq 0 ]]; then
+  elif [[ "$require_fresh" -eq 1 && "$ahead" -eq 0 && "$behind" -eq 0 && "$head_eq_upstream" == "true" ]]; then
+    label="1:1 PORCELAIN COMPLETE FRESH MATCH"
+    reason="no diff found"
+  elif [[ "$require_fresh" -eq 1 ]]; then
     label="NOT 1:1"
-    reason="remote drift (ahead=$ahead behind=$behind)"
+    reason="remote drift"
   else
-    label="NOT 1:1"
-    reason="local changes + remote drift (ahead=$ahead behind=$behind)"
+    label="NOT VERIFIED FOR 1:1"
+    reason="remote not refreshed in this run"
   fi
 
-  echo "- $name: $label | branch=$branch upstream=${upstream:-none} dirty=$dirty ahead=$ahead behind=$behind | $reason"
+  local clean_state="false"
+  [[ "$dirty" -eq 0 ]] && clean_state="true"
+  echo "- $name: $label ($reason; fetch_fresh=$remote_fresh, branch=$branch, upstream=${upstream:-none}, clean=$clean_state, dirty_items=$dirty, ahead=$ahead, behind=$behind, head_eq_upstream=$head_eq_upstream)"
 }
 
 run_quick() {
+  local require_fresh="${1:-0}"
   print_header "T1 Quick"
   echo "[top-level]"
   find "$ROOT" -maxdepth 1 -mindepth 1 -type d -exec basename "{}" ";" | sort | sed 's/^/- /'
@@ -80,7 +100,7 @@ run_quick() {
 
   echo "[repo 1:1 status]"
   for r in "${repos[@]}"; do
-    repo_sync_status "$ROOT/$r"
+    repo_sync_status "$ROOT/$r" "$require_fresh"
   done
 
   echo "[local-workspace queue health]"
@@ -239,12 +259,14 @@ main() {
   echo "resolved_tier=$tier auto=$auto force_full=$force_full noask=$noask"
 
   if [[ "$tier" == "T1" ]]; then
-    run_quick || true
+    run_quick 0 || true
     exit 0
   fi
 
   # T2 or T3 always start with quick.
-  if run_quick; then
+  local quick_fresh=0
+  [[ "$tier" == "T3" ]] && quick_fresh=1
+  if run_quick "$quick_fresh"; then
     if [[ "$tier" == "T2" ]]; then
       echo "t2_note=quick_stop_gate_met; medium_skipped"
       exit 0
