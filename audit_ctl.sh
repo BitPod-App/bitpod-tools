@@ -21,6 +21,44 @@ has_phrase() {
   [[ "$haystack" == *"$needle"* ]]
 }
 
+repo_sync_status() {
+  local repo_path="$1"
+  local name
+  name="$(basename "$repo_path")"
+  local branch upstream dirty ahead behind
+  branch="$(cd "$repo_path" && git rev-parse --abbrev-ref HEAD)"
+  upstream="$(cd "$repo_path" && git rev-parse --abbrev-ref --symbolic-full-name @{u} 2>/dev/null || true)"
+  dirty="$(cd "$repo_path" && git status --porcelain | wc -l | tr -d ' ')"
+  ahead=0
+  behind=0
+  if [[ -n "$upstream" ]]; then
+    local ab
+    ab="$(cd "$repo_path" && git rev-list --left-right --count HEAD...@{u})"
+    ahead="$(printf '%s' "$ab" | awk '{print $1}')"
+    behind="$(printf '%s' "$ab" | awk '{print $2}')"
+  fi
+
+  local label reason
+  if [[ -z "$upstream" ]]; then
+    label="N/A (no upstream)"
+    reason="cannot verify remote parity"
+  elif [[ "$ahead" -eq 0 && "$behind" -eq 0 && "$dirty" -eq 0 ]]; then
+    label="1:1 COMPLETE MATCH"
+    reason="no diff found"
+  elif [[ "$ahead" -eq 0 && "$behind" -eq 0 && "$dirty" -gt 0 ]]; then
+    label="NOT 1:1"
+    reason="local changes only"
+  elif [[ "$dirty" -eq 0 ]]; then
+    label="NOT 1:1"
+    reason="remote drift (ahead=$ahead behind=$behind)"
+  else
+    label="NOT 1:1"
+    reason="local changes + remote drift (ahead=$ahead behind=$behind)"
+  fi
+
+  echo "- $name: $label | branch=$branch upstream=${upstream:-none} dirty=$dirty ahead=$ahead behind=$behind | $reason"
+}
+
 run_quick() {
   print_header "T1 Quick"
   echo "[top-level]"
@@ -38,6 +76,11 @@ run_quick() {
     branch="$(cd "$ROOT/$r" && git rev-parse --abbrev-ref HEAD)"
     total_dirty=$((total_dirty + dirty))
     echo "- $r: dirty_items=$dirty branch=$branch"
+  done
+
+  echo "[repo 1:1 status]"
+  for r in "${repos[@]}"; do
+    repo_sync_status "$ROOT/$r"
   done
 
   echo "[local-workspace queue health]"
@@ -64,6 +107,20 @@ run_quick() {
   echo "  - working_ref_archive_files=$refs_archive"
   echo "  - working_ref_trash_files=$refs_trash"
   echo "- pm_only_files=$pm"
+
+  echo "[soft purge signals]"
+  local trash_pending=0
+  local trash_pending_days=14
+  [[ -d "$ROOT/local-workspace/trash-delete" ]] && trash_pending="$(find "$ROOT/local-workspace/trash-delete" -type f -mtime +$trash_pending_days | wc -l | tr -d ' ')"
+  echo "- trash_soft_purge_pending_files=$trash_pending"
+  echo "- trash_soft_purge_threshold_days=$trash_pending_days"
+  echo "- trash_soft_purge_mode=SOFT_ONLY (informational, no deletion)"
+
+  local incoming_stale=0
+  local incoming_stale_days=3
+  [[ -d "$ROOT/local-workspace/incoming-clutter" ]] && incoming_stale="$(find "$ROOT/local-workspace/incoming-clutter" -type f -mtime +$incoming_stale_days | wc -l | tr -d ' ')"
+  echo "- incoming_stale_pending_files=$incoming_stale"
+  echo "- incoming_stale_threshold_days=$incoming_stale_days"
 
   echo "[likely duplicates estimate]"
   local tmp_canon="/tmp/audit_ctl_canon_names.txt"
