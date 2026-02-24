@@ -156,14 +156,14 @@ run_quick() {
   local working=0
   local trash=0
   local pm=0
-  local handoffs=0
+  local handoff_file_present=0
   [[ -d "$ROOT/local-workspace/local-working-files" ]] && working="$(find "$ROOT/local-workspace/local-working-files" -type f | wc -l | tr -d ' ')"
   [[ -d "$ROOT/local-workspace/local-trash-delete" ]] && trash="$(find "$ROOT/local-workspace/local-trash-delete" -type f | wc -l | tr -d ' ')"
   [[ -d "$ROOT/local-workspace/local-cj-pm-only" ]] && pm="$(find "$ROOT/local-workspace/local-cj-pm-only" -type f | wc -l | tr -d ' ')"
-  [[ -d "$ROOT/local-workspace/local-handoffs" ]] && handoffs="$(find "$ROOT/local-workspace/local-handoffs" -type f | wc -l | tr -d ' ')"
+  [[ -f "$ROOT/local-workspace/.handoff" ]] && handoff_file_present=1
   echo "- working_files=$working"
   echo "- trash_files=$trash"
-  echo "- handoff_files=$handoffs"
+  echo "- handoff_file_present=$handoff_file_present"
   echo "- pm_only_files=$pm"
 
   echo "[soft purge signals]"
@@ -194,11 +194,14 @@ run_quick() {
   legacy_bucket_hits="$(find "$ROOT/local-workspace" -type d \( -name 'incoming-clutter' -o -name 'working-files' -o -name 'trash-delete' -o -name 'handoffs' -o -name 'reference-candidates' \) 2>/dev/null | wc -l | tr -d ' ')"
   echo "- legacy_workspace_dir_hits=$legacy_bucket_hits"
   local unexpected_local_children
-  unexpected_local_children="$(find "$ROOT/local-workspace" -maxdepth 1 -mindepth 1 -type d -exec basename {} \; | rg -v '^(local-working-files|local-trash-delete|local-handoffs|local-cj-pm-only)$' | wc -l | tr -d ' ')"
+  unexpected_local_children="$(find "$ROOT/local-workspace" -maxdepth 1 -mindepth 1 -type d -exec basename {} \; | rg -v '^(local-working-files|local-trash-delete|local-cj-pm-only)$' | wc -l | tr -d ' ')"
   echo "- unexpected_local_workspace_children=$unexpected_local_children"
+  local non_local_prefix_dirs
+  non_local_prefix_dirs="$(find "$ROOT/local-workspace" -mindepth 1 -type d -exec basename {} \; | rg -v '^local-' | wc -l | tr -d ' ')"
+  echo "- non_local_prefix_dir_hits=$non_local_prefix_dirs"
 
   # Stop gate heuristic for quick mode.
-  if [[ "$likely_dups" -le 25 && "$legacy_bucket_hits" -eq 0 && "$unexpected_local_children" -eq 0 ]]; then
+  if [[ "$likely_dups" -le 25 && "$legacy_bucket_hits" -eq 0 && "$unexpected_local_children" -eq 0 && "$non_local_prefix_dirs" -eq 0 ]]; then
     echo "quick_gate=STOP_OK"
     return 0
   fi
