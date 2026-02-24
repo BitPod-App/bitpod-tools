@@ -1,0 +1,202 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="/Users/cjarguello/bitpod-app"
+NOW="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+print_header() {
+  echo "Audit Control | $1"
+  echo "Timestamp: $NOW"
+}
+
+normalize() {
+  tr '[:upper:]' '[:lower:]'
+}
+
+has_phrase() {
+  local haystack="$1"
+  local needle="$2"
+  [[ "$haystack" == *"$needle"* ]]
+}
+
+run_quick() {
+  print_header "T1 Quick"
+  echo "[top-level]"
+  find "$ROOT" -maxdepth 1 -mindepth 1 -type d -exec basename "{}" ";" | sort | sed 's/^/- /'
+  echo "[top-level files]"
+  find "$ROOT" -maxdepth 1 -mindepth 1 -type f -exec basename "{}" ";" | sort | sed 's/^/- /'
+
+  echo "[repo health]"
+  local repos=("bitpod" "bitregime-core" "docs" "taylor-runtime" "tools")
+  local total_dirty=0
+  for r in "${repos[@]}"; do
+    local dirty
+    dirty="$(cd "$ROOT/$r" && git status --short | wc -l | tr -d ' ')"
+    local branch
+    branch="$(cd "$ROOT/$r" && git rev-parse --abbrev-ref HEAD)"
+    total_dirty=$((total_dirty + dirty))
+    echo "- $r: dirty_items=$dirty branch=$branch"
+  done
+
+  echo "[local-workspace queue health]"
+  local incoming=0
+  local trash=0
+  local refs=0
+  local pm=0
+  [[ -d "$ROOT/local-workspace/incoming-clutter" ]] && incoming="$(find "$ROOT/local-workspace/incoming-clutter" -type f | wc -l | tr -d ' ')"
+  [[ -d "$ROOT/local-workspace/trash-delete" ]] && trash="$(find "$ROOT/local-workspace/trash-delete" -type f | wc -l | tr -d ' ')"
+  [[ -d "$ROOT/local-workspace/working-files/reference-candidates" ]] && refs="$(find "$ROOT/local-workspace/working-files/reference-candidates" -type f | wc -l | tr -d ' ')"
+  [[ -d "$ROOT/local-workspace/local-cj-pm-only" ]] && pm="$(find "$ROOT/local-workspace/local-cj-pm-only" -type f | wc -l | tr -d ' ')"
+  echo "- incoming_files=$incoming"
+  echo "- trash_files=$trash"
+  echo "- working_ref_files=$refs"
+  echo "- pm_only_files=$pm"
+
+  echo "[likely duplicates estimate]"
+  local tmp_canon="/tmp/audit_ctl_canon_names.txt"
+  local tmp_local="/tmp/audit_ctl_local_names.txt"
+  find "$ROOT/docs" "$ROOT/bitpod" "$ROOT/bitregime-core" "$ROOT/taylor-runtime" "$ROOT/tools" -type f 2>/dev/null \
+    | xargs -I{} basename "{}" | sort -u > "$tmp_canon"
+  if [[ -d "$ROOT/local-workspace" ]]; then
+    find "$ROOT/local-workspace" -type f 2>/dev/null | xargs -I{} basename "{}" | sort -u > "$tmp_local"
+  else
+    : > "$tmp_local"
+  fi
+  local likely_dups
+  likely_dups="$(comm -12 "$tmp_canon" "$tmp_local" | wc -l | tr -d ' ')"
+  echo "- likely_duplicate_filename_count=$likely_dups"
+
+  # Stop gate heuristic for quick mode.
+  if [[ "$incoming" -eq 0 && "$likely_dups" -le 25 ]]; then
+    echo "quick_gate=STOP_OK"
+    return 0
+  fi
+  echo "quick_gate=ESCALATE_RECOMMENDED"
+  return 10
+}
+
+run_medium() {
+  print_header "T2 Medium"
+  local incoming="$ROOT/local-workspace/working-files/reference-candidates"
+  if [[ ! -d "$incoming" ]]; then
+    echo "medium_note=no reference-candidates folder"
+    echo "medium_gate=STOP_OK"
+    return 0
+  fi
+
+  local tmp_in="/tmp/audit_ctl_in_sha.txt"
+  local tmp_canon="/tmp/audit_ctl_canon_sha.txt"
+  find "$incoming" -type f -name '*.md' -print0 2>/dev/null | xargs -0 shasum -a 256 | sort > "$tmp_in" || true
+  find "$ROOT/docs" "$ROOT/bitpod" "$ROOT/bitregime-core" "$ROOT/taylor-runtime" "$ROOT/tools" -type f -name '*.md' -print0 2>/dev/null \
+    | xargs -0 shasum -a 256 | sort > "$tmp_canon" || true
+
+  local scanned=0
+  local exact=0
+  [[ -f "$tmp_in" ]] && scanned="$(wc -l < "$tmp_in" | tr -d ' ')"
+  if [[ "$scanned" -gt 0 ]]; then
+    exact="$(join -j 1 "$tmp_in" "$tmp_canon" | wc -l | tr -d ' ')"
+  fi
+
+  echo "- scanned_reference_md=$scanned"
+  echo "- exact_duplicate_md=$exact"
+
+  if [[ "$exact" -le 10 ]]; then
+    echo "medium_gate=STOP_OK"
+    return 0
+  fi
+  echo "medium_gate=ESCALATE_RECOMMENDED"
+  return 20
+}
+
+run_full() {
+  print_header "T3 Full"
+  echo "[full inventory summary]"
+  find "$ROOT" -maxdepth 2 -type d | wc -l | awk '{print "- dir_count_depth2=" $1}'
+  find "$ROOT" -maxdepth 2 -type f | wc -l | awk '{print "- file_count_depth2=" $1}'
+  echo "[local-workspace detailed]"
+  find "$ROOT/local-workspace" -maxdepth 3 -type d | sort | sed 's#^#- #'
+  echo "full_complete=TRUE"
+}
+
+confirm_or_exit() {
+  local message="$1"
+  local noask="$2"
+  if [[ "$noask" -eq 1 ]]; then
+    echo "confirm_skipped=TRUE ($message)"
+    return 0
+  fi
+  if [[ -t 0 ]]; then
+    read -r -p "$message [y/N]: " ans
+    [[ "${ans,,}" == "y" || "${ans,,}" == "yes" ]] || exit 0
+  else
+    echo "confirmation_required=$message"
+    exit 3
+  fi
+}
+
+main() {
+  local raw="${*:-run audit}"
+  local q
+  q="$(printf '%s' "$raw" | normalize)"
+
+  local noask=0
+  local force_full=0
+  local auto=0
+
+  has_phrase "$q" "don't ask me for permission" && noask=1
+  has_phrase "$q" "dont ask me for permission" && noask=1
+  has_phrase "$q" "no ask" && noask=1
+  has_phrase "$q" "force full" && force_full=1
+  has_phrase "$q" "auto" && auto=1
+
+  local tier="T1"
+  if has_phrase "$q" "t3" || has_phrase "$q" "tier 3" || has_phrase "$q" "v3" || has_phrase "$q" "full"; then
+    tier="T3"
+  elif has_phrase "$q" "t2" || has_phrase "$q" "tier 2" || has_phrase "$q" "v2" || has_phrase "$q" "medium"; then
+    tier="T2"
+  elif has_phrase "$q" "t1" || has_phrase "$q" "tier 1" || has_phrase "$q" "v1" || has_phrase "$q" "quick"; then
+    tier="T1"
+  fi
+
+  echo "request=\"$raw\""
+  echo "resolved_tier=$tier auto=$auto force_full=$force_full noask=$noask"
+
+  if [[ "$tier" == "T1" ]]; then
+    run_quick || true
+    exit 0
+  fi
+
+  # T2 or T3 always start with quick.
+  if run_quick; then
+    if [[ "$tier" == "T2" ]]; then
+      echo "t2_note=quick_stop_gate_met; medium_skipped"
+      exit 0
+    fi
+    if [[ "$tier" == "T3" && "$force_full" -eq 0 ]]; then
+      if [[ "$auto" -eq 1 ]]; then
+        echo "t3_note=auto_stop_after_quick"
+        exit 0
+      fi
+      confirm_or_exit "Quick audit indicates deeper tiers may not be worth it. Continue anyway?" "$noask"
+    fi
+  fi
+
+  if run_medium; then
+    if [[ "$tier" == "T2" ]]; then
+      exit 0
+    fi
+    if [[ "$tier" == "T3" && "$force_full" -eq 0 ]]; then
+      if [[ "$auto" -eq 1 ]]; then
+        echo "t3_note=auto_stop_after_medium"
+        exit 0
+      fi
+      confirm_or_exit "Medium audit indicates full audit may not be worth it. Continue to full?" "$noask"
+    fi
+  fi
+
+  if [[ "$tier" == "T3" ]]; then
+    run_full
+  fi
+}
+
+main "$@"
