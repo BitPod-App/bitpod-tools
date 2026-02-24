@@ -513,6 +513,11 @@ def extract_gpt_text(response: dict[str, Any]) -> str:
 
     answer_json = answer.get("json")
     if isinstance(answer_json, dict):
+        # Bridge may wrap non-JSON model output under raw_output; show that text
+        # instead of the generic summary so chat remains usable.
+        raw_output = answer_json.get("raw_output")
+        if isinstance(raw_output, str) and raw_output.strip():
+            return raw_output.strip()
         if isinstance(answer_json.get("reply"), str):
             return answer_json["reply"]
         if isinstance(answer_json.get("summary"), str):
