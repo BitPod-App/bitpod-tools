@@ -21,7 +21,7 @@ has_phrase() {
   [[ "$haystack" == *"$needle"* ]]
 }
 
-repo_sync_status() {
+repo_sync_eval() {
   local repo_path="$1"
   local require_fresh="$2"
   local name
@@ -55,31 +55,69 @@ repo_sync_status() {
     fi
   fi
 
-  local label reason
+  local code term meaning certainty
   if [[ -z "$upstream" ]]; then
-    label="UNVERIFIABLE"
-    reason="cannot verify remote parity"
+    code=5
+    term="UNLINKED"
+    meaning="No upstream is configured"
+    certainty="PROVEN"
   elif [[ "$dirty" -gt 0 ]]; then
-    label="NOT 1:1"
-    reason="local changes only"
+    code=3
+    term="LOCAL DIVERGED"
+    meaning="Local changes exist"
+    certainty="PROVEN"
   elif [[ "$require_fresh" -eq 1 && "$ahead" -eq 0 && "$behind" -eq 0 && "$head_eq_upstream" == "true" ]]; then
-    label="1:1 PORCELAIN COMPLETE FRESH MATCH"
-    reason="no diff found"
+    code=1
+    term="PORCELAIN"
+    meaning="Perfect fresh match"
+    certainty="PROVEN"
   elif [[ "$require_fresh" -eq 1 ]]; then
-    label="NOT 1:1"
-    reason="remote drift"
+    code=4
+    term="REMOTE DIVERGED"
+    meaning="Upstream mismatch"
+    certainty="PROVEN"
   else
-    label="NOT VERIFIED FOR 1:1"
-    reason="remote not refreshed in this run"
+    code=2
+    term="NOT VERIFIED"
+    meaning="Remote not refreshed in this run"
+    certainty="UNVERIFIED"
   fi
 
   local clean_state="false"
   [[ "$dirty" -eq 0 ]] && clean_state="true"
-  echo "- $name: $label ($reason; fetch_fresh=$remote_fresh, branch=$branch, upstream=${upstream:-none}, clean=$clean_state, dirty_items=$dirty, ahead=$ahead, behind=$behind, head_eq_upstream=$head_eq_upstream)"
+  echo "$name|$code|$term|$meaning|$certainty|$branch|${upstream:-none}|$remote_fresh|$clean_state|$dirty|$ahead|$behind|$head_eq_upstream"
+}
+
+emit_parity_row() {
+  local eval_row="$1"
+  local reason_context="$2"
+  IFS='|' read -r name code term meaning certainty branch upstream remote_fresh clean_state dirty ahead behind head_eq_upstream <<< "$eval_row"
+  echo "- 1:$code | $name@$branch vs $upstream | $term - $meaning | certainty=$certainty | why=$reason_context | proof(fetch_fresh=$remote_fresh, clean=$clean_state, dirty_items=$dirty, ahead=$ahead, behind=$behind, head_eq_upstream=$head_eq_upstream)"
+}
+
+emit_parity_pulse_summary() {
+  local eval_rows="$1"
+  local reason_context="$2"
+  local c1 c2 c3 c4 c5
+  c1="$(printf '%s\n' "$eval_rows" | awk -F'|' '$2==1{n++} END{print n+0}')"
+  c2="$(printf '%s\n' "$eval_rows" | awk -F'|' '$2==2{n++} END{print n+0}')"
+  c3="$(printf '%s\n' "$eval_rows" | awk -F'|' '$2==3{n++} END{print n+0}')"
+  c4="$(printf '%s\n' "$eval_rows" | awk -F'|' '$2==4{n++} END{print n+0}')"
+  c5="$(printf '%s\n' "$eval_rows" | awk -F'|' '$2==5{n++} END{print n+0}')"
+  echo "[parity pulse (auto)]"
+  echo "- why_shown=$reason_context"
+  echo "- summary: 1:1=$c1 1:2=$c2 1:3=$c3 1:4=$c4 1:5=$c5"
+  printf '%s\n' "$eval_rows" | while IFS= read -r row; do
+    IFS='|' read -r name code term meaning certainty branch upstream remote_fresh clean_state dirty ahead behind head_eq_upstream <<< "$row"
+    if [[ "$code" -ne 1 ]]; then
+      echo "- $name: 1:$code $term ($meaning; certainty=$certainty)"
+    fi
+  done
 }
 
 run_quick() {
   local require_fresh="${1:-0}"
+  local parity_detail="${2:-0}"
   print_header "T1 Quick"
   echo "[top-level]"
   find "$ROOT" -maxdepth 1 -mindepth 1 -type d -exec basename "{}" ";" | sort | sed 's/^/- /'
@@ -98,10 +136,21 @@ run_quick() {
     echo "- $r: dirty_items=$dirty branch=$branch"
   done
 
-  echo "[repo 1:1 status]"
+  local parity_rows=""
   for r in "${repos[@]}"; do
-    repo_sync_status "$ROOT/$r" "$require_fresh"
+    local row
+    row="$(repo_sync_eval "$ROOT/$r" "$require_fresh")"
+    parity_rows+="$row"$'\n'
   done
+  parity_rows="$(printf '%s' "$parity_rows" | sed '/^$/d')"
+  if [[ "$parity_detail" -eq 1 ]]; then
+    echo "[cleanup audit parity]"
+    while IFS= read -r row; do
+      emit_parity_row "$row" "explicit cleanup audit"
+    done <<< "$parity_rows"
+  else
+    emit_parity_pulse_summary "$parity_rows" "auto side signal (no extra checks beyond this run)"
+  fi
 
   echo "[local-workspace queue health]"
   local incoming=0
@@ -259,14 +308,15 @@ main() {
   echo "resolved_tier=$tier auto=$auto force_full=$force_full noask=$noask"
 
   if [[ "$tier" == "T1" ]]; then
-    run_quick 0 || true
+    run_quick 0 0 || true
     exit 0
   fi
 
   # T2 or T3 always start with quick.
   local quick_fresh=0
+  local quick_parity_detail=1
   [[ "$tier" == "T3" ]] && quick_fresh=1
-  if run_quick "$quick_fresh"; then
+  if run_quick "$quick_fresh" "$quick_parity_detail"; then
     if [[ "$tier" == "T2" ]]; then
       echo "t2_note=quick_stop_gate_met; medium_skipped"
       exit 0
