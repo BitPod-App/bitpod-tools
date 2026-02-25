@@ -73,7 +73,7 @@ repo_sync_eval() {
   elif [[ "$require_fresh" -eq 1 && "$ahead" -eq 0 && "$behind" -eq 0 && "$head_eq_upstream" == "true" ]]; then
     code=1
     parity="MATCHED"
-    meaning="Perfect fresh repo match"
+    meaning="Matched fresh repo"
     verify="VERIFIED_FRESH"
   elif [[ "$require_fresh" -eq 1 ]]; then
     code=4
