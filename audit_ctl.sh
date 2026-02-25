@@ -104,17 +104,23 @@ emit_parity_pulse_summary() {
   local reason_context="$2"
   local require_fresh="${3:-0}"
   local c1 c2 c3 c4 c5
+  local perfect diverged unknown unlinked
   c1="$(printf '%s\n' "$eval_rows" | awk -F'|' '$2==1{n++} END{print n+0}')"
   c2="$(printf '%s\n' "$eval_rows" | awk -F'|' '$2==2{n++} END{print n+0}')"
   c3="$(printf '%s\n' "$eval_rows" | awk -F'|' '$2==3{n++} END{print n+0}')"
   c4="$(printf '%s\n' "$eval_rows" | awk -F'|' '$2==4{n++} END{print n+0}')"
   c5="$(printf '%s\n' "$eval_rows" | awk -F'|' '$2==5{n++} END{print n+0}')"
+  perfect="$(printf '%s\n' "$eval_rows" | awk -F'|' '$3=="PERFECT"{n++} END{print n+0}')"
+  diverged="$(printf '%s\n' "$eval_rows" | awk -F'|' '$3=="DIVERGED"{n++} END{print n+0}')"
+  unknown="$(printf '%s\n' "$eval_rows" | awk -F'|' '$3=="UNKNOWN"{n++} END{print n+0}')"
+  unlinked="$(printf '%s\n' "$eval_rows" | awk -F'|' '$3=="UNLINKED"{n++} END{print n+0}')"
   local total
   total="$(printf '%s\n' "$eval_rows" | sed '/^$/d' | wc -l | tr -d ' ')"
   echo "[parity pulse (auto)]"
   echo "- why_shown=$reason_context"
   echo "- scope=REPO_PARITY_ONLY"
   echo "- summary: 1:1=$c1 1:2=$c2 1:3=$c3 1:4=$c4 1:5=$c5"
+  echo "- parity_summary: PERFECT=$perfect DIVERGED=$diverged UNKNOWN=$unknown UNLINKED=$unlinked"
   if [[ "$require_fresh" -eq 1 && "$total" -gt 0 && "$c1" -eq "$total" ]]; then
     echo "- PARITY=PORCELAIN | COMPARE=all_repos($total) | VERIFY=VERIFIED_FRESH | EVIDENCE(perfect_repos=$c1,total_repos=$total)"
   elif [[ "$require_fresh" -eq 1 ]]; then
@@ -124,7 +130,7 @@ emit_parity_pulse_summary() {
   fi
   printf '%s\n' "$eval_rows" | while IFS= read -r row; do
     IFS='|' read -r name code parity meaning verify branch upstream remote_fresh clean_state dirty ahead behind head_eq_upstream <<< "$row"
-    if [[ "$code" -ne 1 ]]; then
+    if [[ "$parity" == "PERFECT" || "$parity" == "DIVERGED" ]]; then
       echo "- $name: PARITY=$parity | COMPARE=$name@$branch vs $upstream | VERIFY=$verify | EVIDENCE(fetch_fresh=$remote_fresh,clean=$clean_state,dirty_items=$dirty,ahead=$ahead,behind=$behind,head_eq_upstream=$head_eq_upstream) | NOTE=$meaning"
     fi
   done
@@ -160,8 +166,17 @@ run_quick() {
   parity_rows="$(printf '%s' "$parity_rows" | sed '/^$/d')"
   if [[ "$parity_detail" -eq 1 ]]; then
     echo "[cleanup audit parity]"
+    local p_perfect p_diverged p_unknown p_unlinked
+    p_perfect="$(printf '%s\n' "$parity_rows" | awk -F'|' '$3=="PERFECT"{n++} END{print n+0}')"
+    p_diverged="$(printf '%s\n' "$parity_rows" | awk -F'|' '$3=="DIVERGED"{n++} END{print n+0}')"
+    p_unknown="$(printf '%s\n' "$parity_rows" | awk -F'|' '$3=="UNKNOWN"{n++} END{print n+0}')"
+    p_unlinked="$(printf '%s\n' "$parity_rows" | awk -F'|' '$3=="UNLINKED"{n++} END{print n+0}')"
+    echo "- parity_summary: PERFECT=$p_perfect DIVERGED=$p_diverged UNKNOWN=$p_unknown UNLINKED=$p_unlinked"
     while IFS= read -r row; do
-      emit_parity_row "$row" "explicit cleanup audit"
+      IFS='|' read -r _name _code _parity _meaning _verify _branch _upstream _remote_fresh _clean_state _dirty _ahead _behind _head_eq_upstream <<< "$row"
+      if [[ "$_parity" == "PERFECT" || "$_parity" == "DIVERGED" ]]; then
+        emit_parity_row "$row" "explicit cleanup audit"
+      fi
     done <<< "$parity_rows"
   else
     emit_parity_pulse_summary "$parity_rows" "auto side signal (no extra checks beyond this run)" "$require_fresh"
