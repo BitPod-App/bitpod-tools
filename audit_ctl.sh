@@ -69,7 +69,7 @@ repo_sync_eval() {
   elif [[ "$require_fresh" -eq 1 && "$ahead" -eq 0 && "$behind" -eq 0 && "$head_eq_upstream" == "true" ]]; then
     code=1
     term="PORCELAIN"
-    meaning="Perfect fresh match"
+    meaning="Perfect fresh repo match"
     certainty="PROVEN"
   elif [[ "$require_fresh" -eq 1 ]]; then
     code=4
@@ -92,7 +92,7 @@ emit_parity_row() {
   local eval_row="$1"
   local reason_context="$2"
   IFS='|' read -r name code term meaning certainty branch upstream remote_fresh clean_state dirty ahead behind head_eq_upstream <<< "$eval_row"
-  echo "- 1:$code | $name@$branch vs $upstream | $term - $meaning | certainty=$certainty | why=$reason_context | proof(fetch_fresh=$remote_fresh, clean=$clean_state, dirty_items=$dirty, ahead=$ahead, behind=$behind, head_eq_upstream=$head_eq_upstream)"
+  echo "- 1:$code | $name@$branch vs $upstream | $term - $meaning | certainty=$certainty | scope=REPO_PARITY_ONLY | why=$reason_context | proof(fetch_fresh=$remote_fresh, clean=$clean_state, dirty_items=$dirty, ahead=$ahead, behind=$behind, head_eq_upstream=$head_eq_upstream)"
 }
 
 emit_parity_pulse_summary() {
@@ -106,6 +106,7 @@ emit_parity_pulse_summary() {
   c5="$(printf '%s\n' "$eval_rows" | awk -F'|' '$2==5{n++} END{print n+0}')"
   echo "[parity pulse (auto)]"
   echo "- why_shown=$reason_context"
+  echo "- scope=REPO_PARITY_ONLY"
   echo "- summary: 1:1=$c1 1:2=$c2 1:3=$c3 1:4=$c4 1:5=$c5"
   printf '%s\n' "$eval_rows" | while IFS= read -r row; do
     IFS='|' read -r name code term meaning certainty branch upstream remote_fresh clean_state dirty ahead behind head_eq_upstream <<< "$row"
@@ -312,6 +313,7 @@ main() {
     if [[ "$tier" == "T3" && "$force_full" -eq 0 ]]; then
       if [[ "$auto" -eq 1 ]]; then
         echo "t3_note=auto_stop_after_quick"
+        echo "t3_scope_notice=repo parity verified; medium/full tiers not executed"
         exit 0
       fi
       confirm_or_exit "Quick audit indicates deeper tiers may not be worth it. Continue anyway?" "$noask"
@@ -325,6 +327,7 @@ main() {
     if [[ "$tier" == "T3" && "$force_full" -eq 0 ]]; then
       if [[ "$auto" -eq 1 ]]; then
         echo "t3_note=auto_stop_after_medium"
+        echo "t3_scope_notice=repo parity + medium checks executed; full tier not executed"
         exit 0
       fi
       confirm_or_exit "Medium audit indicates full audit may not be worth it. Continue to full?" "$noask"
