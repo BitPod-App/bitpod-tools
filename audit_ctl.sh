@@ -55,44 +55,48 @@ repo_sync_eval() {
     fi
   fi
 
-  local code term meaning certainty
+  local code parity meaning verify
   if [[ -z "$upstream" ]]; then
     code=5
-    term="UNLINKED"
+    parity="UNLINKED"
     meaning="No upstream is configured"
-    certainty="PROVEN"
+    verify="VERIFIED_LOCAL"
   elif [[ "$dirty" -gt 0 ]]; then
     code=3
-    term="LOCAL DIVERGED"
+    parity="DIVERGED"
     meaning="Local changes exist"
-    certainty="PROVEN"
+    if [[ "$require_fresh" -eq 1 ]]; then
+      verify="VERIFIED_FRESH"
+    else
+      verify="VERIFIED_LOCAL"
+    fi
   elif [[ "$require_fresh" -eq 1 && "$ahead" -eq 0 && "$behind" -eq 0 && "$head_eq_upstream" == "true" ]]; then
     code=1
-    term="PERFECT"
+    parity="PERFECT"
     meaning="Perfect fresh repo match"
-    certainty="PROVEN"
+    verify="VERIFIED_FRESH"
   elif [[ "$require_fresh" -eq 1 ]]; then
     code=4
-    term="REMOTE DIVERGED"
+    parity="DIVERGED"
     meaning="Upstream mismatch"
-    certainty="PROVEN"
+    verify="VERIFIED_FRESH"
   else
     code=2
-    term="NOT VERIFIED"
+    parity="UNKNOWN"
     meaning="Remote not refreshed in this run"
-    certainty="UNVERIFIED"
+    verify="NOT_CHECKED"
   fi
 
   local clean_state="false"
   [[ "$dirty" -eq 0 ]] && clean_state="true"
-  echo "$name|$code|$term|$meaning|$certainty|$branch|${upstream:-none}|$remote_fresh|$clean_state|$dirty|$ahead|$behind|$head_eq_upstream"
+  echo "$name|$code|$parity|$meaning|$verify|$branch|${upstream:-none}|$remote_fresh|$clean_state|$dirty|$ahead|$behind|$head_eq_upstream"
 }
 
 emit_parity_row() {
   local eval_row="$1"
   local reason_context="$2"
-  IFS='|' read -r name code term meaning certainty branch upstream remote_fresh clean_state dirty ahead behind head_eq_upstream <<< "$eval_row"
-  echo "- 1:$code | $name@$branch vs $upstream | $term - $meaning | certainty=$certainty | scope=REPO_PARITY_ONLY | why=$reason_context | proof(fetch_fresh=$remote_fresh, clean=$clean_state, dirty_items=$dirty, ahead=$ahead, behind=$behind, head_eq_upstream=$head_eq_upstream)"
+  IFS='|' read -r name code parity meaning verify branch upstream remote_fresh clean_state dirty ahead behind head_eq_upstream <<< "$eval_row"
+  echo "- PARITY=$parity | COMPARE=$name@$branch vs $upstream | VERIFY=$verify | EVIDENCE(fetch_fresh=$remote_fresh,clean=$clean_state,dirty_items=$dirty,ahead=$ahead,behind=$behind,head_eq_upstream=$head_eq_upstream) | NOTE=$meaning | scope=REPO_PARITY_ONLY | why=$reason_context"
 }
 
 emit_parity_pulse_summary() {
@@ -112,14 +116,16 @@ emit_parity_pulse_summary() {
   echo "- scope=REPO_PARITY_ONLY"
   echo "- summary: 1:1=$c1 1:2=$c2 1:3=$c3 1:4=$c4 1:5=$c5"
   if [[ "$require_fresh" -eq 1 && "$total" -gt 0 && "$c1" -eq "$total" ]]; then
-    echo "- overall=PORCELAIN (all repos fresh-verified 1:1)"
+    echo "- PARITY=PORCELAIN | COMPARE=all_repos($total) | VERIFY=VERIFIED_FRESH | EVIDENCE(perfect_repos=$c1,total_repos=$total)"
+  elif [[ "$require_fresh" -eq 1 ]]; then
+    echo "- PARITY=DIVERGED | COMPARE=all_repos($total) | VERIFY=VERIFIED_FRESH | EVIDENCE(perfect_repos=$c1,total_repos=$total)"
   else
-    echo "- overall=NOT PORCELAIN (all-repo fresh 1:1 not proven in this run)"
+    echo "- PARITY=UNKNOWN | COMPARE=all_repos($total) | VERIFY=NOT_CHECKED | EVIDENCE(fresh_check_scope=not_all_repos)"
   fi
   printf '%s\n' "$eval_rows" | while IFS= read -r row; do
-    IFS='|' read -r name code term meaning certainty branch upstream remote_fresh clean_state dirty ahead behind head_eq_upstream <<< "$row"
+    IFS='|' read -r name code parity meaning verify branch upstream remote_fresh clean_state dirty ahead behind head_eq_upstream <<< "$row"
     if [[ "$code" -ne 1 ]]; then
-      echo "- $name: 1:$code $term ($meaning; certainty=$certainty)"
+      echo "- $name: PARITY=$parity | COMPARE=$name@$branch vs $upstream | VERIFY=$verify | EVIDENCE(fetch_fresh=$remote_fresh,clean=$clean_state,dirty_items=$dirty,ahead=$ahead,behind=$behind,head_eq_upstream=$head_eq_upstream) | NOTE=$meaning"
     fi
   done
 }
