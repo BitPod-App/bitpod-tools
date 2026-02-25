@@ -68,7 +68,7 @@ repo_sync_eval() {
     certainty="PROVEN"
   elif [[ "$require_fresh" -eq 1 && "$ahead" -eq 0 && "$behind" -eq 0 && "$head_eq_upstream" == "true" ]]; then
     code=1
-    term="PORCELAIN"
+    term="PERFECT"
     meaning="Perfect fresh repo match"
     certainty="PROVEN"
   elif [[ "$require_fresh" -eq 1 ]]; then
@@ -98,16 +98,24 @@ emit_parity_row() {
 emit_parity_pulse_summary() {
   local eval_rows="$1"
   local reason_context="$2"
+  local require_fresh="${3:-0}"
   local c1 c2 c3 c4 c5
   c1="$(printf '%s\n' "$eval_rows" | awk -F'|' '$2==1{n++} END{print n+0}')"
   c2="$(printf '%s\n' "$eval_rows" | awk -F'|' '$2==2{n++} END{print n+0}')"
   c3="$(printf '%s\n' "$eval_rows" | awk -F'|' '$2==3{n++} END{print n+0}')"
   c4="$(printf '%s\n' "$eval_rows" | awk -F'|' '$2==4{n++} END{print n+0}')"
   c5="$(printf '%s\n' "$eval_rows" | awk -F'|' '$2==5{n++} END{print n+0}')"
+  local total
+  total="$(printf '%s\n' "$eval_rows" | sed '/^$/d' | wc -l | tr -d ' ')"
   echo "[parity pulse (auto)]"
   echo "- why_shown=$reason_context"
   echo "- scope=REPO_PARITY_ONLY"
   echo "- summary: 1:1=$c1 1:2=$c2 1:3=$c3 1:4=$c4 1:5=$c5"
+  if [[ "$require_fresh" -eq 1 && "$total" -gt 0 && "$c1" -eq "$total" ]]; then
+    echo "- overall=PORCELAIN (all repos fresh-verified 1:1)"
+  else
+    echo "- overall=NOT PORCELAIN (all-repo fresh 1:1 not proven in this run)"
+  fi
   printf '%s\n' "$eval_rows" | while IFS= read -r row; do
     IFS='|' read -r name code term meaning certainty branch upstream remote_fresh clean_state dirty ahead behind head_eq_upstream <<< "$row"
     if [[ "$code" -ne 1 ]]; then
@@ -150,7 +158,7 @@ run_quick() {
       emit_parity_row "$row" "explicit cleanup audit"
     done <<< "$parity_rows"
   else
-    emit_parity_pulse_summary "$parity_rows" "auto side signal (no extra checks beyond this run)"
+    emit_parity_pulse_summary "$parity_rows" "auto side signal (no extra checks beyond this run)" "$require_fresh"
   fi
 
   echo "[local-workspace queue health]"
