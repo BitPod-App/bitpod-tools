@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -39,12 +40,28 @@ def _event_tokens(event: dict) -> int:
     return int(event.get("input_tokens_est", 0) or 0) + int(event.get("output_tokens_est", 0) or 0)
 
 
+def _event_usd(event: dict, usd_per_1k_in: float, usd_per_1k_out: float) -> float:
+    in_tokens = float(event.get("input_tokens_est", 0) or 0)
+    out_tokens = float(event.get("output_tokens_est", 0) or 0)
+    return (in_tokens / 1000.0) * usd_per_1k_in + (out_tokens / 1000.0) * usd_per_1k_out
+
+
 def _status(value: int, warn_cap: int | None, fail_cap: int | None) -> str:
     if fail_cap is not None and value >= fail_cap:
         return "fail"
     if warn_cap is not None and value >= warn_cap:
         return "warn"
     return "ok"
+
+
+def _flt_env(name: str, default: float) -> float:
+    raw = os.getenv(name)
+    if raw is None or raw == "":
+        return default
+    try:
+        return float(raw)
+    except ValueError:
+        return default
 
 
 def main() -> int:
@@ -57,6 +74,11 @@ def main() -> int:
     parser.add_argument("--run-fail", type=int, default=None, help="Fail when latest run tokens >= this cap")
     parser.add_argument("--daily-warn", type=int, default=None, help="Warn when rolling window tokens >= this cap")
     parser.add_argument("--daily-fail", type=int, default=None, help="Fail when rolling window tokens >= this cap")
+
+    parser.add_argument("--usd-per-1k-in", type=float, default=_flt_env("COST_USD_PER_1K_IN", 0.0))
+    parser.add_argument("--usd-per-1k-out", type=float, default=_flt_env("COST_USD_PER_1K_OUT", 0.0))
+    parser.add_argument("--weekly-budget-usd", type=float, default=_flt_env("COST_WEEKLY_BUDGET_USD", 0.0))
+    parser.add_argument("--monthly-budget-usd", type=float, default=_flt_env("COST_MONTHLY_BUDGET_USD", 0.0))
 
     parser.add_argument("--warn-exit-0", action="store_true", help="Return 0 on warn status (still returns non-zero on fail)")
     args = parser.parse_args()
@@ -76,6 +98,17 @@ def main() -> int:
     window_events = [e for e in events if (_event_ts(e) and _event_ts(e) >= cutoff)]
     window_tokens = sum(_event_tokens(e) for e in window_events)
 
+    week_cutoff = now - timedelta(days=7)
+    month_cutoff = now - timedelta(days=30)
+    week_events = [e for e in events if (_event_ts(e) and _event_ts(e) >= week_cutoff)]
+    month_events = [e for e in events if (_event_ts(e) and _event_ts(e) >= month_cutoff)]
+
+    total_usd = sum(_event_usd(e, args.usd_per_1k_in, args.usd_per_1k_out) for e in events)
+    latest_usd = _event_usd(events[-1], args.usd_per_1k_in, args.usd_per_1k_out) if events else 0.0
+    window_usd = sum(_event_usd(e, args.usd_per_1k_in, args.usd_per_1k_out) for e in window_events)
+    week_usd = sum(_event_usd(e, args.usd_per_1k_in, args.usd_per_1k_out) for e in week_events)
+    month_usd = sum(_event_usd(e, args.usd_per_1k_in, args.usd_per_1k_out) for e in month_events)
+
     run_status = _status(latest_tokens, args.run_warn, args.run_fail)
     daily_status = _status(window_tokens, args.daily_warn, args.daily_fail)
 
@@ -84,6 +117,13 @@ def main() -> int:
         overall = "fail"
     elif "warn" in {run_status, daily_status}:
         overall = "warn"
+
+    weekly_budget_usd = args.weekly_budget_usd if args.weekly_budget_usd > 0 else None
+    monthly_budget_usd = args.monthly_budget_usd if args.monthly_budget_usd > 0 else None
+
+    weekly_used_pct = (week_usd / weekly_budget_usd * 100.0) if weekly_budget_usd else None
+    monthly_used_pct = (month_usd / monthly_budget_usd * 100.0) if monthly_budget_usd else None
+    weekly_budgets_burned_month = (month_usd / weekly_budget_usd) if weekly_budget_usd else None
 
     payload = {
         "meter": str(meter),
@@ -100,6 +140,26 @@ def main() -> int:
             "run_fail": args.run_fail,
             "daily_warn": args.daily_warn,
             "daily_fail": args.daily_fail,
+        },
+        "pricing": {
+            "usd_per_1k_in": args.usd_per_1k_in,
+            "usd_per_1k_out": args.usd_per_1k_out,
+        },
+        "usd_estimates": {
+            "latest_run_usd": round(latest_usd, 6),
+            "window_usd": round(window_usd, 6),
+            "week_usd": round(week_usd, 6),
+            "month_usd": round(month_usd, 6),
+            "total_usd": round(total_usd, 6),
+        },
+        "budgets": {
+            "weekly_budget_usd": weekly_budget_usd,
+            "monthly_budget_usd": monthly_budget_usd,
+            "weekly_used_pct": round(weekly_used_pct, 3) if weekly_used_pct is not None else None,
+            "monthly_used_pct": round(monthly_used_pct, 3) if monthly_used_pct is not None else None,
+            "weekly_budgets_burned_this_month": round(weekly_budgets_burned_month, 6)
+            if weekly_budgets_burned_month is not None
+            else None,
         },
         "status": {
             "run": run_status,
