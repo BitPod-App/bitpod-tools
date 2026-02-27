@@ -9,6 +9,7 @@ Operating rule for this run:
 - Mallers links are optional freshness inputs, not hard dependencies.
 - If Mallers fetch fails, continue with independent web research and clearly note missing Mallers intake.
 - Do not assume Codex artifacts exist unless explicitly provided in this chat.
+- GPT is narrative-only: do not treat narrative reasoning as a substitute for missing critical datasets.
 Confirm these 3 rules, then run the Weekly BTC Data Update + Output Report.
 ```
 
@@ -136,6 +137,7 @@ Rules:
 - If fewer than 2 are missing/blocked, return COMPLETE with scoring_table + 7d/30d probability_map + falsifiers.
 - Do not assume Codex artifacts unless explicitly provided in this chat.
 - Mallers is optional freshness steering only.
+- GPT cannot satisfy missing critical datasets by explanation, inference, or narrative fallback.
 
 Required output:
 A) status_header (STRICT + COMPLETE/INCOMPLETE)
