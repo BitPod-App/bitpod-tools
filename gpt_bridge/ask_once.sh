@@ -11,15 +11,8 @@ if [[ -f .env ]]; then
   set +a
 fi
 
-: "${OPENAI_API_KEY:?OPENAI_API_KEY is required (set in .env)}"
-if [[ -z "${GPT_BRIDGE_TOKEN:-}" && -z "${GPT_BRIDGE_SHARED_SECRET:-}" ]]; then
-  echo "Set GPT_BRIDGE_TOKEN or GPT_BRIDGE_SHARED_SECRET in .env" >&2
-  exit 1
-fi
-
 BRIDGE_URL="${GPT_BRIDGE_URL:-http://127.0.0.1:8787/ask}"
 START_LOG="${GPT_BRIDGE_START_LOG:-$SCRIPT_DIR/logs/bridge_start.log}"
-PID_FILE="${GPT_BRIDGE_PID_FILE:-$SCRIPT_DIR/logs/bridge.pid}"
 
 check_bridge() {
   local code
@@ -47,16 +40,12 @@ is_local_bridge_url() {
 
 if ! check_bridge; then
   if is_local_bridge_url; then
-    mkdir -p "$SCRIPT_DIR/logs"
-    nohup python3 "$SCRIPT_DIR/gpt_bridge.py" >>"$START_LOG" 2>&1 &
-    echo "$!" > "$PID_FILE"
-
-    for _ in {1..20}; do
-      if check_bridge; then
-        break
-      fi
-      sleep 0.25
-    done
+    # Delegate startup to bridge_ctl.sh so start checks and error reporting
+    # stay centralized and consistent across callers.
+    if ! "$SCRIPT_DIR/bridge_ctl.sh" start >/dev/null 2>&1; then
+      echo "Bridge failed to start. See $START_LOG" >&2
+      exit 1
+    fi
   else
     echo "Remote bridge unreachable: $BRIDGE_URL" >&2
     echo "Start or fix the remote bridge service, then retry." >&2
