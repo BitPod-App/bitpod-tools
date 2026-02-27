@@ -67,6 +67,68 @@ cd /Users/cjarguello/bitpod-app/tools/gpt_bridge
 ./bridge_ctl.sh stop --session team
 ```
 
+## Bridge Troubleshooting Ladder
+
+Use this in order. Stop when one step explains/fixes the issue.
+
+1. Check bridge health:
+
+```bash
+cd /Users/cjarguello/bitpod-app/tools/gpt_bridge
+./bridge_ctl.sh status
+```
+
+2. Validate env/auth is loaded in current shell:
+
+```bash
+cd /Users/cjarguello/bitpod-app/tools/gpt_bridge
+set -a; source .env; set +a
+echo OPENAI_API_KEY=${OPENAI_API_KEY:+set}
+echo GPT_BRIDGE_TOKEN=${GPT_BRIDGE_TOKEN:+set}
+echo GPT_BRIDGE_SHARED_SECRET=${GPT_BRIDGE_SHARED_SECRET:+set}
+```
+
+3. If inactive, start explicitly and re-check:
+
+```bash
+cd /Users/cjarguello/bitpod-app/tools/gpt_bridge
+./bridge_ctl.sh start --session team
+./bridge_ctl.sh status
+```
+
+4. If start fails, inspect startup log:
+
+```bash
+cd /Users/cjarguello/bitpod-app/tools/gpt_bridge
+tail -n 120 logs/bridge_start.log
+```
+
+Common signatures:
+- `OPENAI_API_KEY is required` -> env not loaded in this shell.
+- `Set GPT_BRIDGE_TOKEN and/or GPT_BRIDGE_SHARED_SECRET` -> missing auth config.
+- `Address already in use` -> port conflict; stop stray process or use configured endpoint.
+- `Operation not permitted` -> runtime/sandbox permission issue.
+
+5. If local bridge is unstable, test direct ask path:
+
+```bash
+cd /Users/cjarguello/bitpod-app/tools/gpt_bridge
+./ask_once.sh "ping"
+```
+
+6. If using remote-managed bridge URL, confirm endpoint/auth first:
+- `GPT_BRIDGE_URL` is reachable.
+- token/secret matches server expectation.
+- local `bridge_ctl.sh start` is not required for remote endpoints.
+
+7. Final reset (local bridge only):
+
+```bash
+cd /Users/cjarguello/bitpod-app/tools/gpt_bridge
+./bridge_ctl.sh stop --session team
+./bridge_ctl.sh start --session team
+```
+
 ## Model selection
 
 Default model behavior:
