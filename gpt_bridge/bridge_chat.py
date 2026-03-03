@@ -1319,6 +1319,7 @@ def run_options(args: argparse.Namespace) -> int:
     print("Bridge GPT | Messages & Chat:")
     print("Bridge GPT | <message> (sends to team chat, anyone can reply or ignore, but will be logged in session memory)")
     print("Bridge GPT | ~gpt <message> (technically relays message to ChatGPT, effectively works as @GPT in team chat)")
+    print("Bridge GPT | ~decide <question> (decision intent routed through GPT workflow)")
     print("Bridge GPT | ~codex <message> (@direct message to Codex, quick short replies)")
     print("Bridge GPT | ~cj <message> (@mentions CJ in team chat, may reply eventually, extremely elaborately)")
     print("Bridge GPT | ~taylor <message> (@direct message to Taylor in team chat, longer replies)")
@@ -1477,10 +1478,12 @@ def run_chat(args: argparse.Namespace) -> int:
                     show_raw=False,
                 )
             )
-        if tcmd in {"gpt", "codex", "cj", "taylor"}:
+        if tcmd in {"gpt", "codex", "cj", "taylor", "decide"}:
             if not trest:
                 print(f"Bridge GPT | Usage: ~{tcmd} <message>")
                 return 2
+            if tcmd == "decide":
+                return run_team(_chat_team_args(args, f"@gpt [DECIDE] {trest}"))
             return run_team(_chat_team_args(args, f"@{tcmd} {trest}"))
         print(f"Bridge GPT | Unknown command: ~{tcmd}" if tcmd else "Bridge GPT | Unknown command: ~")
         print("Bridge GPT | Try ~help")
@@ -1520,10 +1523,12 @@ def run_chat(args: argparse.Namespace) -> int:
                 show_raw=False,
             )
         )
-    if cmd in {"/gpt", "/ask"}:
+    if cmd in {"/gpt", "/ask", "/decide"}:
         if not rest:
-            print("Bridge GPT | Usage: /gpt <message> (or /ask <message>)")
+            print("Bridge GPT | Usage: /gpt <message> (or /ask <message> or /decide <question>)")
             return 2
+        if cmd == "/decide":
+            return run_team(_chat_team_args(args, f"@gpt [DECIDE] {rest}"))
         return run_team(_chat_team_args(args, f"@gpt {rest}"))
     if cmd == "/codex":
         if not rest:

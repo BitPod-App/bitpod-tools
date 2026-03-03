@@ -2,6 +2,7 @@
 set -euo pipefail
 
 ROOT="/Users/cjarguello/bitpod-app"
+ZONE_POLICY_FILE="$ROOT/bitpod-tools/config/cleanup_zones_policy.tsv"
 # Guardrail: this runner is read-only. It never renames/moves/deletes files.
 # Rename cleanup is a separate manual workflow (quarantine first, then decide).
 NOW="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
@@ -136,6 +137,55 @@ emit_parity_pulse_summary() {
   done
 }
 
+collect_repo_paths() {
+  local candidates=(
+    "bitpod"
+    "bitregime-core"
+    "bitpod-docs"
+    "bitpod-tools"
+    "bitpod-taylor-runtime"
+    "docs"
+    "tools"
+    "taylor-runtime"
+  )
+  local out=()
+  local r
+  for r in "${candidates[@]}"; do
+    if [[ -d "$ROOT/$r/.git" ]]; then
+      out+=("$r")
+    fi
+  done
+  printf '%s\n' "${out[@]}"
+}
+
+emit_managed_zones_summary() {
+  echo "[managed folder zones]"
+  if [[ ! -f "$ZONE_POLICY_FILE" ]]; then
+    echo "- zone_policy_file=MISSING path=$ZONE_POLICY_FILE"
+    return 0
+  fi
+  local lines=0
+  while IFS='|' read -r zone mode rel_path notes; do
+    [[ -z "${zone// }" ]] && continue
+    [[ "$zone" =~ ^# ]] && continue
+    lines=$((lines + 1))
+    local abs_path="$ROOT/$rel_path"
+    if [[ ! -d "$abs_path" ]]; then
+      echo "- zone=$zone mode=$mode path=$rel_path status=MISSING notes=${notes:-none}"
+      continue
+    fi
+
+    local file_count dup_names large_files
+    file_count="$(find "$abs_path" -type f 2>/dev/null | wc -l | tr -d ' ')"
+    dup_names="$(find "$abs_path" -type f -exec basename {} \; 2>/dev/null | sort | uniq -d | wc -l | tr -d ' ')"
+    large_files="$(find "$abs_path" -type f -size +10M 2>/dev/null | wc -l | tr -d ' ')"
+    echo "- zone=$zone mode=$mode path=$rel_path files=$file_count dup_names=$dup_names large_files_gt10mb=$large_files notes=${notes:-none}"
+  done < "$ZONE_POLICY_FILE"
+  if [[ "$lines" -eq 0 ]]; then
+    echo "- zone_policy_entries=0 (file exists but has no active rows)"
+  fi
+}
+
 run_quick() {
   local require_fresh="${1:-0}"
   local parity_detail="${2:-0}"
@@ -146,7 +196,13 @@ run_quick() {
   find "$ROOT" -maxdepth 1 -mindepth 1 -type f -exec basename "{}" ";" | sort | sed 's/^/- /'
 
   echo "[repo health]"
-  local repos=("bitpod" "bitregime-core" "docs" "taylor-runtime" "tools")
+  local repos=()
+  while IFS= read -r repo_name; do
+    [[ -n "$repo_name" ]] && repos+=("$repo_name")
+  done < <(collect_repo_paths)
+  if [[ "${#repos[@]}" -eq 0 ]]; then
+    echo "- repo_scan_status=NO_GIT_REPOS_FOUND_UNDER_ROOT"
+  fi
   local total_dirty=0
   for r in "${repos[@]}"; do
     local dirty
@@ -196,6 +252,8 @@ run_quick() {
   echo "- handoff_files=$handoff_files"
   echo "- pm_only_files=$pm"
 
+  emit_managed_zones_summary
+
   echo "[soft purge signals]"
   local trash_pending=0
   local trash_pending_days=14
@@ -207,8 +265,26 @@ run_quick() {
   echo "[likely duplicates estimate]"
   local tmp_canon="/tmp/audit_ctl_canon_names.txt"
   local tmp_local="/tmp/audit_ctl_local_names.txt"
-  find "$ROOT/docs" "$ROOT/bitpod" "$ROOT/bitregime-core" "$ROOT/taylor-runtime" "$ROOT/tools" -type f 2>/dev/null \
-    | xargs -I{} basename "{}" | sort -u > "$tmp_canon"
+  local canon_scan_dirs=()
+  local maybe_dirs=(
+    "$ROOT/bitpod"
+    "$ROOT/bitregime-core"
+    "$ROOT/bitpod-docs"
+    "$ROOT/bitpod-tools"
+    "$ROOT/bitpod-taylor-runtime"
+    "$ROOT/docs"
+    "$ROOT/tools"
+    "$ROOT/taylor-runtime"
+  )
+  local d
+  for d in "${maybe_dirs[@]}"; do
+    [[ -d "$d" ]] && canon_scan_dirs+=("$d")
+  done
+  if [[ "${#canon_scan_dirs[@]}" -gt 0 ]]; then
+    find "${canon_scan_dirs[@]}" -type f 2>/dev/null | xargs -I{} basename "{}" | sort -u > "$tmp_canon"
+  else
+    : > "$tmp_canon"
+  fi
   local local_work_root="$ROOT/local-workspace/local-working-files"
   if [[ -d "$local_work_root" ]]; then
     find "$local_work_root" -type f 2>/dev/null | xargs -I{} basename "{}" | sort -u > "$tmp_local"
@@ -251,8 +327,26 @@ run_medium() {
   local tmp_in="/tmp/audit_ctl_in_sha.txt"
   local tmp_canon="/tmp/audit_ctl_canon_sha.txt"
   find "$working" -type f -name '*.md' -print0 2>/dev/null | xargs -0 shasum -a 256 | sort > "$tmp_in" || true
-  find "$ROOT/docs" "$ROOT/bitpod" "$ROOT/bitregime-core" "$ROOT/taylor-runtime" "$ROOT/tools" -type f -name '*.md' -print0 2>/dev/null \
-    | xargs -0 shasum -a 256 | sort > "$tmp_canon" || true
+  local canon_scan_dirs=()
+  local maybe_dirs=(
+    "$ROOT/bitpod"
+    "$ROOT/bitregime-core"
+    "$ROOT/bitpod-docs"
+    "$ROOT/bitpod-tools"
+    "$ROOT/bitpod-taylor-runtime"
+    "$ROOT/docs"
+    "$ROOT/tools"
+    "$ROOT/taylor-runtime"
+  )
+  local d
+  for d in "${maybe_dirs[@]}"; do
+    [[ -d "$d" ]] && canon_scan_dirs+=("$d")
+  done
+  if [[ "${#canon_scan_dirs[@]}" -gt 0 ]]; then
+    find "${canon_scan_dirs[@]}" -type f -name '*.md' -print0 2>/dev/null | xargs -0 shasum -a 256 | sort > "$tmp_canon" || true
+  else
+    : > "$tmp_canon"
+  fi
 
   local scanned=0
   local exact=0
@@ -279,6 +373,7 @@ run_full() {
   find "$ROOT" -maxdepth 2 -type f | wc -l | awk '{print "- file_count_depth2=" $1}'
   echo "[local-workspace detailed]"
   find "$ROOT/local-workspace" -maxdepth 3 -type d | sort | sed 's#^#- #'
+  emit_managed_zones_summary
   echo "full_complete=TRUE"
 }
 
