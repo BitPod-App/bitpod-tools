@@ -16,3 +16,8 @@ Use this folder for tools-runtime notes and migration guardrails only.
 - `taylor_runtime_prompts.md`
 
 Do not duplicate product canon bundles here.
+
+
+## Integration Baselines
+
+- `linear_github_sync_mvp_BIT-44.md`
