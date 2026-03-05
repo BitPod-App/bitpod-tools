@@ -18,6 +18,7 @@ This folder contains the initial scaffold for Linear + GitHub workflow-enforceme
 ## Primary SOP
 
 - `./docs/linear_custom_configs_v1.md`
+- `./docs/process/linear_bot_v1_runbook.md`
 
 ## Current implementation coverage (v1)
 
