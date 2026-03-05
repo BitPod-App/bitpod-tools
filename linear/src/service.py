@@ -7,7 +7,12 @@ import subprocess
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from typing import Dict, List, Tuple
 
-from engine import LinearBotEngine, Action, format_actions
+try:
+    from linear.src.engine import Action, format_actions
+    from linear.src.runtime import BotRuntime
+except ModuleNotFoundError:
+    from engine import Action, format_actions
+    from runtime import BotRuntime
 
 
 def parse_pr_url(pr_url: str) -> Tuple[str, str, str]:
@@ -54,7 +59,7 @@ def apply_actions(actions: List[Action], dry_run: bool = True) -> None:
 
 
 class Handler(BaseHTTPRequestHandler):
-    bot = LinearBotEngine()
+    runtime = BotRuntime()
     dry_run = True
 
     def _json(self, code: int, payload: Dict):
@@ -78,17 +83,11 @@ class Handler(BaseHTTPRequestHandler):
         if self.path == "/github":
             action = data.get("action")
             if action == "opened":
-                actions = self.bot.on_github_pr_opened(data)
+                actions = self.runtime.run_github_event(data)
             elif action == "ready_for_review":
-                actions = self.bot.on_github_pr_ready_for_review(data)
+                actions = self.runtime.run_github_event(data)
             elif action == "closed" and data.get("pull_request", {}).get("merged") is True:
-                issue = data.get("linear_issue", {})
-                pr = data.get("pull_request", {})
-                actions = self.bot.on_github_pr_merged(
-                    issue=issue,
-                    pr_url=pr.get("html_url", ""),
-                    merge_sha=pr.get("merge_commit_sha", ""),
-                )
+                actions = self.runtime.run_github_event(data)
 
         elif self.path == "/linear":
             kind = data.get("type")
@@ -96,17 +95,13 @@ class Handler(BaseHTTPRequestHandler):
                 issue_key = data.get("issue_key", "")
                 body = data.get("comment_body", "")
                 pr_url = data.get("pr_url", "")
-                actions = self.bot.on_linear_comment(issue_key, body, pr_url)
+                actions = self.runtime.run_linear_event(data)
             elif kind == "issue_ready_gate":
-                actions = self.bot.on_linear_ready_gate(data.get("issue", {}))
+                actions = self.runtime.run_linear_event(data)
             elif kind == "pm_label_changed":
-                actions = self.bot.on_linear_pm_label_change(
-                    issue_key=data.get("issue_key", ""),
-                    pm_value=data.get("pm_value", ""),
-                    pr_url=data.get("pr_url", ""),
-                )
+                actions = self.runtime.run_linear_event(data)
             elif kind == "daily_aging_scan":
-                actions = self.bot.daily_aging_scan(data.get("issues", []))
+                actions = self.runtime.run_linear_event(data)
 
         else:
             self._json(404, {"ok": False, "error": "unknown-path"})

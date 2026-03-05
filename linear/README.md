@@ -117,3 +117,10 @@ PR checks run automatically for `linear/**` via:
 
 - Service live mode currently supports GitHub PR comments only.
 - Linear live mutation executor is intentionally fail-closed until final API/actor wiring is complete.
+
+## Portability-first architecture
+
+- Core logic is platform-agnostic in `src/engine.py`.
+- Runtime orchestration + memory abstraction lives in `src/runtime.py` + `src/memory.py`.
+- Transport adapters stay thin (`src/service.py`).
+- Cloudflare migration notes: `docs/cloudflare_migration_path.md`.

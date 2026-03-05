@@ -3,7 +3,10 @@ import argparse
 import json
 from pathlib import Path
 
-from engine import LinearBotEngine, format_actions
+try:
+    from linear.src.engine import LinearBotEngine, format_actions
+except ModuleNotFoundError:
+    from engine import LinearBotEngine, format_actions
 
 
 def main() -> int:
