@@ -46,3 +46,45 @@ Schedule:
 
 - If GitHub actions appear as CJ instead of bot/app identity: stop and report `AUTH ATTRIBUTION WRONG`.
 - If Linear mutations appear as CJ instead of app actor: stop and report `LINEAR ACTOR WRONG`.
+
+## Simulation runner
+
+Run sample event simulations locally:
+
+```bash
+cd /Users/cjarguello/bitpod-app/bitpod-tools/linear/src
+python3 simulate.py --mode gh_opened --event ../events/sample_pr_opened.json
+python3 simulate.py --mode linear_comment --event ../events/sample_linear_comment_passed.json
+python3 simulate.py --mode aging_scan --event ../events/sample_aging_scan.json
+```
+
+## Test
+
+```bash
+cd /Users/cjarguello/bitpod-app/bitpod-tools
+python3 -m unittest linear/tests/test_engine.py
+```
+
+## Webhook service (dry-run default)
+
+Run local service:
+
+```bash
+cd /Users/cjarguello/bitpod-app/bitpod-tools/linear/src
+cp ../config.example.env ../.env  # optional
+python3 service.py --dry-run
+```
+
+POST sample events:
+
+```bash
+curl -sS -X POST http://127.0.0.1:8787/github \
+  -H 'content-type: application/json' \
+  --data @../events/sample_pr_opened.json
+
+curl -sS -X POST http://127.0.0.1:8787/linear \
+  -H 'content-type: application/json' \
+  --data '{"type":"comment_created","issue_key":"BIT-45","comment_body":"QA_RESULT=PASSED","pr_url":"https://github.com/BitPod-App/bitpod-tools/pull/17"}'
+```
+
+Service is fail-closed for live mode until explicit API executor wiring is added.

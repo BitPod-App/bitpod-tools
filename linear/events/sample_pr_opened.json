@@ -1,0 +1,9 @@
+{
+  "pull_request": {
+    "number": 17,
+    "title": "BIT-45 add linear bot skeleton",
+    "body": "Implements initial webhook paths",
+    "html_url": "https://github.com/BitPod-App/bitpod-tools/pull/17",
+    "head": {"ref": "codex/bit-45-linear-bot-v1"}
+  }
+}

@@ -1,0 +1,5 @@
+{
+  "issue_key": "BIT-45",
+  "comment_body": "QA_RESULT=PASSED\nChecks look good.\nNo regressions found.",
+  "pr_url": "https://github.com/BitPod-App/bitpod-tools/pull/17"
+}

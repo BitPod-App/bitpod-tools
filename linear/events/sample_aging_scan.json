@@ -1,0 +1,14 @@
+{
+  "issues": [
+    {
+      "identifier": "BIT-101",
+      "status": "📂 Backlog",
+      "updatedAt": "2026-01-01T00:00:00Z"
+    },
+    {
+      "identifier": "BIT-102",
+      "status": "🧊 Icebox",
+      "updatedAt": "2025-11-01T00:00:00Z"
+    }
+  ]
+}
