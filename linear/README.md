@@ -87,6 +87,7 @@ cd /Users/cjarguello/bitpod-app/bitpod-tools/linear/src
 python3 simulate.py --mode gh_opened --event ../events/sample_pr_opened.json
 python3 simulate.py --mode linear_comment --event ../events/sample_linear_comment_passed.json
 python3 simulate.py --mode aging_scan --event ../events/sample_aging_scan.json
+python3 simulate_e2e.py
 ```
 
 Additional samples:
@@ -96,11 +97,18 @@ python3 simulate.py --mode gh_opened --event ../events/sample_pr_opened.json
 # PM label changed and merged gate are exercised through service payloads in ./events/
 ```
 
+`simulate_e2e.py` runs the full happy-path sequence:
+- PR opened -> In Progress
+- PR ready for review -> In Review + QA/PM defaults
+- QA comment token parse (`QA_RESULT=PASSED`)
+- PM approval label signal
+- PR merged with gates satisfied -> Done
+
 ## Test
 
 ```bash
 cd /Users/cjarguello/bitpod-app/bitpod-tools
-python3 -m unittest linear/tests/test_engine.py
+python3 -m unittest linear/tests/test_engine.py linear/tests/test_runtime.py linear/tests/test_e2e_flow.py
 ```
 
 ## GitHub Actions smoke
