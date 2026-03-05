@@ -113,6 +113,13 @@ cd /Users/cjarguello/bitpod-app/bitpod-tools
 python3 -m unittest linear/tests/test_engine.py linear/tests/test_runtime.py linear/tests/test_e2e_flow.py
 ```
 
+One-command local smoke:
+
+```bash
+cd /Users/cjarguello/bitpod-app/bitpod-tools
+bash linear/scripts/local_smoke.sh
+```
+
 ## GitHub Actions smoke
 
 PR checks run automatically for `linear/**` via:
