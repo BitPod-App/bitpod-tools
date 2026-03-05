@@ -1,0 +1,6 @@
+{
+  "type": "pm_label_changed",
+  "issue_key": "BIT-45",
+  "pm_value": "❌ PM: Rejected",
+  "pr_url": "https://github.com/BitPod-App/bitpod-tools/pull/17"
+}

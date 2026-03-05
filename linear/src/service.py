@@ -2,10 +2,19 @@
 import argparse
 import json
 import os
+import re
+import subprocess
 from http.server import BaseHTTPRequestHandler, HTTPServer
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 from engine import LinearBotEngine, Action, format_actions
+
+
+def parse_pr_url(pr_url: str) -> Tuple[str, str, str]:
+    m = re.match(r"https://github\.com/([^/]+)/([^/]+)/pull/(\d+)", pr_url or "")
+    if not m:
+        return "", "", ""
+    return m.group(1), m.group(2), m.group(3)
 
 
 def apply_actions(actions: List[Action], dry_run: bool = True) -> None:
@@ -13,10 +22,35 @@ def apply_actions(actions: List[Action], dry_run: bool = True) -> None:
         print("[DRY_RUN] would apply actions:")
         print(format_actions(actions))
         return
-    # Live mutation executor intentionally minimal in v1 bootstrap.
-    # Hook real API clients here once credentials and status/label mappings are finalized.
-    print("[LIVE] action executor not yet wired; refusing fail-closed.")
-    print(format_actions(actions))
+
+    # Live mode (minimal): GitHub PR comments via gh CLI.
+    # Linear mutations intentionally fail-closed until API executor is configured.
+    for a in actions:
+        if a.system == "github" and a.kind == "comment":
+            owner, repo, num = parse_pr_url(a.target)
+            if owner and repo and num:
+                subprocess.run(
+                    [
+                        "gh",
+                        "pr",
+                        "comment",
+                        num,
+                        "-R",
+                        f"{owner}/{repo}",
+                        "--body",
+                        a.payload.get("body", ""),
+                    ],
+                    check=False,
+                )
+                continue
+            print(f"[LIVE][SKIP] invalid github target for comment: {a.target}")
+            continue
+
+        if a.system == "linear":
+            print(f"[LIVE][FAIL-CLOSED] linear executor not configured yet; skipped: {a.kind} {a.target}")
+            continue
+
+        print(f"[LIVE][SKIP] unknown action: {a}")
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -40,6 +74,7 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         actions: List[Action] = []
+
         if self.path == "/github":
             action = data.get("action")
             if action == "opened":
@@ -47,8 +82,14 @@ class Handler(BaseHTTPRequestHandler):
             elif action == "ready_for_review":
                 actions = self.bot.on_github_pr_ready_for_review(data)
             elif action == "closed" and data.get("pull_request", {}).get("merged") is True:
-                # merged handling requires hydrated issue labels; use simulation/worker for now
-                actions = []
+                issue = data.get("linear_issue", {})
+                pr = data.get("pull_request", {})
+                actions = self.bot.on_github_pr_merged(
+                    issue=issue,
+                    pr_url=pr.get("html_url", ""),
+                    merge_sha=pr.get("merge_commit_sha", ""),
+                )
+
         elif self.path == "/linear":
             kind = data.get("type")
             if kind == "comment_created":
@@ -58,6 +99,15 @@ class Handler(BaseHTTPRequestHandler):
                 actions = self.bot.on_linear_comment(issue_key, body, pr_url)
             elif kind == "issue_ready_gate":
                 actions = self.bot.on_linear_ready_gate(data.get("issue", {}))
+            elif kind == "pm_label_changed":
+                actions = self.bot.on_linear_pm_label_change(
+                    issue_key=data.get("issue_key", ""),
+                    pm_value=data.get("pm_value", ""),
+                    pr_url=data.get("pr_url", ""),
+                )
+            elif kind == "daily_aging_scan":
+                actions = self.bot.daily_aging_scan(data.get("issues", []))
+
         else:
             self._json(404, {"ok": False, "error": "unknown-path"})
             return

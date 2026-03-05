@@ -1,0 +1,12 @@
+{
+  "action": "closed",
+  "pull_request": {
+    "merged": true,
+    "html_url": "https://github.com/BitPod-App/bitpod-tools/pull/17",
+    "merge_commit_sha": "abc123def"
+  },
+  "linear_issue": {
+    "identifier": "BIT-45",
+    "labels": ["🔷 QA: Passed", "❇️ PM: Approved"]
+  }
+}

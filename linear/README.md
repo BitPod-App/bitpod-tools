@@ -7,28 +7,66 @@ This folder contains the initial scaffold for Linear + GitHub workflow-enforceme
 - `/bitpod-tools/linear/docs/`
   - SOP and implementation references.
 - `/bitpod-tools/linear/docs/process/`
-  - Process runbooks and operator notes (placeholder for now).
+  - Process runbooks and operator notes.
+- `/bitpod-tools/linear/src/`
+  - Rule engine, webhook service, and simulator.
+- `/bitpod-tools/linear/events/`
+  - Sample payloads for local simulation.
+- `/bitpod-tools/linear/tests/`
+  - Unit tests for gate and transition behavior.
 
 ## Primary SOP
 
 - `./docs/linear_custom_configs_v1.md`
 
+## Current implementation coverage (v1)
+
+Implemented in engine/service:
+- GitHub events:
+  - `pull_request.opened`
+  - `pull_request.ready_for_review`
+  - `pull_request.closed` with merged=true (fail-closed gate check)
+- Linear events:
+  - ready-gate enforcement trigger
+  - comment-created QA token parser (`QA_RESULT=PASSED|FAILED`)
+  - PM label changed (`Approved` / `Rejected`)
+  - daily aging scan payload handler
+- Gating behavior:
+  - Ready gate (required Type + required headings)
+  - QA/PM label defaults in review flow
+  - merge gate requires QA Passed + PM Approved
+  - fail-closed comments when gates are not met
+- Dry-run default and simulation runner
+
+## Status model note (important)
+
+SOP expects emoji statuses (`☑️ Ready`, `🏗️ In Progress`, `🧪 In Review`, etc).
+Current BIT workspace still uses mixed/non-emoji statuses (`Backlog`, `Todo`, `In Progress`, `In Review`, `Done`, `Icebox 🧊`, `Obsolete`).
+
+This implementation includes fallback handling for current statuses where safe, but full parity requires final Linear status normalization.
+
 ## How to run
 
-1. Implement bot runtime (GitHub Actions workflow or webhook service) under this folder.
-2. Start in dry-run mode (`DRY_RUN=true`) and simulate events before enabling mutations.
-3. Enable live mutations only after attribution checks pass for both GitHub and Linear actors.
+```bash
+cd /Users/cjarguello/bitpod-app/bitpod-tools/linear/src
+python3 service.py --dry-run
+```
 
 ## Configure secrets
 
-Recommended required secrets/env vars (exact names can be adapted to implementation):
+Recommended env vars:
 
-- `GITHUB_APP_ID`
-- `GITHUB_APP_PRIVATE_KEY`
-- `GITHUB_WEBHOOK_SECRET`
-- `LINEAR_API_KEY` (or OAuth app credentials for app-actor mutations)
-- `LINEAR_WEBHOOK_SECRET`
-- `DRY_RUN` (default: `true`)
+- `DRY_RUN=true` (default)
+- `BOT_HOST=127.0.0.1`
+- `BOT_PORT=8787`
+- `GITHUB_APP_ID` (future live mode)
+- `GITHUB_APP_PRIVATE_KEY` (future live mode)
+- `GITHUB_WEBHOOK_SECRET` (future live mode)
+- `LINEAR_API_KEY` or OAuth app creds (future live mode)
+- `LINEAR_WEBHOOK_SECRET` (future live mode)
+
+Reference template:
+- `./config.example.env`
 
 ## Configure webhooks
 
@@ -42,20 +80,20 @@ Linear webhook events:
 Schedule:
 - daily aging scan for backlog/icebox transitions.
 
-## Attribution guardrails (fail-closed)
-
-- If GitHub actions appear as CJ instead of bot/app identity: stop and report `AUTH ATTRIBUTION WRONG`.
-- If Linear mutations appear as CJ instead of app actor: stop and report `LINEAR ACTOR WRONG`.
-
 ## Simulation runner
-
-Run sample event simulations locally:
 
 ```bash
 cd /Users/cjarguello/bitpod-app/bitpod-tools/linear/src
 python3 simulate.py --mode gh_opened --event ../events/sample_pr_opened.json
 python3 simulate.py --mode linear_comment --event ../events/sample_linear_comment_passed.json
 python3 simulate.py --mode aging_scan --event ../events/sample_aging_scan.json
+```
+
+Additional samples:
+
+```bash
+python3 simulate.py --mode gh_opened --event ../events/sample_pr_opened.json
+# PM label changed and merged gate are exercised through service payloads in ./events/
 ```
 
 ## Test
@@ -65,26 +103,17 @@ cd /Users/cjarguello/bitpod-app/bitpod-tools
 python3 -m unittest linear/tests/test_engine.py
 ```
 
-## Webhook service (dry-run default)
+## GitHub Actions smoke
 
-Run local service:
+PR checks run automatically for `linear/**` via:
+- `.github/workflows/linear-bot-smoke.yml`
 
-```bash
-cd /Users/cjarguello/bitpod-app/bitpod-tools/linear/src
-cp ../config.example.env ../.env  # optional
-python3 service.py --dry-run
-```
+## Attribution guardrails
 
-POST sample events:
+- If GitHub actions appear as CJ instead of bot/app identity: stop and report `AUTH ATTRIBUTION WRONG`.
+- If Linear mutations appear as CJ instead of app actor: stop and report `LINEAR ACTOR WRONG`.
 
-```bash
-curl -sS -X POST http://127.0.0.1:8787/github \
-  -H 'content-type: application/json' \
-  --data @../events/sample_pr_opened.json
+## Live-mode safety
 
-curl -sS -X POST http://127.0.0.1:8787/linear \
-  -H 'content-type: application/json' \
-  --data '{"type":"comment_created","issue_key":"BIT-45","comment_body":"QA_RESULT=PASSED","pr_url":"https://github.com/BitPod-App/bitpod-tools/pull/17"}'
-```
-
-Service is fail-closed for live mode until explicit API executor wiring is added.
+- Service live mode currently supports GitHub PR comments only.
+- Linear live mutation executor is intentionally fail-closed until final API/actor wiring is complete.
