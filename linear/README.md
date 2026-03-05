@@ -124,3 +124,25 @@ PR checks run automatically for `linear/**` via:
 - Runtime orchestration + memory abstraction lives in `src/runtime.py` + `src/memory.py`.
 - Transport adapters stay thin (`src/service.py`).
 - Cloudflare migration notes: `docs/cloudflare_migration_path.md`.
+
+## Cloudflare adapter (optional now, migration-ready)
+
+A Worker edge gateway scaffold is included at:
+- `linear/cloudflare/worker.mjs`
+- `linear/cloudflare/wrangler.toml`
+
+Purpose:
+- stable public webhook ingress (`/webhooks/github`, `/webhooks/linear`)
+- forward events to runtime backend (`BOT_ORIGIN`)
+- keep portability while enabling Cloudflare-first deployment path
+
+Quick start:
+```bash
+cd /Users/cjarguello/bitpod-app/bitpod-tools/linear/cloudflare
+wrangler deploy
+```
+
+Required Cloudflare secrets/vars:
+- `BOT_ORIGIN` (backend runtime URL)
+- `GITHUB_WEBHOOK_SECRET`
+- `LINEAR_WEBHOOK_SECRET`
