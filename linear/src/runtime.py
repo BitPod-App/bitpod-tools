@@ -58,6 +58,8 @@ class BotRuntime:
                 issue_key=event.get("issue_key", ""),
                 comment_body=event.get("comment_body", ""),
                 pr_url=event.get("pr_url", ""),
+                issue_labels=event.get("issue_labels", []),
+                issue_url=event.get("issue_url", ""),
             )
         elif kind == "issue_ready_gate":
             out = self.engine.on_linear_ready_gate(event.get("issue", {}))

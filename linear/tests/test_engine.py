@@ -56,6 +56,33 @@ class EngineTests(unittest.TestCase):
     def test_linear_comment_passed(self):
         actions = self.bot.on_linear_comment("BIT-45", "QA_RESULT=PASSED\nok", "https://pr")
         self.assertEqual(actions[0].payload["value"], "🔷 QA: Passed")
+        self.assertTrue(any(a.kind == "set_label" and a.payload.get("value") == "✴️ PM: Waiting" for a in actions))
+
+    def test_linear_comment_passed_keeps_pm_decision(self):
+        actions = self.bot.on_linear_comment(
+            "BIT-45",
+            "QA_RESULT=PASSED\nok",
+            "https://pr",
+            issue_labels=["❇️ PM: Approved"],
+        )
+        self.assertTrue(any(a.kind == "set_label" and a.payload.get("value") == "🔷 QA: Passed" for a in actions))
+        self.assertFalse(any(a.kind == "set_label" and a.payload.get("value") == "✴️ PM: Waiting" for a in actions))
+
+    def test_linear_comment_parses_pr_url_token(self):
+        actions = self.bot.on_linear_comment(
+            "BIT-45",
+            "QA_RESULT=FAILED\nPR_URL=https://github.com/BitPod-App/bitpod-tools/pull/123\nboom",
+            "",
+        )
+        gh = [a for a in actions if a.system == "github" and a.kind == "comment"][0]
+        self.assertEqual(gh.target, "https://github.com/BitPod-App/bitpod-tools/pull/123")
+
+    def test_linear_comment_without_pr_link_fails_closed(self):
+        actions = self.bot.on_linear_comment("BIT-45", "QA_RESULT=PASSED\nok", "")
+        self.assertEqual(len(actions), 1)
+        self.assertEqual(actions[0].system, "linear")
+        self.assertEqual(actions[0].kind, "comment")
+        self.assertIn("Linking incomplete", actions[0].payload.get("body", ""))
 
     def test_pm_rejected(self):
         actions = self.bot.on_linear_pm_label_change("BIT-45", "❌ PM: Rejected", "https://pr")

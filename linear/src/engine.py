@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional
 
 ISSUE_KEY_RE = re.compile(r"\b([A-Z]{2,}-\d+)\b")
 QA_TOKEN_RE = re.compile(r"QA_RESULT=(PASSED|FAILED)")
+PR_URL_TOKEN_RE = re.compile(r"PR_URL=(https?://[^\s]+)")
 
 REQUIRED_HEADINGS = [
     "Context",
@@ -97,6 +98,9 @@ class LinearBotEngine:
     def _issue_linking_comment(self) -> str:
         return "Missing Linear issue key; cannot automate."
 
+    def _linking_incomplete_comment(self) -> str:
+        return "Linking incomplete."
+
     def _linked_issue_from_pr(self, pr: Dict[str, Any]) -> Optional[str]:
         return (
             self.find_issue_key(pr.get("title", ""))
@@ -156,25 +160,45 @@ class LinearBotEngine:
 
         return []
 
-    def on_linear_comment(self, issue_key: str, comment_body: str, pr_url: str = "") -> List[Action]:
+    def _extract_pr_url_token(self, comment_body: str) -> str:
+        m = PR_URL_TOKEN_RE.search(comment_body or "")
+        return m.group(1) if m else ""
+
+    def on_linear_comment(
+        self,
+        issue_key: str,
+        comment_body: str,
+        pr_url: str = "",
+        issue_labels: Optional[List[str]] = None,
+        issue_url: str = "",
+    ) -> List[Action]:
         m = QA_TOKEN_RE.search(comment_body or "")
         if not m:
             return []
 
         token = m.group(1)
+        target_pr_url = self._extract_pr_url_token(comment_body) or pr_url
+        labels = set(issue_labels or [])
+        issue_ref = issue_url or issue_key
+
+        if not target_pr_url:
+            return [Action("linear", "comment", issue_key, {"body": self._linking_incomplete_comment()})]
+
         summary = "\n".join((comment_body or "").splitlines()[:10])
         if token == "FAILED":
             return [
                 Action("linear", "set_label", issue_key, {"group": "🧪 QA", "value": self.cfg.qa_failed}),
                 Action("linear", "set_status", issue_key, {"status": self._in_progress()}),
-                Action("github", "comment", pr_url, {"body": f"QA FAILED. Summary: {summary}. See Linear: {issue_key}"}),
+                Action("github", "comment", target_pr_url, {"body": f"QA FAILED. Summary: {summary}. See Linear: {issue_ref}"}),
             ]
 
-        return [
+        out = [
             Action("linear", "set_label", issue_key, {"group": "🧪 QA", "value": self.cfg.qa_passed}),
-            Action("linear", "set_label", issue_key, {"group": "🔑 PM", "value": self.cfg.pm_waiting}),
-            Action("github", "comment", pr_url, {"body": f"QA PASSED. Awaiting PM approval in Linear. {issue_key}"}),
+            Action("github", "comment", target_pr_url, {"body": f"QA PASSED. Awaiting PM approval in Linear. {issue_ref}"}),
         ]
+        if self.cfg.pm_approved not in labels and self.cfg.pm_rejected not in labels:
+            out.insert(1, Action("linear", "set_label", issue_key, {"group": "🔑 PM", "value": self.cfg.pm_waiting}))
+        return out
 
     def on_linear_pm_label_change(self, issue_key: str, pm_value: str, pr_url: str = "") -> List[Action]:
         if pm_value == self.cfg.pm_rejected:
