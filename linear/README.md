@@ -19,6 +19,7 @@ This folder contains the initial scaffold for Linear + GitHub workflow-enforceme
 
 - `./docs/linear_custom_configs_v1.md`
 - `./docs/process/linear_bot_v1_runbook.md`
+- `./docs/process/live_cutover_auth_batch.md`
 
 ## Current implementation coverage (v1)
 
