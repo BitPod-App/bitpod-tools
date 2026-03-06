@@ -31,6 +31,7 @@ Org: BitPod-App
 | UTC | Action | Result |
 |---|---|---|
 | 2026-03-06T05:50:xxZ | PATCH `/orgs/BitPod-App` with `members_can_delete_repositories=false` | No effective change (`true -> true`) |
+| 2026-03-06T05:53:xxZ | PATCH `/orgs/BitPod-App` with `two_factor_requirement_enabled=true` | No effective change (`false -> false`) |
 
 ## Repositories
 
@@ -49,3 +50,4 @@ Org: BitPod-App
 - `members_can_delete_repositories` can be safely tightened without lockout risk.
 - Enabling `two_factor_requirement_enabled` can remove members without 2FA and should be treated as a coordinated change.
 - The API patch attempt for `members_can_delete_repositories` did not take effect; verify if this control is plan-restricted or requires UI-only path.
+- Precheck for 2FA lockout risk was clean (`filter=2fa_disabled` returned none), but API patch still did not take effect.
