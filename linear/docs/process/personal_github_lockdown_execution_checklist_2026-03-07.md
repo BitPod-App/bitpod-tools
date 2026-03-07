@@ -59,3 +59,11 @@ If org access breaks after revoke:
 1. Stop further revocations.
 2. Re-authorize only the minimum org-scoped integration required.
 3. Re-run Phase C before proceeding.
+
+## One-command verification helper
+
+```bash
+/Users/cjarguello/bitpod-app/bitpod-tools/linear/scripts/personal_lockdown_verify.sh
+```
+
+Generates a markdown report under `/tmp/` with auth/install/reachability smoke outputs.
