@@ -21,6 +21,9 @@ Inputs:
 | `backup/tools/chatgpt-prompts/*` | prompt assets | REVIEW | `active/bitpod-tools/docs/` (or designated prompts dir) | Keep if still in use; otherwise archive. |
 | `backup/tools/gpt_bridge/*` (excluding secrets) | bridge scripts/docs | REVIEW | `active/bitpod-tools/gpt_bridge/` | Some likely superseded by current branch changes. |
 | `backup/tools/gpt_bridge/.env` | secret material | DROP | n/a | Never migrate raw secrets from legacy backup. |
+| `backup/tools/gpt_bridge/logs/memory_store.jsonl` | runtime log artifact | ARCHIVE | n/a | Historical runtime state; keep in cold archive, do not migrate to active repo. |
+| `backup/tools/artifacts/cost-meter/cost_events.jsonl` | generated metric artifact | ARCHIVE | n/a | Retain in cold archive only; avoid active-path pollution. |
+| `backup/tools/costs/__pycache__/*` | compiled cache | DROP | n/a | Reproducible cache output; safe to delete. |
 | `backup/taylor-runtime/artifacts/*` | runtime outputs/logs | ARCHIVE | n/a | Large historical run evidence; keep compressed if needed, not active workspace. |
 | `backup/bitpod/.venv*` and `site-packages` | generated env deps | DROP | n/a | Reproducible local environments. |
 | `backup/bitpod/artifacts/*` (legacy run outputs) | generated artifacts | ARCHIVE | n/a | Preserve briefly for auditability then drop. |
