@@ -1,0 +1,177 @@
+# Backup Dedupe Mapping: docs/process + tools (2026-03-07)
+
+Related issue: https://linear.app/bitpod-app/issue/BIT-50/retire-legacy-local-backup-workspace-after-migration-hardening-bitpod
+
+## Backup docs/process path mapping
+
+- .DS_Store
+  - status: NO_DIRECT_MATCH
+  - target: (none)
+- anti-drift-playbook.md
+  - status: NO_DIRECT_MATCH
+  - target: (none)
+- canonical-path-contract.md
+  - status: NO_DIRECT_MATCH
+  - target: (none)
+- local-workspace-cleanup-runbook.md
+  - status: NO_DIRECT_MATCH
+  - target: (none)
+- project-sources/00_CANONICAL_REFS_AND_PINS_v1.json
+  - status: NO_DIRECT_MATCH
+  - target: (none)
+- project-sources/00_CANONICAL_REFS_AND_PINS_v1.md
+  - status: NO_DIRECT_MATCH
+  - target: (none)
+- project-sources/01_PRODUCT_INTENT_ONE_PAGER_v1.md
+  - status: NO_DIRECT_MATCH
+  - target: (none)
+- project-sources/02_JTBD_AND_CORE_FLOWS_MIN_v1.md
+  - status: NO_DIRECT_MATCH
+  - target: (none)
+- project-sources/03_DECISIONS_LOG_MIN_v1.md
+  - status: NO_DIRECT_MATCH
+  - target: (none)
+- project-sources/10_TECHNICAL_CONTRACTS_INDEX_v1.md
+  - status: NO_DIRECT_MATCH
+  - target: (none)
+- project-sources/11_RUNTIME_GOVERNANCE_CONTRACT_v1.md
+  - status: NO_DIRECT_MATCH
+  - target: (none)
+- project-sources/12_ENV_AND_SECRET_BOUNDARIES_v1.md
+  - status: NO_DIRECT_MATCH
+  - target: (none)
+- project-sources/13_AGENT_EXECUTION_GATES_v1.md
+  - status: NO_DIRECT_MATCH
+  - target: (none)
+- project-sources/README.md
+  - status: NO_DIRECT_MATCH
+  - target: (none)
+- project-sources/validate_pins.py
+  - status: NO_DIRECT_MATCH
+  - target: (none)
+- prompt-governance.md
+  - status: NO_DIRECT_MATCH
+  - target: (none)
+- read-first-protocol.md
+  - status: NO_DIRECT_MATCH
+  - target: (none)
+- spec-lock-checklist.md
+  - status: NO_DIRECT_MATCH
+  - target: (none)
+- temporary-jtbd-thread-workflow-2026-02-27.md
+  - status: NO_DIRECT_MATCH
+  - target: (none)
+
+## Backup tools path mapping
+
+- .DS_Store
+  - status: MATCH_IN_BITPOD_TOOLS
+  - target: /Users/cjarguello/bitpod-app/bitpod-tools/.DS_Store
+- .gitignore
+  - status: MATCH_IN_BITPOD_TOOLS
+  - target: /Users/cjarguello/bitpod-app/bitpod-tools/.gitignore
+- artifacts/cost-meter/cost_events.jsonl
+  - status: NO_DIRECT_MATCH
+  - target: (none)
+- audit_ctl.sh
+  - status: MATCH_IN_BITPOD_TOOLS
+  - target: /Users/cjarguello/bitpod-app/bitpod-tools/audit_ctl.sh
+- chatgpt-prompts/README.md
+  - status: MATCH_IN_BITPOD_TOOLS
+  - target: /Users/cjarguello/bitpod-app/bitpod-tools/chatgpt-prompts/README.md
+- chatgpt-prompts/weekly-btc/weekly-btc-prompts.md
+  - status: MATCH_IN_BITPOD_TOOLS
+  - target: /Users/cjarguello/bitpod-app/bitpod-tools/chatgpt-prompts/weekly-btc/weekly-btc-prompts.md
+- costs/__pycache__/cost_meter.cpython-311.pyc
+  - status: NO_DIRECT_MATCH
+  - target: (none)
+- costs/cost_ctl.py
+  - status: MATCH_IN_BITPOD_TOOLS
+  - target: /Users/cjarguello/bitpod-app/bitpod-tools/costs/cost_ctl.py
+- costs/cost_meter.py
+  - status: MATCH_IN_BITPOD_TOOLS
+  - target: /Users/cjarguello/bitpod-app/bitpod-tools/costs/cost_meter.py
+- docs/README.md
+  - status: MATCH_IN_BITPOD_TOOLS
+  - target: /Users/cjarguello/bitpod-app/bitpod-tools/docs/README.md
+- gpt_bridge/.env
+  - status: MATCH_IN_BITPOD_TOOLS
+  - target: /Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge/.env
+- gpt_bridge/.gitignore
+  - status: MATCH_IN_BITPOD_TOOLS
+  - target: /Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge/.gitignore
+- gpt_bridge/README.md
+  - status: MATCH_IN_BITPOD_TOOLS
+  - target: /Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge/README.md
+- gpt_bridge/ask_gpt.py
+  - status: MATCH_IN_BITPOD_TOOLS
+  - target: /Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge/ask_gpt.py
+- gpt_bridge/ask_gpt.sh
+  - status: MATCH_IN_BITPOD_TOOLS
+  - target: /Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge/ask_gpt.sh
+- gpt_bridge/ask_once.sh
+  - status: MATCH_IN_BITPOD_TOOLS
+  - target: /Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge/ask_once.sh
+- gpt_bridge/bridge_chat.py
+  - status: MATCH_IN_BITPOD_TOOLS
+  - target: /Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge/bridge_chat.py
+- gpt_bridge/bridge_chat.sh
+  - status: MATCH_IN_BITPOD_TOOLS
+  - target: /Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge/bridge_chat.sh
+- gpt_bridge/bridge_ctl.sh
+  - status: MATCH_IN_BITPOD_TOOLS
+  - target: /Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge/bridge_ctl.sh
+- gpt_bridge/config.example.env
+  - status: MATCH_IN_BITPOD_TOOLS
+  - target: /Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge/config.example.env
+- gpt_bridge/gpt_bridge.py
+  - status: MATCH_IN_BITPOD_TOOLS
+  - target: /Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge/gpt_bridge.py
+- gpt_bridge/gpt_bridge_mcp.py
+  - status: MATCH_IN_BITPOD_TOOLS
+  - target: /Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge/gpt_bridge_mcp.py
+- gpt_bridge/logs/.gitkeep
+  - status: MATCH_IN_BITPOD_TOOLS
+  - target: /Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge/logs/.gitkeep
+- gpt_bridge/logs/bridge.jsonl
+  - status: MATCH_IN_BITPOD_TOOLS
+  - target: /Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge/logs/bridge.jsonl
+- gpt_bridge/logs/bridge.pid
+  - status: MATCH_IN_BITPOD_TOOLS
+  - target: /Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge/logs/bridge.pid
+- gpt_bridge/logs/bridge_start.log
+  - status: MATCH_IN_BITPOD_TOOLS
+  - target: /Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge/logs/bridge_start.log
+- gpt_bridge/logs/chat.jsonl
+  - status: MATCH_IN_BITPOD_TOOLS
+  - target: /Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge/logs/chat.jsonl
+- gpt_bridge/logs/memory_store.jsonl
+  - status: NO_DIRECT_MATCH
+  - target: (none)
+- gpt_bridge/logs/session_state.json
+  - status: MATCH_IN_BITPOD_TOOLS
+  - target: /Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge/logs/session_state.json
+- gpt_bridge/logs/view_state.json
+  - status: MATCH_IN_BITPOD_TOOLS
+  - target: /Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge/logs/view_state.json
+- gpt_bridge/quick_test.sh
+  - status: MATCH_IN_BITPOD_TOOLS
+  - target: /Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge/quick_test.sh
+- gpt_bridge/schemas.py
+  - status: MATCH_IN_BITPOD_TOOLS
+  - target: /Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge/schemas.py
+- linear/docs/README.md
+  - status: MATCH_IN_ACTIVE_TOOLS
+  - target: /Users/cjarguello/bitpod-app/tools/linear/docs/README.md
+
+## Computed summary
+
+- docs/process total: 19
+  - match active/docs/process: 0
+  - match bitpod-tools/linear/docs/process: 0
+  - no direct match: 19
+
+- tools total: 33
+  - match active/tools: 1
+  - match bitpod-tools: 29
+  - no direct match: 3
