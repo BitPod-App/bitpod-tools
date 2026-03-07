@@ -3,58 +3,42 @@
 Date: 2026-03-07
 Org: `BitPod-App`
 
-## Target controls
+## Applied baseline
 
 - Dependabot security updates: enabled
 - Secret scanning: enabled
 - Secret scanning push protection: enabled
-- Dependency graph / code security: best-effort (plan-dependent)
-- Branch protection / rulesets: consistent baseline required
+- Branch protection on `main`: enabled
+  - Require pull request reviews: yes (1 approval)
+  - Enforce admins: no (owner bypass allowed in Phase 1)
+  - Allow force pushes: no
+  - Allow deletions: no
+- Rulesets: no empty/inert rulesets remaining
 
-## Current repo-by-repo state
+## Repo-by-repo final state
 
-| Repo | Dependabot Sec Updates | Secret Scanning | Push Protection | Code Security | Branch Protection on `main` | Rulesets |
-|---|---:|---:|---:|---:|---:|---|
-| `bitpod-tools` | enabled | enabled | enabled | disabled | no | none |
-| `sector-feeds` | enabled | enabled | enabled | disabled | no | `Basic Main Rules` (0 rules) |
-| `linear` | enabled | enabled | enabled | disabled | no | none |
-| `bitpod-docs` | enabled | enabled | enabled | disabled | no | none |
-| `bitregime-core` | enabled | enabled | enabled | disabled | no | none |
-| `bitpod-taylor-runtime` | enabled | enabled | enabled | disabled | no | none |
+| Repo | Dependabot Sec Updates | Secret Scanning | Push Protection | Main protected | PR approvals required | Force push blocked | Deletion blocked |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| `bitpod-tools` | enabled | enabled | enabled | yes | 1 | yes | yes |
+| `sector-feeds` | enabled | enabled | enabled | yes | 1 | yes | yes |
+| `linear` | enabled | enabled | enabled | yes | 1 | yes | yes |
+| `bitpod-docs` | enabled | enabled | enabled | yes | 1 | yes | yes |
+| `bitregime-core` | enabled | enabled | enabled | yes | 1 | yes | yes |
+| `bitpod-taylor-runtime` | enabled | enabled | enabled | yes | 1 | yes | yes |
 
-## Commands used
+## Notes
+
+- `code_security` remains disabled in API responses; treated as plan/feature-gated and excluded from Phase 1 pass criteria.
+- Removed stale empty ruleset from `sector-feeds` (`Basic Main Rules`, 0 rules).
+
+## Verification commands
 
 ```bash
-# State snapshot
-gh repo list BitPod-App --limit 200 --json name --jq '.[].name'
-
-# Apply security_and_analysis
-gh api -X PATCH /repos/BitPod-App/<repo> \
-  -f security_and_analysis[secret_scanning][status]=enabled \
-  -f security_and_analysis[secret_scanning_push_protection][status]=enabled \
-  -f security_and_analysis[dependabot_security_updates][status]=enabled
-
-# Verify
-for r in <repos>; do
+repos=$(gh repo list BitPod-App --limit 200 --json name --jq '.[].name')
+for r in $repos; do
   gh api /repos/BitPod-App/$r --jq '{name,security_and_analysis}'
-  gh api /repos/BitPod-App/$r/branches/main/protection
+  gh api /repos/BitPod-App/$r/branches/main/protection --jq '{allow_force_pushes,allow_deletions,enforce_admins}'
+  gh api /repos/BitPod-App/$r/branches/main/protection/required_pull_request_reviews --jq '{required_approving_review_count}'
   gh api /repos/BitPod-App/$r/rulesets
  done
 ```
-
-## Findings
-
-1. Security analysis controls were enabled successfully on all repos for Dependabot + Secret Scanning + Push Protection.
-2. `code_security` remains disabled on all repos (likely plan/feature-level constraint).
-3. Branch protection consistency is not yet established:
-   - No branch protection on `main` for all repos.
-   - One repo (`sector-feeds`) has an active ruleset with zero rules.
-
-## Proposed safe next action
-
-Define a minimal org-wide branch baseline in BIT-25 before applying:
-- Require PR for `main`
-- Block force-push on `main`
-- Keep bypass for org owners initially (to avoid migration deadlocks)
-
-Then apply consistently across all six repos and re-run this matrix.
