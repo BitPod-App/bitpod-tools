@@ -14,6 +14,8 @@ Date: 2026-03-07
 - File counts (quick):
   - Active: `4832`
   - Backup: `9144`
+- Detailed parity artifact:
+  - `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/backup_workspace_parity_snapshot_2026-03-07.md`
 
 ## Top-level directory delta
 
@@ -43,6 +45,10 @@ Backup git repos:
 - `docs`
 - `taylor-runtime`
 - `tools`
+
+Remote mismatch captured:
+- Active `bitpod` remote now points to `BitPod-App/sector-feeds`.
+- Backup `bitpod` remote still points to legacy `BitPod-App/bitpod`.
 
 ## Interpretation
 
