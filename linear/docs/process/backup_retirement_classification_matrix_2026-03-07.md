@@ -57,5 +57,5 @@ rm -f  /Users/cjarguello/bitpod-app-backup-2026-03-02/tools/gpt_bridge/.env
 
 - Classification table approved.
 - Required MIGRATE items copied and verified.
-- ARCHIVE tarball exists and checksum recorded.
+- ARCHIVE tarball exists and checksum recorded. (Done: see `backup_cold_archive_evidence_2026-03-07.md`)
 - Explicit delete approval captured in BIT-50.
