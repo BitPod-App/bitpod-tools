@@ -10,6 +10,32 @@ Domain: `bitpod.app`
 - DMARC present: `p=none` (monitor mode)
 - MX present (Cloudflare Email Routing)
 - DKIM selectors not yet verified for active sender providers
+- Cloudflare API token currently available to automation has `zone:read` but not `dns_records:read` (cannot programmatically list selectors yet)
+
+## 2026-03-07 live evidence snapshot
+
+Verified via terminal:
+
+```bash
+dig +short bitpod.app TXT
+dig +short _dmarc.bitpod.app TXT
+```
+
+Observed:
+- `openai-domain-verification=dv-E8xAQo7JvLQb23GlwUrcKAFd`
+- `v=spf1 include:_spf.mx.cloudflare.net ~all`
+- `v=DMARC1; p=none; rua=mailto:cj.project.hq@gmail.com; fo=1; adkim=s; aspf=s; pct=100`
+
+Cloudflare API permission probe:
+
+```bash
+curl /zones?name=bitpod.app      # success
+curl /zones/<id>/dns_records     # authentication error (missing dns read scope)
+```
+
+Implication:
+- We can confirm public SPF/DMARC posture now.
+- We cannot enumerate authoritative DKIM selector records until token scopes are expanded or selectors are provided from sender dashboards.
 
 ## Goal state
 

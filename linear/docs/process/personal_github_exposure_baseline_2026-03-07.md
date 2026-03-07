@@ -10,6 +10,7 @@ Date: 2026-03-07
 - Org-level installed app on `BitPod-App`:
   - `chatgpt-codex-connector`
   - repository selection: `all`
+  - installation id: `113661755`
   - permissions: actions/checks/contents/issues/metadata/pull_requests/statuses/workflows
 - Org hardening controls confirmed:
   - `two_factor_requirement_enabled=true`
@@ -22,6 +23,7 @@ Date: 2026-03-07
 - `GET /user/installations` returned HTTP 403 with PAT auth context:
   - "You must authenticate with an access token authorized to a GitHub App..."
 - Meaning: personal-account app-install inventory cannot be fully extracted with current PAT; use GitHub UI for complete personal authorized apps/OAuth review.
+- `GET /orgs/BitPod-App/installations` is accessible and confirms current org app installation state for cross-check.
 
 ## UI checklist for final lock-down (Phase 3)
 

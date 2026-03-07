@@ -11,6 +11,7 @@ Domain: `bitpod.app`
   - `route1.mx.cloudflare.net`
   - `route2.mx.cloudflare.net`
   - `route3.mx.cloudflare.net`
+- Apex TXT also includes OpenAI domain verification token.
 
 ## Sender/provider inventory (fill)
 
@@ -21,6 +22,11 @@ Domain: `bitpod.app`
 | Alerts/bot notifications | UNKNOWN | UNKNOWN | UNKNOWN | no | no | |
 | Marketing/newsletter | UNKNOWN | UNKNOWN | UNKNOWN | no | no | |
 | Forwarding-only mailbox | Cloudflare Email Routing | `*@bitpod.app` | n/a | yes | yes | receiving only |
+
+## Current blocker
+
+- Cloudflare token used by automation cannot list DNS records (`/dns_records` returns authentication error).
+- Action required: create/rotate Cloudflare API token with at least `Zone -> DNS -> Read` for `bitpod.app`, then rerun selector inventory.
 
 ## Verification commands
 
