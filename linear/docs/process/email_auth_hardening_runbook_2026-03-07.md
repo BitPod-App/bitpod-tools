@@ -105,4 +105,7 @@ dig +short _dmarc.bitpod.app TXT
 dig +short bitpod.app MX
 # per selector
 dig +short <selector>._domainkey.bitpod.app TXT
+
+# reusable probe helper (writes markdown report)
+linear/scripts/email_auth_probe.sh bitpod.app
 ```
