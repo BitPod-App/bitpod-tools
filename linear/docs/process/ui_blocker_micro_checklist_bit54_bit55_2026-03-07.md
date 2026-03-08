@@ -22,9 +22,8 @@ Related issues:
 
 1. GitHub org page: https://github.com/BitPod-App
 2. Upload temporary placeholder logo/avatar.
-3. Pin exactly 3 repos:
+3. Pin exactly 2 repos:
    - `sector-feeds`
-   - `bitpod-docs`
    - `bitpod-tools`
 4. Confirm org bio and descriptions are still clean.
 
@@ -38,5 +37,5 @@ Run:
 
 Expected:
 - Cloudflare DNS-record probe returns success.
-- GitHub org pinned repos include the three target repos.
+- GitHub org pinned repos include the two target repos.
 - Markdown report path printed for evidence posting.

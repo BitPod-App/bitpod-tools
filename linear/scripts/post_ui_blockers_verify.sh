@@ -41,7 +41,6 @@ fi
   echo
   echo "## Target pins expected"
   echo "- sector-feeds"
-  echo "- bitpod-docs"
   echo "- bitpod-tools"
 } > "$OUT"
 

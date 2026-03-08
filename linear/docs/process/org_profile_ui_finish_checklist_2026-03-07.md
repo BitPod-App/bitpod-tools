@@ -5,17 +5,16 @@ Related issue: https://linear.app/bitpod-app/issue/BIT-55/org-profile-cleanup-pa
 ## Completed via API/CLI
 
 - Org display name: `BitPod App`
-- Org bio: `Publishing Bitcoin theses with disciplined signal and execution.`
+- Org bio: `🎙️ Broadcast your Bitcoin thesis. See what tracks. 🚧 WIP.`
 - Repo descriptions standardized for all six org repos.
 
 ## Remaining UI-only tasks
 
 1. Upload placeholder org avatar/logo.
-2. Pin 2–3 repos on org profile.
+2. Pin exactly 2 repos on org profile.
 
-Recommended pins (per agreed structure):
+Pinned set (approved):
 - Main product repo: `sector-feeds`
-- Docs/spec/process repo: `bitpod-docs`
 - Infra/tooling repo: `bitpod-tools`
 
 ## Why UI-only
@@ -26,5 +25,5 @@ Attempted GitHub GraphQL mutation from CLI:
 
 ## Verification after UI changes
 
-- Visit org page and confirm exactly 3 pinned repos are visible.
+- Visit org page and confirm exactly 2 pinned repos are visible.
 - Confirm avatar renders correctly in light and dark theme.

@@ -28,5 +28,4 @@ sed -n '1,220p' /tmp/post_ui_blockers_verify_after_ui.md
 - Cloudflare dns_records probe returns `"success":true`
 - Pinned repos include:
   - `sector-feeds`
-  - `bitpod-docs`
   - `bitpod-tools`
