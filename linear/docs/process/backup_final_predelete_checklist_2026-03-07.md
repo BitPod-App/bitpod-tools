@@ -12,12 +12,12 @@ Related issue: https://linear.app/bitpod-app/issue/BIT-50/retire-legacy-local-ba
 - [x] low-risk docs migration (`archive/learnings`) complete
 - [x] low-risk docs migration (`archive/reference-candidates`) complete
 - [x] preservation copy of `backup/docs/process` complete
+- [x] preservation copy of backup prompt assets complete
+- [x] preservation copy of backup tools residual logs/artifacts complete
 - [x] destructive command plan drafted (not executed)
 
 ## Remaining decisions before full backup deletion
 
-- [ ] Confirm whether `backup/tools/chatgpt-prompts/*` should be migrated into active canonical prompts path or left archived only.
-- [ ] Confirm whether any remaining legacy `backup/tools/gpt_bridge/*` logs should be retained beyond cold archive.
 - [ ] Explicit delete approval for full folder removal:
   - `/Users/cjarguello/bitpod-app-backup-2026-03-02`
 
