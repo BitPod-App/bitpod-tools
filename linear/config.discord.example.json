@@ -1,0 +1,10 @@
+{
+  "webhooks": {
+    "ops_status": "https://discord.com/api/webhooks/REPLACE/REPLACE",
+    "build": "https://discord.com/api/webhooks/REPLACE/REPLACE",
+    "review_qa": "https://discord.com/api/webhooks/REPLACE/REPLACE",
+    "release": "https://discord.com/api/webhooks/REPLACE/REPLACE",
+    "incidents": "https://discord.com/api/webhooks/REPLACE/REPLACE"
+  },
+  "message_prefix": "[BitPod Phase2 parity]"
+}
