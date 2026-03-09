@@ -1,0 +1,27 @@
+name: linear-bot-smoke
+
+on:
+  pull_request:
+    paths:
+      - 'linear/**'
+      - '.github/workflows/linear-bot-smoke.yml'
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Run unit tests
+        run: |
+          python -m unittest linear/tests/test_engine.py linear/tests/test_runtime.py linear/tests/test_e2e_flow.py
+      - name: Run sample simulations
+        run: |
+          cd linear/src
+          python simulate.py --mode gh_opened --event ../events/sample_pr_opened.json
+          python simulate.py --mode linear_comment --event ../events/sample_linear_comment_passed.json
+          python simulate.py --mode aging_scan --event ../events/sample_aging_scan.json
+          python simulate_e2e.py
