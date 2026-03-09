@@ -34,6 +34,7 @@ Define the canonical way BitPod agents use Linear for execution tracking, eviden
 4. Capability degradation handling
 - If tool behavior is impaired, stop speculative actions and post minimal verified state.
 - Continue with smallest reversible step or park with explicit blocker.
+- Use `capability_state_truth_label_incident_protocol_v1.md` as mandatory incident-response workflow.
 
 ## Current workspace status model (as of v1)
 
@@ -63,6 +64,7 @@ Artifacts:
 - `github_repo_security_matrix_2026-03-07.md`
 - `governance_parity_checklist_2026-03-07.md`
 - `linear_link_reference_policy_v1.md`
+- `capability_state_truth_label_incident_protocol_v1.md`
 
 ## Rollback path
 
