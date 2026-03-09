@@ -4,14 +4,14 @@ Status: Draft v1 (Phase 1)
 Owner: PM/Platform
 Implements: BIT-23
 Consumed by: BIT-11
-Last updated: 2026-03-06
+Last updated: 2026-03-09
 
 ## Scope
 Applies to GitHub organization `BitPod-App` and all repos under the org.
 
 ## Security Minimums
 - Require 2FA for all organization members.
-- Private repositories by default.
+- Private repositories by default; public exposure allowed only by explicit PM/owner decision.
 - Restrict repository creation/deletion to owners/admin-approved roles.
 - Enforce branch protection/rulesets on default branches.
 - Enable security scanning baseline across repos (secret scanning, dependency graph, Dependabot alerts).
@@ -33,7 +33,8 @@ Applies to GitHub organization `BitPod-App` and all repos under the org.
 | Policy Control | GitHub Setting Path | Target Value |
 |---|---|---|
 | Enforce MFA | Org Settings -> Security -> Authentication security | Require 2FA = On |
-| Default repo visibility | Org Settings -> Member privileges / Repository defaults | Private |
+| Default repo visibility | Org Settings -> Member privileges / Repository defaults | Private by default |
+| Public repo exception policy | Org-level decision log + repo settings | Only explicitly approved repos can be public |
 | Restrict repo creation | Org Settings -> Member privileges | Limited to approved roles |
 | Restrict repo deletion/transfer | Org Settings -> Repository administration | Owners/Admin only |
 | Branch protection baseline | Repo Settings -> Branches / Rulesets | Protect default branch; require PR for merge |
