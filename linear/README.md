@@ -26,6 +26,9 @@ This folder contains the initial scaffold for Linear + GitHub workflow-enforceme
 - `./docs/process/taylor_orchestrator_contract_v1.md`
 - `./docs/process/agent_handoff_templates_v1.md`
 - `./docs/process/delegated_execution_sample_run_v1.md`
+- `./docs/process/specialist_agent_registry_v1.md`
+- `./docs/process/qa_authority_model_v1.md`
+- `./docs/process/agent_runtime_portability_plan_v1.md`
 - `./docs/process/capability_state_truth_label_incident_protocol_v1.md`
 - `./docs/process/linear_link_reference_policy_v1.md`
 - `./docs/process/linear_operating_guide_changelog.md`
