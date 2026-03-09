@@ -28,8 +28,8 @@ Define the canonical way BitPod agents use Linear for execution tracking, eviden
 - Store durable artifacts in repo under `/bitpod-tools/linear/docs/process/`.
 
 3. Link hygiene
-- Linear issue refs should be full links when posted in chat/docs.
-- PR updates should include related Linear issue reference.
+- Linear issue refs and PR refs must follow `linear_link_reference_policy_v1.md`.
+- If title lookup is unavailable, use degraded fallback format (ID + full URL) instead of guessing.
 
 4. Capability degradation handling
 - If tool behavior is impaired, stop speculative actions and post minimal verified state.
@@ -62,6 +62,7 @@ Artifacts:
 - `github_org_team_access_map_2026-03-07.md`
 - `github_repo_security_matrix_2026-03-07.md`
 - `governance_parity_checklist_2026-03-07.md`
+- `linear_link_reference_policy_v1.md`
 
 ## Rollback path
 
