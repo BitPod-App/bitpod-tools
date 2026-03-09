@@ -25,6 +25,12 @@ This folder contains the initial scaffold for Linear + GitHub workflow-enforceme
 - `./docs/process/linear_link_reference_policy_v1.md`
 - `./docs/process/linear_operating_guide_changelog.md`
 
+## Phase 2 planning seeds
+
+- `./docs/process/discord_migration_architecture_v1.md`
+- `./docs/process/discord_command_parity_matrix_v1.md`
+- `./docs/process/discord_webhook_parity_checks_v1.md`
+
 ## Current implementation coverage (v1)
 
 Implemented in engine/service:
