@@ -30,6 +30,7 @@ This folder contains the initial scaffold for Linear + GitHub workflow-enforceme
 - `./docs/process/discord_migration_architecture_v1.md`
 - `./docs/process/discord_command_parity_matrix_v1.md`
 - `./docs/process/discord_webhook_parity_checks_v1.md`
+- `./docs/process/discord_phase2_prereq_execution_runbook_v1.md`
 
 ## Current implementation coverage (v1)
 
