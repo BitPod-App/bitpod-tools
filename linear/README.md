@@ -21,6 +21,7 @@ This folder contains the initial scaffold for Linear + GitHub workflow-enforceme
 - `./docs/process/linear_bot_v1_runbook.md`
 - `./docs/process/live_cutover_auth_batch.md`
 - `./docs/process/linear_operating_guide_v1.md`
+- `./docs/process/startup_operating_model_v1.md`
 - `./docs/process/capability_state_truth_label_incident_protocol_v1.md`
 - `./docs/process/linear_link_reference_policy_v1.md`
 - `./docs/process/linear_operating_guide_changelog.md`
