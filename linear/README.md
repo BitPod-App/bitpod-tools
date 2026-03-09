@@ -24,6 +24,7 @@ This folder contains the initial scaffold for Linear + GitHub workflow-enforceme
 - `./docs/process/capability_state_truth_label_incident_protocol_v1.md`
 - `./docs/process/linear_link_reference_policy_v1.md`
 - `./docs/process/linear_operating_guide_changelog.md`
+- `./docs/process/post_bootstrap_hardening_runbook_v1.md`
 
 ## Phase 2 planning seeds
 
