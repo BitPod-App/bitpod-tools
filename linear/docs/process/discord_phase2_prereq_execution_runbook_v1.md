@@ -43,6 +43,27 @@ python3 linear/scripts/discord_webhook_smoke.py --config linear/config.discord.e
 
 Then run live with real config file outside git.
 
+## Fast evidence pack (recommended)
+
+Generate one markdown pack covering sanitized route map + smoke + parity outputs:
+
+```bash
+cd /Users/cjarguello/bitpod-app/bitpod-tools
+python3 linear/scripts/discord_phase2_evidence_pack.py \
+  --config /ABS/PATH/private.discord.config.json \
+  --out /Users/cjarguello/bitpod-app/local-workspace/local-working-files/discord_phase2_evidence_pack.md
+```
+
+Live check mode:
+
+```bash
+cd /Users/cjarguello/bitpod-app/bitpod-tools
+python3 linear/scripts/discord_phase2_evidence_pack.py \
+  --config /ABS/PATH/private.discord.config.json \
+  --out /Users/cjarguello/bitpod-app/local-workspace/local-working-files/discord_phase2_evidence_pack_live.md \
+  --live
+```
+
 ## Completion evidence contract for BIT-59
 - Status line: `<from> -> <to> + transition reason`
 - Commands/UI checks executed

@@ -1,4 +1,15 @@
 {
+  "discord": {
+    "server_name": "BitPod",
+    "server_id": "REPLACE_SERVER_ID",
+    "channels": {
+      "ops_status": { "name": "00-ops-status", "id": "REPLACE_CHANNEL_ID" },
+      "build": { "name": "30-build", "id": "REPLACE_CHANNEL_ID" },
+      "review_qa": { "name": "40-review-qa", "id": "REPLACE_CHANNEL_ID" },
+      "release": { "name": "50-release", "id": "REPLACE_CHANNEL_ID" },
+      "incidents": { "name": "60-incidents", "id": "REPLACE_CHANNEL_ID" }
+    }
+  },
   "webhooks": {
     "ops_status": "https://discord.com/api/webhooks/REPLACE/REPLACE",
     "build": "https://discord.com/api/webhooks/REPLACE/REPLACE",
