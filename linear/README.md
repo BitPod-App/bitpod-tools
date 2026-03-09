@@ -33,6 +33,7 @@ This folder contains the initial scaffold for Linear + GitHub workflow-enforceme
 - `./docs/process/linear_link_reference_policy_v1.md`
 - `./docs/process/linear_operating_guide_changelog.md`
 - `./docs/process/post_bootstrap_hardening_runbook_v1.md`
+- `./docs/process/legacy_identity_sweep_remediation_2026-03-09.md`
 
 ## Phase 2 planning seeds
 
