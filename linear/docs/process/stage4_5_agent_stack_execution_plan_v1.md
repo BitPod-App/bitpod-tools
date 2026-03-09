@@ -9,7 +9,7 @@ Purpose: Integrate the Taylor-hub specialist model into chronological execution 
 - Specialists are constrained execution spokes.
 - Linear is execution system-of-record.
 - Repo/docs are implementation memory.
-- Discord is lean status surface, not primary database.
+- Communication surfaces (Discord now, dashboard later) are adapters, not primary databases.
 
 ## Stage Model (chronological)
 
@@ -46,7 +46,7 @@ Purpose: Integrate the Taylor-hub specialist model into chronological execution 
 2. Memory stewardship service (proposal + approval + contradiction scan)
 3. Governance and action policy enforcement
 4. Evaluation suites and regression gates
-5. Communication hygiene (summary-first Discord policy + linkage)
+5. Communication hygiene (summary-first adapter contract + source-of-record linkage)
 
 ## CJ-Required Checkpoints (only when unavoidable)
 
@@ -55,6 +55,10 @@ Purpose: Integrate the Taylor-hub specialist model into chronological execution 
 - final approval for destructive hardening actions
 
 Everything else should continue in autopilot mode.
+
+## Portability note
+
+Phase 2 remains Discord-first for speed, but all new communication automation should target a transport-agnostic event envelope so migration to an internal dashboard (or another surface) is low-friction.
 
 ## Evidence Rule
 
