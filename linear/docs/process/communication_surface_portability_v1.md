@@ -50,3 +50,28 @@ Before declaring communication layer mature:
 
 - Keep completing Phase 2 parity via Discord because it is the active path now.
 - Build all new communication work so it can switch transports with minimal refactor.
+
+## Discord Baseline Matrix
+
+| Canonical intent | Current Discord channel | Payload focus | Required links | Dashboard-ready mapping |
+| --- | --- | --- | --- | --- |
+| ops_status | `ops-status` | deploy state, health state, non-interactive automation summaries | Linear issue or artifact | operational feed / status rail |
+| build | `build` | implementation progress, PR-level execution summaries, smoke outcomes | PR + Linear issue | build stream |
+| review_qa | `review-qa` | QA verdicts, review blockers, pass/fail summaries | PR + artifact + Linear issue | review queue |
+| release | `release` | merge-ready state, release cut notes, rollout checkpoints | PR + release artifact | release board |
+| incidents | `incidents` | degraded capability, outage notices, incident containment updates | incident issue + artifact | incident console |
+
+Rules for all rows:
+
+- Only summary-first messages belong in the transport adapter.
+- Raw execution traces stay in repo artifacts or linked systems.
+- Every post must include at least one durable reference: Linear issue, PR, or artifact path/link.
+- Channel routing must be config-driven, never hardcoded into business logic.
+
+## Migration-Readiness Checklist
+
+- Canonical event envelope documented and adapter-agnostic.
+- Discord baseline matrix defined with stable intent names.
+- Dashboard destination names can be mapped 1:1 from canonical intents.
+- No workflow requires Discord-specific metadata to preserve correctness.
+- Every transport post has a no-Discord fallback path via repo artifact and Linear link.
