@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bitpod.app/contracts/memory_write_proposal_schema_v1.json",
+  "title": "MemoryWriteProposalV1",
+  "type": "object",
+  "required": [
+    "proposal_id",
+    "created_at",
+    "memory_layer",
+    "source_artifacts",
+    "target_path",
+    "summary",
+    "rationale",
+    "confidence",
+    "contradiction_status",
+    "approval"
+  ],
+  "properties": {
+    "proposal_id": {
+      "type": "string",
+      "pattern": "^memprop-[a-z0-9-]+$"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "memory_layer": {
+      "type": "string",
+      "enum": ["working", "project", "strategic", "artifact"]
+    },
+    "source_artifacts": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      }
+    },
+    "target_path": {
+      "type": "string"
+    },
+    "summary": {
+      "type": "string",
+      "minLength": 10
+    },
+    "rationale": {
+      "type": "string",
+      "minLength": 10
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "contradiction_status": {
+      "type": "string",
+      "enum": ["clear", "needs_review", "conflict"]
+    },
+    "approval": {
+      "type": "object",
+      "required": ["state", "approver"],
+      "properties": {
+        "state": {
+          "type": "string",
+          "enum": ["proposed", "approved", "rejected"]
+        },
+        "approver": {
+          "type": "string"
+        },
+        "approved_at": {
+          "type": ["string", "null"],
+          "format": "date-time"
+        }
+      },
+      "additionalProperties": false
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

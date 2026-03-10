@@ -38,6 +38,7 @@ This folder contains the initial scaffold for Linear + GitHub workflow-enforceme
 - `./docs/process/linear_operating_guide_changelog.md`
 - `./docs/process/post_bootstrap_hardening_runbook_v1.md`
 - `./docs/process/legacy_identity_sweep_remediation_2026-03-09.md`
+- `./docs/process/memory_stewardship_service_contract_v1.md`
 
 ## Phase 2 planning seeds
 
@@ -159,6 +160,13 @@ bash linear/scripts/local_smoke.sh
 
 PR checks run automatically for `linear/**` via:
 - `.github/workflows/linear-bot-smoke.yml`
+
+## Memory stewardship artifacts
+
+- contract: `./docs/process/memory_stewardship_service_contract_v1.md`
+- schema: `./contracts/memory_write_proposal_schema_v1.json`
+- example proposal: `./examples/memory_write_proposal_example_v1.json`
+- validator: `./scripts/validate_memory_proposal.py`
 
 ## Attribution guardrails
 
