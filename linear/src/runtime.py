@@ -1,13 +1,14 @@
 from __future__ import annotations
 
+import os
 from typing import Any, Dict, List
 
 try:
     from linear.src.engine import Action, LinearBotEngine
-    from linear.src.memory import InMemoryStore, MemoryEvent, MemoryStore, now_iso
+    from linear.src.memory import InMemoryStore, JsonlFileStore, MemoryEvent, MemoryStore, now_iso
 except ModuleNotFoundError:
     from engine import Action, LinearBotEngine
-    from memory import InMemoryStore, MemoryEvent, MemoryStore, now_iso
+    from memory import InMemoryStore, JsonlFileStore, MemoryEvent, MemoryStore, now_iso
 
 
 class BotRuntime:
@@ -19,7 +20,11 @@ class BotRuntime:
 
     def __init__(self, engine: LinearBotEngine | None = None, store: MemoryStore | None = None) -> None:
         self.engine = engine or LinearBotEngine()
-        self.store = store or InMemoryStore()
+        if store is not None:
+            self.store = store
+        else:
+            trace_path = os.getenv("RUNTIME_TRACE_PATH")
+            self.store = JsonlFileStore(trace_path) if trace_path else InMemoryStore()
 
     def run_github_event(self, event: Dict[str, Any]) -> List[Action]:
         action = event.get("action")

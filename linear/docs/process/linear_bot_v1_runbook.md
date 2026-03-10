@@ -34,6 +34,8 @@ Populate only required values for your mode:
   - `DRY_RUN=true|false`
   - `BOT_HOST`
   - `BOT_PORT`
+  - `RUNTIME_TRACE_PATH` (durable runtime event sink, example: `/tmp/bitpod_runtime_events.jsonl`)
+  - `TRACE_STORE_PATH` (service action trace sink, example: `/tmp/bitpod_linear_runtime_trace.jsonl`)
 - Required for GitHub live comments:
   - `GITHUB_APP_ID`
   - `GITHUB_APP_PRIVATE_KEY`
@@ -70,6 +72,9 @@ Set Worker secrets/vars:
 2. Confirm PR comments are posted by automation actor (not CJ).  
 3. Keep Linear mutation path fail-closed until app actor is verified.
 4. If attribution is wrong, stop and fix identity before continuing.
+5. Confirm trace artifacts are being written:
+   - runtime events: path from `RUNTIME_TRACE_PATH`
+   - service action traces: path from `TRACE_STORE_PATH`
 
 ## 6) Incident fallback
 
