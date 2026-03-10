@@ -1,0 +1,61 @@
+{
+  "trace_id": "trace-bit-67-sample-001",
+  "issue_key": "BIT-67",
+  "capability_state": "full",
+  "certainty_pct": 92,
+  "truth_classification": "verified",
+  "states": [
+    {
+      "state": "intake",
+      "actor": "taylor",
+      "summary": "CJ requested runtime-core hardening with agent and tool registry outputs."
+    },
+    {
+      "state": "plan",
+      "actor": "taylor",
+      "summary": "Split work into runtime contract, machine-readable registries, and validation path."
+    },
+    {
+      "state": "dispatch",
+      "actor": "taylor",
+      "delegations": [
+        {
+          "owner": "engineering",
+          "objective": "Create registry artifacts and validator.",
+          "artifacts": [
+            "linear/contracts/agent_registry_v1.json",
+            "linear/contracts/tool_registry_v1.json",
+            "linear/scripts/validate_runtime_contract_artifacts.py"
+          ]
+        },
+        {
+          "owner": "vera",
+          "objective": "Verify registry and trace consistency.",
+          "artifacts": [
+            "linear/examples/taylor_delegated_trace_v1.json"
+          ]
+        }
+      ]
+    },
+    {
+      "state": "await_results",
+      "actor": "taylor",
+      "summary": "Waiting for registry build and trace verification outputs."
+    },
+    {
+      "state": "verify",
+      "actor": "vera",
+      "summary": "Validator confirms every referenced agent, tool, and state exists."
+    },
+    {
+      "state": "synthesize",
+      "actor": "taylor",
+      "summary": "Prepared Linear-ready summary with artifact links and residual-risk note."
+    },
+    {
+      "state": "complete",
+      "actor": "taylor",
+      "summary": "Work is ready for closeout with evidence attached."
+    }
+  ]
+}

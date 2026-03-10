@@ -1,0 +1,46 @@
+{
+  "version": "v1",
+  "states": [
+    {
+      "id": "intake",
+      "allowed_next": ["plan", "escalate"],
+      "description": "Capture request, context, and capability snapshot."
+    },
+    {
+      "id": "plan",
+      "allowed_next": ["dispatch", "escalate"],
+      "description": "Convert intent into bounded tasks and validation contracts."
+    },
+    {
+      "id": "dispatch",
+      "allowed_next": ["await_results", "escalate"],
+      "description": "Send task packets to one or more specialist lanes."
+    },
+    {
+      "id": "await_results",
+      "allowed_next": ["verify", "escalate"],
+      "description": "Hold while specialists execute or report blockers."
+    },
+    {
+      "id": "verify",
+      "allowed_next": ["synthesize", "dispatch", "escalate"],
+      "description": "Run checks and classify truth quality."
+    },
+    {
+      "id": "synthesize",
+      "allowed_next": ["complete", "dispatch", "escalate"],
+      "description": "Prepare final status update and artifact summary."
+    },
+    {
+      "id": "complete",
+      "allowed_next": [],
+      "description": "Close the runtime chain with evidence attached."
+    },
+    {
+      "id": "escalate",
+      "allowed_next": ["plan", "complete"],
+      "description": "Pause normal flow and request CJ or policy intervention."
+    }
+  ],
+  "capability_overlays": ["full", "degraded", "severely_impaired", "disconnected"]
+}

@@ -1,0 +1,83 @@
+{
+  "version": "v1",
+  "tools": [
+    {
+      "id": "linear_mcp",
+      "surface": "linear",
+      "permission_level": "write_limited",
+      "notes": "Execution system of record. Use for issues, comments, labels, and projects."
+    },
+    {
+      "id": "repo_read",
+      "surface": "git",
+      "permission_level": "read",
+      "notes": "Read source, docs, and diffs."
+    },
+    {
+      "id": "repo_write",
+      "surface": "git",
+      "permission_level": "write",
+      "notes": "Modify files in the working tree and prepare commits."
+    },
+    {
+      "id": "docs_read",
+      "surface": "docs",
+      "permission_level": "read",
+      "notes": "Read institutional memory and process artifacts."
+    },
+    {
+      "id": "artifact_writer",
+      "surface": "docs",
+      "permission_level": "write",
+      "notes": "Write deterministic markdown or JSON artifacts."
+    },
+    {
+      "id": "artifact_reader",
+      "surface": "docs",
+      "permission_level": "read",
+      "notes": "Read evidence artifacts and generated reports."
+    },
+    {
+      "id": "test_runner",
+      "surface": "local_exec",
+      "permission_level": "write_limited",
+      "notes": "Run tests and deterministic probes."
+    },
+    {
+      "id": "ci_reader",
+      "surface": "github",
+      "permission_level": "read",
+      "notes": "Read CI status and logs."
+    },
+    {
+      "id": "cloudflare_ops",
+      "surface": "cloudflare",
+      "permission_level": "write_limited",
+      "notes": "Deploy or inspect platform resources under approved scope."
+    },
+    {
+      "id": "web_research",
+      "surface": "web",
+      "permission_level": "read",
+      "notes": "Gather external source material."
+    },
+    {
+      "id": "notion_read",
+      "surface": "notion",
+      "permission_level": "read",
+      "notes": "Pull internal research context from Notion."
+    },
+    {
+      "id": "figma_context",
+      "surface": "figma",
+      "permission_level": "read_limited",
+      "notes": "Read or map Figma design context."
+    },
+    {
+      "id": "browser_ui",
+      "surface": "browser",
+      "permission_level": "write_limited",
+      "notes": "Perform UI-only actions that cannot be done via API."
+    }
+  ]
+}
