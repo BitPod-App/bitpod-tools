@@ -53,6 +53,8 @@ This folder contains the initial scaffold for Linear + GitHub workflow-enforceme
 - `./docs/process/stage4_5_agent_stack_execution_plan_v1.md`
 - `./docs/process/communication_surface_portability_v1.md`
 - `./docs/process/taylor_runtime_core_contract_v1.md`
+- `./docs/process/global_artifact_naming_policy_v1.md`
+- `./docs/process/workspace_local_state_location_policy_v1.md`
 
 ## Current implementation coverage (v1)
 
