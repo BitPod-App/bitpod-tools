@@ -17,12 +17,27 @@ echo "[3/4] end-to-end lifecycle simulation"
 python3 simulate_e2e.py
 
 echo "[4/4] dry-run service boot check"
-PYTHONUNBUFFERED=1 BOT_PORT=18787 python3 service.py --dry-run >/tmp/linear_service_boot.log 2>&1 &
+BOT_PORT="$(
+python3 - <<'PY'
+import socket
+s = socket.socket()
+s.bind(("127.0.0.1", 0))
+print(s.getsockname()[1])
+s.close()
+PY
+)"
+
+PYTHONUNBUFFERED=1 BOT_PORT="$BOT_PORT" python3 service.py --dry-run >/tmp/linear_service_boot.log 2>&1 &
 svc_pid=$!
-sleep 1
+for _ in $(seq 1 20); do
+  if rg -q "listening on http://127.0.0.1:${BOT_PORT}" /tmp/linear_service_boot.log 2>/dev/null; then
+    break
+  fi
+  sleep 0.2
+done
 kill "$svc_pid" >/dev/null 2>&1 || true
 wait "$svc_pid" 2>/dev/null || true
-if ! rg -q "listening on http://127.0.0.1:18787" /tmp/linear_service_boot.log; then
+if ! rg -q "listening on http://127.0.0.1:${BOT_PORT}" /tmp/linear_service_boot.log; then
   echo "service boot check failed"
   cat /tmp/linear_service_boot.log
   exit 1
