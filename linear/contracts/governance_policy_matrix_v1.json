@@ -1,0 +1,54 @@
+{
+  "version": "v1",
+  "classes": [
+    {
+      "class": "A",
+      "name": "safe_autonomous",
+      "required_approver": "none",
+      "allowed_examples": [
+        "doc_update",
+        "read_only_scan",
+        "report_generation",
+        "pr_open_without_merge",
+        "evidence_comment"
+      ],
+      "evidence_required": true
+    },
+    {
+      "class": "B",
+      "name": "guarded_autonomous",
+      "required_approver": "Taylor",
+      "allowed_examples": [
+        "process_contract_update",
+        "dry_run_automation_enable",
+        "reversible_linear_structure_change"
+      ],
+      "evidence_required": true
+    },
+    {
+      "class": "C",
+      "name": "cj_approval_required",
+      "required_approver": "CJ",
+      "allowed_examples": [
+        "destructive_delete",
+        "credential_rotation",
+        "permission_broadening",
+        "production_cutover",
+        "repo_visibility_change",
+        "ruleset_change"
+      ],
+      "evidence_required": true
+    },
+    {
+      "class": "D",
+      "name": "emergency_stop",
+      "required_approver": "CJ",
+      "allowed_examples": [
+        "security_bypass",
+        "audit_disable",
+        "known_policy_violation"
+      ],
+      "evidence_required": false
+    }
+  ]
+}
