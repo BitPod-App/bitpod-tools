@@ -8,8 +8,21 @@ fi
 
 OUT="$1"
 ROOT="/Users/cjarguello/bitpod-app"
-REPOS=(bitpod bitpod-tools bitpod-docs bitpod-taylor-runtime bitregime-core)
 PATTERNS=("bitipod\\.com" "@bitipod\\.com" "\\bbitipod\\b")
+
+REPOS=()
+while IFS= read -r repo; do
+  REPOS+=("$repo")
+done < <(
+  find "$ROOT" -mindepth 1 -maxdepth 1 -type d -exec test -d "{}/.git" ';' -print \
+    | xargs -n1 basename \
+    | sort
+)
+
+if [[ ${#REPOS[@]} -eq 0 ]]; then
+  echo "no git repos found under ${ROOT}" >&2
+  exit 3
+fi
 
 mkdir -p "$(dirname "$OUT")"
 TS="$(date -u +"%Y-%m-%d %H:%M:%SZ")"
