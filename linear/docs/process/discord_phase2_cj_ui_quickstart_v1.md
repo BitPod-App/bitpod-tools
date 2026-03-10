@@ -70,6 +70,11 @@ Never paste raw webhook URLs into Linear, GitHub, or tracked repo files.
 Run these from `/Users/cjarguello/bitpod-app/bitpod-tools`:
 
 ```bash
+python3 linear/scripts/discord_config_preflight.py \
+  --config /Users/cjarguello/bitpod-app/local-workspace/local-working-files/private.discord.config.json
+```
+
+```bash
 python3 linear/scripts/discord_webhook_smoke.py \
   --config /Users/cjarguello/bitpod-app/local-workspace/local-working-files/private.discord.config.json \
   --live

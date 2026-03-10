@@ -145,6 +145,16 @@ python3 linear/scripts/validate_runtime_contract_artifacts.py
 - PM approval label signal
 - PR merged with gates satisfied -> Done
 
+## Discord operator preflight
+
+Validate the private Discord config before any live webhook call:
+
+```bash
+cd /Users/cjarguello/bitpod-app/bitpod-tools
+python3 linear/scripts/discord_config_preflight.py \
+  --config /Users/cjarguello/bitpod-app/local-workspace/local-working-files/private.discord.config.json
+```
+
 ## Test
 
 ```bash
