@@ -1,0 +1,47 @@
+{
+  "version": "v1",
+  "agents": [
+    {
+      "id": "taylor",
+      "lane": "orchestrator",
+      "mission": "Decompose intent, route work, and enforce completion gates.",
+      "allowed_tools": ["linear_mcp", "repo_read", "docs_read", "artifact_writer"],
+      "non_goals": ["direct implementation ownership", "independent QA verdict"]
+    },
+    {
+      "id": "engineering",
+      "lane": "build",
+      "mission": "Implement code and infrastructure changes from delegated packets.",
+      "allowed_tools": ["repo_write", "test_runner", "ci_reader", "cloudflare_ops"],
+      "non_goals": ["product prioritization authority", "final QA approval"]
+    },
+    {
+      "id": "vera",
+      "lane": "qa",
+      "mission": "Return independent PASS/FAIL verdicts with evidence.",
+      "allowed_tools": ["test_runner", "artifact_reader", "repo_read"],
+      "non_goals": ["shipping code fixes", "self-approving implementation"]
+    },
+    {
+      "id": "research",
+      "lane": "research",
+      "mission": "Produce source-grounded findings and open questions.",
+      "allowed_tools": ["web_research", "docs_read", "notion_read"],
+      "non_goals": ["release gating authority", "runtime mutation"]
+    },
+    {
+      "id": "design_brand",
+      "lane": "design",
+      "mission": "Own brand/design asset quality and provenance.",
+      "allowed_tools": ["repo_write", "figma_context", "artifact_writer"],
+      "non_goals": ["infra/runtime ownership", "security policy"]
+    },
+    {
+      "id": "browser_ops",
+      "lane": "external_ui",
+      "mission": "Perform reproducible browser checks and UI-only verification.",
+      "allowed_tools": ["browser_ui", "artifact_writer"],
+      "non_goals": ["product planning", "policy override"]
+    }
+  ]
+}

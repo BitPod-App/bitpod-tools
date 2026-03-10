@@ -10,6 +10,10 @@ This folder contains the initial scaffold for Linear + GitHub workflow-enforceme
   - Process runbooks and operator notes.
 - `/bitpod-tools/linear/src/`
   - Rule engine, webhook service, and simulator.
+- `/bitpod-tools/linear/contracts/`
+  - Machine-readable runtime, agent, and tool registries.
+- `/bitpod-tools/linear/examples/`
+  - Sample traces and delegated execution artifacts.
 - `/bitpod-tools/linear/events/`
   - Sample payloads for local simulation.
 - `/bitpod-tools/linear/tests/`
@@ -42,6 +46,7 @@ This folder contains the initial scaffold for Linear + GitHub workflow-enforceme
 - `./docs/process/discord_phase2_prereq_execution_runbook_v1.md`
 - `./docs/process/stage4_5_agent_stack_execution_plan_v1.md`
 - `./docs/process/communication_surface_portability_v1.md`
+- `./docs/process/taylor_runtime_core_contract_v1.md`
 
 ## Current implementation coverage (v1)
 
@@ -119,6 +124,13 @@ Additional samples:
 ```bash
 python3 simulate.py --mode gh_opened --event ../events/sample_pr_opened.json
 # PM label changed and merged gate are exercised through service payloads in ./events/
+```
+
+Runtime contract validation:
+
+```bash
+cd /Users/cjarguello/bitpod-app/bitpod-tools
+python3 linear/scripts/validate_runtime_contract_artifacts.py
 ```
 
 `simulate_e2e.py` runs the full happy-path sequence:
