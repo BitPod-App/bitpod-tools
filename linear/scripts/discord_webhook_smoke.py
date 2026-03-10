@@ -12,6 +12,8 @@ import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 
+USER_AGENT = "BitPod-Discord-Diagnostic/1.0"
+
 
 def parse_args() -> argparse.Namespace:
     ap = argparse.ArgumentParser(description="Discord webhook smoke sender")
@@ -33,6 +35,7 @@ def send(url: str, content: str, timeout: float) -> tuple[bool, str]:
     body = json.dumps({"content": content}).encode("utf-8")
     req = urllib.request.Request(url, data=body, method="POST")
     req.add_header("Content-Type", "application/json")
+    req.add_header("User-Agent", USER_AGENT)
     try:
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             status = resp.getcode()

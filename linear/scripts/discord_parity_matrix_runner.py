@@ -11,6 +11,8 @@ import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 
+USER_AGENT = "BitPod-Discord-Diagnostic/1.0"
+
 ROWS = [
     ("GH_PR_OPENED", "build", "repo,pr,title,author,link"),
     ("GH_CHECK_FAILED", "incidents", "repo,check,run,severity"),
@@ -41,6 +43,7 @@ def post(url: str, content: str, timeout: float) -> tuple[bool, str]:
     data = json.dumps({"content": content}).encode("utf-8")
     req = urllib.request.Request(url, data=data, method="POST")
     req.add_header("Content-Type", "application/json")
+    req.add_header("User-Agent", USER_AGENT)
     try:
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             code = resp.getcode()
