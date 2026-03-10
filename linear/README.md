@@ -25,6 +25,7 @@ This folder contains the initial scaffold for Linear + GitHub workflow-enforceme
 - `./docs/process/linear_bot_v1_runbook.md`
 - `./docs/process/live_cutover_auth_batch.md`
 - `./docs/process/linear_operating_guide_v1.md`
+- `./docs/process/linear_issue_workflow_reconfig_spec_v1.md`
 - `./docs/process/startup_operating_model_v1.md`
 - `./docs/process/ai_team_topology_raci_v1.md`
 - `./docs/process/taylor_orchestrator_contract_v1.md`
@@ -78,6 +79,9 @@ SOP expects emoji statuses (`☑️ Ready`, `🏗️ In Progress`, `🧪 In Revi
 Current BIT workspace still uses mixed/non-emoji statuses (`Backlog`, `Todo`, `In Progress`, `In Review`, `Done`, `Icebox 🧊`, `Obsolete`).
 
 This implementation includes fallback handling for current statuses where safe, but full parity requires final Linear status normalization.
+
+Canonical target for the Product Development team workflow reconfiguration:
+- `./docs/process/linear_issue_workflow_reconfig_spec_v1.md`
 
 ## How to run
 
