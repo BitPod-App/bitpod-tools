@@ -1,0 +1,42 @@
+{
+  "version": "v1",
+  "suites": [
+    {
+      "name": "planning_quality",
+      "required": true,
+      "checks": ["artifact_contract_present"]
+    },
+    {
+      "name": "implementation_quality",
+      "required": true,
+      "checks": ["unit_tests", "service_smoke"]
+    },
+    {
+      "name": "qa_quality",
+      "required": true,
+      "checks": ["qa_contract_present"]
+    },
+    {
+      "name": "handoff_quality",
+      "required": true,
+      "checks": ["handoff_template_present"]
+    }
+  ],
+  "validators": [
+    {
+      "name": "runtime_contract",
+      "path": "linear/scripts/validate_runtime_contract_artifacts.py",
+      "optional": true
+    },
+    {
+      "name": "memory_proposal",
+      "path": "linear/scripts/validate_memory_proposal.py",
+      "optional": true
+    },
+    {
+      "name": "governance_policy",
+      "path": "linear/scripts/validate_governance_policy.py",
+      "optional": true
+    }
+  ]
+}

@@ -40,6 +40,7 @@ This folder contains the initial scaffold for Linear + GitHub workflow-enforceme
 - `./docs/process/legacy_identity_sweep_remediation_2026-03-09.md`
 - `./docs/process/memory_stewardship_service_contract_v1.md`
 - `./docs/process/governance_policy_engine_v1.md`
+- `./docs/process/eval_regression_gate_framework_v1.md`
 
 ## Phase 2 planning seeds
 
@@ -168,6 +169,13 @@ PR checks run automatically for `linear/**` via:
 - schema: `./contracts/memory_write_proposal_schema_v1.json`
 - example proposal: `./examples/memory_write_proposal_example_v1.json`
 - validator: `./scripts/validate_memory_proposal.py`
+
+## Eval regression artifacts
+
+- contract: `./docs/process/eval_regression_gate_framework_v1.md`
+- registry: `./contracts/eval_registry_v1.json`
+- runner: `./scripts/run_eval_regression_bundle.sh`
+- sample report: `./examples/eval_regression_report_sample_2026-03-10.md`
 
 ## Attribution guardrails
 
