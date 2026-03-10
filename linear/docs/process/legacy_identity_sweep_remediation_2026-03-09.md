@@ -1,8 +1,8 @@
 # Legacy Identity Scan Report
 
-- UTC: 2026-03-09 09:44:55Z
+- UTC: 2026-03-10 03:31:29Z
 - Scope root: `/Users/cjarguello/bitpod-app`
-- Repos: bitpod bitpod-tools bitpod-docs bitpod-taylor-runtime bitregime-core
+- Repos: bitpod bitpod-assets bitpod-docs bitpod-taylor-runtime bitpod-tools bitregime-core sector-feeds
 
 ## Counts
 
@@ -36,7 +36,7 @@
 - Runtime/config references should be remediated.
 - Historical evidence docs may retain legacy references when clearly annotated.
 
-## Remediation Disposition (2026-03-09)
+## Remediation Disposition (2026-03-10)
 
 - Verified: zero legacy-domain hits in active runtime/config code paths across scanned repos.
 - Remaining matches are documentation references that intentionally describe legacy forwarding or historical migration context.
