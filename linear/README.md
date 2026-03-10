@@ -39,6 +39,7 @@ This folder contains the initial scaffold for Linear + GitHub workflow-enforceme
 - `./docs/process/post_bootstrap_hardening_runbook_v1.md`
 - `./docs/process/legacy_identity_sweep_remediation_2026-03-09.md`
 - `./docs/process/memory_stewardship_service_contract_v1.md`
+- `./docs/process/governance_policy_engine_v1.md`
 
 ## Phase 2 planning seeds
 
@@ -172,6 +173,13 @@ PR checks run automatically for `linear/**` via:
 
 - If GitHub actions appear as CJ instead of bot/app identity: stop and report `AUTH ATTRIBUTION WRONG`.
 - If Linear mutations appear as CJ instead of app actor: stop and report `LINEAR ACTOR WRONG`.
+
+## Governance policy artifacts
+
+- contract: `./docs/process/governance_policy_engine_v1.md`
+- policy matrix: `./contracts/governance_policy_matrix_v1.json`
+- audit sample: `./examples/governance_audit_trail_sample_2026-03-10.json`
+- validator: `./scripts/validate_governance_policy.py`
 
 ## Live-mode safety
 

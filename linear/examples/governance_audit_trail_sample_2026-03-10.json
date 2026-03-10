@@ -1,0 +1,27 @@
+[
+  {
+    "timestamp": "2026-03-10T13:40:00Z",
+    "actor": "Codex",
+    "action_id": "act-bit70-doc-contract",
+    "summary": "Add governance policy engine contract artifacts",
+    "policy_class": "A",
+    "approval_state": "not_required",
+    "decision": "allowed",
+    "evidence_links": [
+      "linear/docs/process/governance_policy_engine_v1.md",
+      "linear/contracts/governance_policy_matrix_v1.json"
+    ]
+  },
+  {
+    "timestamp": "2026-03-10T13:45:00Z",
+    "actor": "Codex",
+    "action_id": "act-example-repo-visibility",
+    "summary": "Attempt repo visibility change",
+    "policy_class": "C",
+    "approval_state": "missing",
+    "decision": "blocked",
+    "evidence_links": [
+      "CJ approval required before execution"
+    ]
+  }
+]
