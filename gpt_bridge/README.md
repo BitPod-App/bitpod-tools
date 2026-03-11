@@ -302,7 +302,7 @@ Team-first routing:
 `@codex` triggers explicit Codex acknowledgment in timeline.  
 Other mentions are team-visible intent tags.
 
-Recommended in Codex UI: tilde commands (`~...`)
+Recommended in Codex UI: Bridge tilde commands (`~...`)
 
 ```bash
 ./bridge_chat.sh chat "~help"
@@ -310,11 +310,11 @@ Recommended in Codex UI: tilde commands (`~...`)
 ./bridge_chat.sh chat "~session Let's plan the rollout"
 ./bridge_chat.sh chat "~gpt review this diff"
 ./bridge_chat.sh chat "~sync"
+./bridge_chat.sh chat "~recover"
 ./bridge_chat.sh chat "~codex sanity-check this plan"
 ./bridge_chat.sh chat "~cj please review this"
 ./bridge_chat.sh chat "~taylor please review this"
 ./bridge_chat.sh chat "~end"
-./bridge_chat.sh chat "~recover"
 ```
 
 Quote-safe invocation (no shell escaping issues):

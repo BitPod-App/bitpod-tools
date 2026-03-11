@@ -54,9 +54,37 @@ cat /tmp/bridge_check.json
 
 ## Command Intent Surface
 
-- `~decide`/`/decide` remains a valid intent command surface (product-level intent retained).
-- Current router behavior may map this intent through existing team/GPT paths until dedicated decision-mode behavior is finalized.
-- Core operational commands remain: `~gpt`, `~codex`, `~taylor`, `~session`, `~sync`, `~end`.
+Bridge CLI currently implements:
+
+- `~help`, `~options`
+- `~session <prompt>`
+- `~sync`
+- `~recover`
+- `~end`
+- `~gpt <message>`
+- `~decide <question>`
+- `~codex <message>`
+- `~cj <message>`
+- `~taylor <message>`
+
+Implemented slash aliases include:
+
+- `/help`, `/options`
+- `/session <prompt>`
+- `/sync`
+- `/recover`
+- `/end`
+- `/gpt <message>`
+- `/ask <message>`
+- `/decide <question>`
+- `/codex <message>`
+- `/team <message>`
+
+Notes:
+
+- `~decide`/`/decide` remains a valid Bridge intent command surface.
+- Plain text with no command prefix is routed as a team-chat message.
+- Taylor runtime shortcuts and topic-prefix intents are a separate runtime surface, not the Bridge CLI surface.
 
 ## Migration Notes
 
