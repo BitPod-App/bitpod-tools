@@ -1,7 +1,7 @@
 # Stage 4/5 Agent Stack Execution Plan v1
 
-Status: Active planning baseline  
-Purpose: Integrate the Taylor-hub specialist model into chronological execution with maximum autopilot throughput.
+Status: Active normalization baseline  
+Purpose: Integrate the Taylor-hub specialist model into chronological execution without overstating milestone completion.
 
 ## North-Star Integration
 
@@ -16,8 +16,8 @@ Purpose: Integrate the Taylor-hub specialist model into chronological execution 
 1. Stage 1 — Identity + Access Bootstrap (complete baseline)
 2. Stage 2 — Integration Parity + Runtime Migration (active; Discord parity completion path)
 3. Stage 3 — Retroactive Cleanup + Hardening (active after Stage 2 blockers clear)
-4. Stage 4 — Orchestrator + Specialist Operating Model (baseline complete)
-5. Stage 5 — Governance, Memory, Evals, and Runtime Maturity (new lane)
+4. Stage 4 — AI/AI-agent Team Operationalization (not complete until real operations exist)
+5. Stage 5 — Governance, Memory, Evals, and Runtime Hardening (post-foundation hardening lane)
 
 ## Current Autopilot Priority Order
 
@@ -32,7 +32,7 @@ Purpose: Integrate the Taylor-hub specialist model into chronological execution 
 - [BIT-21 — Phase 3 planning stub: legacy cleanup + access hardening](https://linear.app/bitpod-app/issue/BIT-21/phase-3-planning-stub-legacy-cleanup-access-hardening)
 - [BIT-32 — Post-bootstrap hardening plan: restricted local scope + dedicated macOS profile](https://linear.app/bitpod-app/issue/BIT-32/post-bootstrap-hardening-plan-restricted-local-scope-dedicated-macos)
 
-### P2: Stage 5 buildout (new)
+### P2: Stage 4 execution reality + Stage 5 hardening
 
 - Taylor runner runtime loop hardening
 - tool permissions matrix per specialist lane
@@ -42,11 +42,11 @@ Purpose: Integrate the Taylor-hub specialist model into chronological execution 
 
 ## Stage 5 Proposed Work Packages
 
-1. Runtime core and delegation engine hardening
-2. Memory stewardship service (proposal + approval + contradiction scan)
-3. Governance and action policy enforcement
-4. Evaluation suites and regression gates
-5. Communication hygiene (summary-first adapter contract + source-of-record linkage)
+1. Prove Taylor orchestrator in a real multi-agent execution loop
+2. Stand up specialist operating lanes in practice
+3. Real Discord acceptance for the session surface and command contract
+4. Prove durable decision, artifact, and memory flow in live AI-team work
+5. After that, continue governance, reviewer-routing, checkpointing, and eval hardening as Stage 5 work
 
 ## CJ-Required Checkpoints (only when unavoidable)
 
