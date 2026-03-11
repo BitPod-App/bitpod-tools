@@ -1,7 +1,7 @@
 # BitPod Startup Operating Model v1
 
 Version: v1  
-Status: Working baseline (Phase 4 bootstrap)  
+Status: Working baseline only; not proof that Phase 4 is operationally complete  
 Owner: CJ (final authority), Taylor (operating orchestrator)
 
 ## Purpose
@@ -116,7 +116,8 @@ When capabilities degrade (tool outage, auth drift, MCP instability), execution 
 - Phase 1: Critical identity/access bootstrap and safety baseline.
 - Phase 2: Integration parity and runtime migration.
 - Phase 3: Retroactive cleanup and hardening.
-- Phase 4: AI team orchestration and specialist operating model.
+- Phase 4: AI team orchestration and specialist operating model in practice, not only in docs.
+- Phase 5: governance, memory, eval, and reviewer-routing hardening after Phase 4 is operationally real.
 
 Each phase closes only with explicit evidence pack and go/no-go decision record.
 
