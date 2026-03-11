@@ -61,8 +61,10 @@ This folder contains the initial scaffold for Linear + GitHub workflow-enforceme
 - `./docs/process/global_artifact_naming_policy_v1.md`
 - `./docs/process/long_thread_checkpoint_protocol_v1.md`
 - `./docs/process/durable_artifact_memory_flow_proof_v1.md`
+- `./docs/process/checkpoints/checkpoint_protocol_adoption_note_2026-03-11.md`
 - `./docs/process/checkpoints/thread_checkpoint_template_v1.md`
 - `./docs/process/checkpoints/active_checkpoint_sector_feeds_bit77_2026-03-11.md`
+- `./docs/process/checkpoints/active_checkpoint_phase4_operating_model_2026-03-11.md`
 - `./docs/process/workspace_local_state_location_policy_v1.md`
 
 ## Current implementation coverage (v1)
