@@ -30,7 +30,8 @@ PYTHONPATH=src python3 -m taylor --once
 ## Current Chat Backend
 
 - Current production backend is Zulip.
-- Discord migration is tracked separately in `BIT-37`.
+- Discord is the first post-Zulip proof-of-concept target, but transport portability remains required.
+- Migration/transport contract is tracked in [BIT-37 — Migrate team session chat commands from Zulip to chosen platform](https://linear.app/bitpod-app/issue/BIT-37/migrate-team-session-chat-commands-from-zulip-to-chosen-platform).
 
 ## Required Environment
 

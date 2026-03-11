@@ -44,6 +44,7 @@ This folder contains the initial scaffold for Linear + GitHub workflow-enforceme
 - `./docs/process/governance_policy_engine_v1.md`
 - `./docs/process/github_team_purpose_reviewer_routing_v1.md`
 - `./docs/process/eval_regression_gate_framework_v1.md`
+- `./docs/process/team_session_platform_migration_contract_v1.md`
 
 ## Phase 2 planning seeds
 
