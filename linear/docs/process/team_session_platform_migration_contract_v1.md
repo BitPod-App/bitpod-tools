@@ -111,6 +111,14 @@ BIT-37 is complete when:
 - follow-on command cleanup work can proceed without ambiguity
 - [BIT-39 — Bridge command surface cleanup (keep useful, remove obsolete, clarify behavior)](https://linear.app/bitpod-app/issue/BIT-39/bridge-command-surface-cleanup-keep-useful-remove-obsolete-clarify) is unblocked conceptually by a stable transport contract
 
+## Completion Boundary
+
+Document/spec work is not enough to call this lane fully complete.
+
+BIT-37 should only be treated as truly done when a real Discord environment has been used to validate the post-Zulip team session contract in practice.
+
+Until then, repo-side contract work should be treated as baseline planning/progress, not full operational completion.
+
 ## Follow-On Work
 
 After this contract is accepted:
