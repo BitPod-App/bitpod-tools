@@ -41,6 +41,7 @@ This folder contains the initial scaffold for Linear + GitHub workflow-enforceme
 - `./docs/process/legacy_identity_sweep_remediation_2026-03-09.md`
 - `./docs/process/memory_stewardship_service_contract_v1.md`
 - `./docs/process/governance_policy_engine_v1.md`
+- `./docs/process/github_team_purpose_reviewer_routing_v1.md`
 - `./docs/process/eval_regression_gate_framework_v1.md`
 
 ## Phase 2 planning seeds
