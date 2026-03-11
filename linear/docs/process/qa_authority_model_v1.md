@@ -54,6 +54,15 @@ Allowed only for emergency mitigation with CJ approval:
 - temporary bypass with documented rollback
 - explicit post-incident QA follow-up issue opened immediately
 
+## Temporary Staffing Gap Policy
+
+For the current interim PR workflow while BitPod lacks a separate human technical reviewer, see:
+
+- [BIT-79 — Establish interim AI technical QA + CJ acceptance policy](https://linear.app/bitpod-app/issue/BIT-79/establish-interim-ai-technical-qa-cj-acceptance-policy)
+- `./interim_ai_technical_qa_cj_acceptance_policy_v1.md`
+
+That policy does not replace QA independence as the target model. It only defines the temporary path where AI technical QA evidence exists, CJ performs acceptance/operational approval, and admin bypass is used honestly rather than mislabeled as technical review.
+
 ## Auditability
 
 - QA evidence must be attached to related Linear issue and/or PR thread.

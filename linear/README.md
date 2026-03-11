@@ -33,6 +33,7 @@ This folder contains the initial scaffold for Linear + GitHub workflow-enforceme
 - `./docs/process/delegated_execution_sample_run_v1.md`
 - `./docs/process/specialist_agent_registry_v1.md`
 - `./docs/process/qa_authority_model_v1.md`
+- `./docs/process/interim_ai_technical_qa_cj_acceptance_policy_v1.md`
 - `./docs/process/agent_runtime_portability_plan_v1.md`
 - `./docs/process/capability_state_truth_label_incident_protocol_v1.md`
 - `./docs/process/linear_link_reference_policy_v1.md`
