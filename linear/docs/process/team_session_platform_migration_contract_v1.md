@@ -39,6 +39,7 @@ Transport-specific behavior must not become the place where product/session logi
 
 - Discord is the first migration target.
 - Discord should prove:
+  - Taylor is conversationally reachable in `#general`
   - session command intake
   - Taylor reply flow
   - durable operator-visible thread/report flow
@@ -83,6 +84,12 @@ Canonical meaning set:
 - `end`
 
 If aliases exist, they should be documented as aliases, not separate semantic modes.
+
+## Primary operator surface
+
+- Discord `#general` should function as the main human-facing conversational intake surface for Taylor.
+- Specialist channels may still exist for structured team work, but Taylor should not require them for basic operator interaction.
+- Taylor may route work from `#general` into more structured lanes without losing conversational continuity.
 
 ## Runtime Boundary
 

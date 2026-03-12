@@ -19,7 +19,7 @@ Missing proof:
 - one real Discord message linking back to a Linear issue and/or GitHub PR
 - one screenshot or transcript excerpt from actual Discord usage
 - one explicit operator-level usability judgment that the surface no longer depends on Zulip mental models
-- one explicit CJ operator judgment on whether Taylor is conversationally real as an agent in Discord
+- one explicit CJ operator judgment on whether Taylor is conversationally real as an agent in Discord `#general`
 
 ## What is verified now
 
@@ -64,7 +64,17 @@ Current state should be read as:
 
 - baseline Discord transport proof: `PASS`
 - real Discord session-surface acceptance: `NOT YET PROVEN`
-- Taylor conversational reality to CJ in Discord: `NOT YET PROVEN`
+- Taylor conversational reality to CJ in Discord `#general`: `NOT YET PROVEN`
+
+The stronger intended truth is now explicit:
+
+- Taylor should be usable in Discord `#general` for broad BitPod-relevant conversation
+- the current verified baseline does not yet prove that
+
+This should be read carefully:
+
+- a Discord pass can help prove Taylor-real
+- but Taylor-real itself is tracked separately in [BIT-97 — Prove Taylor as a real AI agent in any live operator surface](https://linear.app/bitpod-app/issue/BIT-97/prove-taylor-as-a-real-ai-agent-in-any-live-operator-surface)
 
 That is enough to promote BIT-86 into active closure work.
 
@@ -75,6 +85,6 @@ It is not enough to close BIT-86.
 1. run one real intent-bearing Discord interaction
 2. run one real decision/update interaction with linked artifact
 3. capture one real screenshot or transcript excerpt
-4. run one real CJ-to-Taylor conversational exchange and record an explicit operator verdict
+4. run one real CJ-to-Taylor conversational exchange in `#general` and record an explicit operator verdict
 5. write one acceptance note with pass/fail per section from `discord_real_acceptance_checklist_v1.md`
 6. then decide whether BIT-86 passes or must be split further into baseline versus final closure work
