@@ -15,11 +15,16 @@ Promote Discord from parity proof-of-concept to real acceptance surface for the 
 
 This issue is not complete when webhook parity is green. It is complete only when real team-style communication is exercised successfully in Discord with linked artifacts and a usable command/session flow.
 
-It must now also prove a stronger claim:
+Discord acceptance may also prove a stronger claim if Taylor is tested live there:
 
-- CJ can speak to Taylor conversationally in Discord as a real agent surface
+- CJ can speak to Taylor conversationally in Discord `#general` as a real agent surface
 - Taylor can respond usefully beyond narrow command execution
 - Taylor can hold enough continuity, groundedness, and role stability that the interaction feels agent-real rather than skill-like or bot-like
+
+But this stronger claim is not globally Discord-exclusive.
+
+- [BIT-97 — Prove Taylor as a real AI agent in any live operator surface](https://linear.app/bitpod-app/issue/BIT-97/prove-taylor-as-a-real-ai-agent-in-any-live-operator-surface) owns the transport-agnostic Taylor-real verdict.
+- BIT-86 owns the Discord/session-surface verdict.
 
 ## Promotion meaning
 
@@ -78,11 +83,12 @@ Pass only if all are true:
 
 Pass only if all are true:
 
-- CJ has at least one non-trivial conversational exchange with Taylor in Discord
+- CJ has at least one non-trivial conversational exchange with Taylor in Discord `#general`
 - the exchange goes beyond a simple command/request-reply pattern
 - Taylor responds as an orchestrator/agent surface rather than a narrow bot wrapper
 - Taylor shows groundedness by separating observed, inferred, and unknown where it matters
 - CJ can make an explicit operator judgment that Taylor feels usable as a real AI agent surface
+- Taylor is usable for broad BitPod-relevant conversation, not only narrow specialist commands
 
 ## Required live checks
 
@@ -93,7 +99,7 @@ Pass only if all are true:
 5. Verify the channel flow is understandable to a human operator without hidden context.
 6. Verify command/session usage does not require Zulip-only mental models.
 7. Capture screenshot or transcript evidence from the real Discord environment.
-8. Run one CJ-to-Taylor conversational exchange that includes at least:
+8. Run one CJ-to-Taylor conversational exchange in `#general` that includes at least:
    - one planning or scoping question
    - one follow-up or clarification turn
    - one response from Taylor that includes a next action, recommendation, or decision framing
@@ -123,6 +129,7 @@ Any of the following means BIT-86 remains open:
 - the live flow cannot carry plans, decisions, and artifact links cleanly
 - evidence depends on thread-local memory rather than durable references
 - Taylor only behaves like a narrow command bot rather than a usable conversational agent surface for CJ
+- Taylor cannot be used meaningfully in Discord `#general`
 
 ## Completion rule
 

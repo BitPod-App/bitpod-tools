@@ -27,6 +27,7 @@ Environment:
 
 ## Conversational exchange summary
 
+- Discord surface/channel: `#general|other`
 - CJ prompt/question:
 - Taylor response:
 - follow-up:

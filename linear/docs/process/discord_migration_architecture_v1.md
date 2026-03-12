@@ -7,6 +7,7 @@ Issue: https://linear.app/bitpod-app/issue/BIT-28/discord-migration-architecture
 Define a Discord workspace topology and integration model that preserves operational parity with current Zulip-based flows while enabling future runtime agent expansion.
 
 ## Channel Topology (v1)
+- #general (primary human + Taylor conversational surface)
 - #00-ops-status (read-only; automated broadcast sink)
 - #10-plan
 - #20-decide
@@ -32,9 +33,18 @@ Define a Discord workspace topology and integration model that preserves operati
   - blockers/priority changes
   - milestone update broadcasts
 - Runtime agents -> Discord
+  - Taylor conversational replies in `#general`
   - command receipts
   - QA summaries
   - incident/event logs
+
+## Primary Interaction Rule
+
+- Taylor should be reachable conversationally in `#general` for broad operator interaction, not only through narrow specialist channels or webhook sinks.
+- Specialist channels still matter for structured execution, but they should not be the only place where Taylor feels real.
+- A truthful Discord migration claim is stronger than parity routing:
+  - CJ should be able to ask Taylor about planning, status, decisions, and general coordination in `#general`
+  - Taylor should respond usefully without requiring a Zulip-only topic model to make sense
 
 ## Migration Guardrails
 - Preserve one source-of-truth for issue status in Linear.

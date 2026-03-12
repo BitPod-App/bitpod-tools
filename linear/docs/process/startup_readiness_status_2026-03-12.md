@@ -53,7 +53,9 @@ The missing gap is not one thing. It is the combination of:
 ### Critical blockers
 
 - [BIT-86 — Real Discord acceptance for team session contract and bridge command surface](https://linear.app/bitpod-app/issue/BIT-86/real-discord-acceptance-for-team-session-contract-and-bridge-command)
-  - strongest current vehicle for proving Taylor is conversationally real to CJ and that the team session surface is genuinely usable
+  - required to prove the Discord/session-surface side honestly
+- [BIT-97 — Prove Taylor as a real AI agent in any live operator surface](https://linear.app/bitpod-app/issue/BIT-97/prove-taylor-as-a-real-ai-agent-in-any-live-operator-surface)
+  - required to prove Taylor-real without making that claim transport-exclusive
 - [BIT-89 — Mature reviewer routing from temporary bypass policy to intended GitHub governance](https://linear.app/bitpod-app/issue/BIT-89/mature-reviewer-routing-from-temporary-bypass-policy-to-intended)
   - required to stop normal work from depending on interim bypass behavior
 - [BIT-91 — Raise governance, memory, and eval baseline artifacts to production-grade operations](https://linear.app/bitpod-app/issue/BIT-91/raise-governance-memory-and-eval-baseline-artifacts-to-production)
@@ -86,11 +88,19 @@ The missing gap is not one thing. It is the combination of:
 
 The next honest closeout package should not claim startup-ready yet.
 
-It should claim one narrower thing:
+It should claim these narrower things separately:
 
 - `Taylor as real AI agent to CJ = true|false`
+- `Discord real acceptance = true|false`
 
-and it should be evaluated inside [BIT-86 — Real Discord acceptance for team session contract and bridge command surface](https://linear.app/bitpod-app/issue/BIT-86/real-discord-acceptance-for-team-session-contract-and-bridge-command) with:
+The Taylor-real verdict should be evaluated inside [BIT-97 — Prove Taylor as a real AI agent in any live operator surface](https://linear.app/bitpod-app/issue/BIT-97/prove-taylor-as-a-real-ai-agent-in-any-live-operator-surface) with:
+
+- one real CJ-to-Taylor conversational interaction
+- one follow-up/clarification turn
+- one explicit operator usability judgment from CJ
+- one note naming the proving surface used
+
+The Discord verdict should be evaluated inside [BIT-86 — Real Discord acceptance for team session contract and bridge command surface](https://linear.app/bitpod-app/issue/BIT-86/real-discord-acceptance-for-team-session-contract-and-bridge-command) with:
 
 - one real CJ-to-Taylor conversational interaction
 - one planning exchange
