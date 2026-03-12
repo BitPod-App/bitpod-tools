@@ -2,6 +2,12 @@
 
 Use this block in relevant Linear issues and PRs.
 
+Default intent:
+
+- solve the portability concern now when reasonable
+- use bypass only when there is a clear short-term reason
+- if bypass is used and it is meaningful, add it to the active bypass register
+
 ```md
 Taylor01 Portability Check
 

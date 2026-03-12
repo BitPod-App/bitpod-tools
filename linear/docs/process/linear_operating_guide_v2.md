@@ -44,6 +44,8 @@ Define the canonical way agents use Linear for execution tracking, evidence logg
 - Product-only BitPod work does not need the block unless it changes reusable operating behavior.
 - Missing portability classification means the issue is not decision-complete unless the update explicitly declares a temporary Taylor01 bypass with reason and review trigger.
 - Temporary bypass is allowed for bounded experimental work; hidden coupling is not.
+- Default expectation is to solve portability now for new portable or mixed work unless there is a concrete reason not to.
+- Meaningful active bypasses should be tracked in `taylor01_active_bypass_register_v1.md` and reviewed soon, not left as vague backlog residue.
 
 ## Required issue evidence format
 

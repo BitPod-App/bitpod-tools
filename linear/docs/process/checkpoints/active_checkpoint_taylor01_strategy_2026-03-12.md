@@ -17,6 +17,7 @@ Project: [Taylor01](https://linear.app/bitpod-app/project/taylor01-b51442062c45)
 - `linear/docs/process/taylor01_coupling_log_v1.md`
 - `linear/docs/process/taylor01_repo_boundary_recommendation_v1.md`
 - `linear/docs/process/taylor01_backlog_seed_v1.md`
+- `linear/docs/process/taylor01_active_bypass_register_v1.md`
 - `linear/docs/process/taylor01_portability_review_gate_v1.md`
 - `linear/docs/process/linear_issue_template_evidence_contract_v2.md`
 - `linear/docs/process/linear_operating_guide_v2.md`
@@ -29,4 +30,4 @@ Project: [Taylor01](https://linear.app/bitpod-app/project/taylor01-b51442062c45)
 2. Normalize mixed workspace/path policies into portable Taylor01 base plus BitPod overlay.
 3. Start using `tools/taylor01/*` as the reserved future landing zone for portable content.
 4. Grow the Taylor01 project backlog only when future items are concrete enough to avoid noise.
-
+5. Keep temporary bypasses in the active bypass register rather than letting them drift into memory or generic backlog.

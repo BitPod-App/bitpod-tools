@@ -28,6 +28,8 @@ The rule is:
 - portable by default
 - temporary coupling only when explicit
 - hidden coupling never
+- solve portability now when reasonable
+- if not now, review the exception soon rather than letting it become background backlog
 
 ## Scope
 
@@ -71,6 +73,7 @@ This document does not define final brand canon, legal policy, or billing policy
 1. Intake: request enters Linear issue with objective, scope, required outputs.
 2. Portability check: relevant issues are classified for Taylor01 portability before they are treated as ready.
    - if immediate portability work is not worth the interruption, use an explicit temporary bypass with reason and review trigger
+   - significant active bypasses should be tracked in the Taylor01 active bypass register until closed or promoted
 3. Plan: Taylor decomposes into atomic tasks with explicit dependencies.
 4. Execute: specialists implement scoped changes only.
 5. Verify: QA validates against acceptance criteria and evidence requirements.

@@ -55,3 +55,6 @@ These are seed items only.
 
 They should influence new work immediately, but they should not become a migration program unless explicitly promoted.
 
+Temporary bypasses should not be dumped here by default.
+
+Use the active bypass register first and only promote items here when they have become important enough to deserve a real Taylor01 follow-up lane.

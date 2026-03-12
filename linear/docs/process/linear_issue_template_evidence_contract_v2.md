@@ -38,6 +38,11 @@ If portability is intentionally deferred for now, also include:
 - `T01_BYPASS_REASON`
 - `T01_REVIEW_TRIGGER`
 
+Default expectation:
+
+- use `T01_ACTION: create-generic-version-now` unless there is a real reason not to
+- use bypass only as a bounded exception
+
 ## `Needs-CJ` marker guidance
 
 Use `Needs-CJ` only when:
@@ -97,3 +102,4 @@ Risk / follow-up:
 - If a completion comment omits required evidence fields, status must not move to `Done`.
 - If a relevant issue omits the Taylor01 portability block, status must not be treated as decision-complete unless an explicit temporary-bypass note is present in the same update.
 - If uncertain, set/keep `In Review` and request missing evidence.
+- If a meaningful temporary bypass is used, add or update the active bypass register entry instead of silently relying on memory.

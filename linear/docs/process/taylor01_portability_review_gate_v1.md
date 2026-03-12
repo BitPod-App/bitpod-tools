@@ -43,6 +43,7 @@ Optional when bypassing portability work for now:
 ## Decision rule
 
 - Default posture: be strict enough to notice coupling early.
+- Default action for new portable or mixed work should be to solve the portability concern now.
 - Do not block experimentation by default.
 - If the work creates hard future lock-in, portability work may interrupt or reshape BitPod delivery.
 - If the work is acceptable for now, coupling must still be logged explicitly.
@@ -63,6 +64,27 @@ Do not use bypass when:
 - the coupling would be expensive to unwind even one or two steps later
 - the decision would hard-code Taylor01 to BitPod or one tool surface in a foundational way
 - nobody can explain what would trigger future cleanup
+
+## Active bypass review rule
+
+- Temporary bypasses should not disappear into a generic backlog.
+- Record meaningful active bypasses in:
+  - `linear/docs/process/taylor01_active_bypass_register_v1.md`
+- Review active bypasses:
+  - on the next related touch, or
+  - during the next weekly Taylor01 review,
+  - whichever comes first
+- Remove the entry when one of the following becomes true:
+  - the coupling is resolved
+  - the artifact is reclassified as intentionally BitPod-specific
+  - the bypass is promoted into a concrete Taylor01 ticket because it now matters enough
+
+## Backlog rule
+
+- Do not create a future ticket for every temporary bypass.
+- Only promote a bypass into backlog when it becomes important enough that not solving it soon would create real cost.
+- The active bypass register is for short-lived, reviewable exceptions.
+- The backlog is for items that have earned dedicated follow-up.
 
 ## Where to record it
 
