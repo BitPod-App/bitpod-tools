@@ -42,6 +42,7 @@ Define the canonical way agents use Linear for execution tracking, evidence logg
 - Any relevant issue must include a Taylor01 Portability Check block.
 - Relevant means the issue touches agents, workflows, process docs, workspace policy, or tool integrations.
 - Product-only BitPod work does not need the block unless it changes reusable operating behavior.
+- The current primary execution goal remains building BitPod App using Taylor01 Team.
 - Missing portability classification means the issue is not decision-complete unless the update explicitly declares a temporary Taylor01 bypass with reason and review trigger.
 - Temporary bypass is allowed for bounded experimental work; hidden coupling is not.
 - Default expectation is to solve portability now for new portable or mixed work unless there is a concrete reason not to.

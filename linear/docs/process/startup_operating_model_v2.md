@@ -12,10 +12,16 @@ Define how BitPod runs as an AI-assisted startup while explicitly recognizing Ta
 
 ## Dual-product framing
 
-- BitPod App is the current product being built.
-- Taylor01 is the reusable PM + AI team operating system being proven through BitPod.
+- BitPod App is the primary current product being built.
+- Taylor01 is the reusable PM + AI team operating system being proven and improved through BitPod.
 - BitPod is the proving ground, not the owner of Taylor01 architecture.
 - BitPod completion is not required to validate Taylor01's utility.
+
+## Priority order
+
+- Main goal: build BitPod App using Taylor01 Team.
+- Secondary goal: improve Taylor01 over time so it becomes reusable for future non-BitPod products.
+- Portability and separation work should support the main goal by reducing future entanglement, not replace the main goal.
 
 ## Control rule
 
@@ -30,6 +36,7 @@ The rule is:
 - hidden coupling never
 - solve portability now when reasonable
 - if not now, review the exception soon rather than letting it become background backlog
+- keep BitPod execution moving unless the coupling risk is strong enough to justify interruption
 
 ## Scope
 

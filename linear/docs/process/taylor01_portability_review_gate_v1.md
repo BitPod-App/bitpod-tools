@@ -12,6 +12,8 @@ The goal is not to freeze experimentation.
 
 The goal is to make sure change lands in the correct bucket or is explicitly marked as temporary coupling.
 
+This gate exists to help BitPod get built with the right reusable boundaries, not to replace BitPod as the primary execution goal.
+
 ## Gate applies when
 
 A ticket or PR touches any of:
@@ -45,6 +47,7 @@ Optional when bypassing portability work for now:
 - Default posture: be strict enough to notice coupling early.
 - Default action for new portable or mixed work should be to solve the portability concern now.
 - Do not block experimentation by default.
+- Keep BitPod moving by default unless the coupling risk is large enough to justify interruption.
 - If the work creates hard future lock-in, portability work may interrupt or reshape BitPod delivery.
 - If the work is acceptable for now, coupling must still be logged explicitly.
 - A temporary bypass is allowed when the portability fix is not worth the immediate interruption.
