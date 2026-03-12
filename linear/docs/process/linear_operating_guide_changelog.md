@@ -2,7 +2,7 @@
 
 ## Active version
 
-- `v1` (effective 2026-03-07)
+- `v2` (effective 2026-03-12)
 
 ## Entries
 
@@ -27,3 +27,21 @@ Linked artifacts:
 
 Rollback target:
 - This is baseline v1; rollback target is itself until v2 exists.
+
+### v2 — 2026-03-12
+
+Reason:
+- Taylor01 is now treated as a co-equal product to BitPod, so relevant Linear execution work requires an explicit portability review gate.
+
+Includes:
+- Taylor01 Portability Check requirement for relevant issues
+- active evidence contract updated to `linear_issue_template_evidence_contract_v2.md`
+- guidance for classifying reusable work as `core`, `policy`, `adapter`, `bitpod-embedding`, or `mixed`
+
+Linked artifacts:
+- `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/linear_operating_guide_v2.md`
+- `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/linear_issue_template_evidence_contract_v2.md`
+- `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/taylor01_portability_review_gate_v1.md`
+
+Rollback target:
+- `v1`

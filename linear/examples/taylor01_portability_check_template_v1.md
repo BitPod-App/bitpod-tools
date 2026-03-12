@@ -1,0 +1,35 @@
+# Taylor01 Portability Check Template v1
+
+Use this block in relevant Linear issues and PRs.
+
+Default intent:
+
+- solve the portability concern now when reasonable
+- use bypass only when there is a clear short-term reason
+- if bypass is used and it is meaningful, add it to the active bypass register
+
+```md
+Taylor01 Portability Check
+
+T01_LAYER: core | policy | adapter | bitpod-embedding | mixed
+T01_SPECIFICITY: portable | bitpod-specific | mixed
+T01_COUPLING: short note on what is still too coupled
+T01_ACTION: keep-local | move-later | create-generic-version-now
+T01_BYPASS: none | temporary-coupling
+T01_BYPASS_REASON: only if bypass is used
+T01_REVIEW_TRIGGER: only if bypass is used
+```
+
+## Example
+
+```md
+Taylor01 Portability Check
+
+T01_LAYER: adapter
+T01_SPECIFICITY: mixed
+T01_COUPLING: workflow is generic, but current examples still assume Linear issue URLs and BitPod repo paths
+T01_ACTION: create-generic-version-now
+T01_BYPASS: temporary-coupling
+T01_BYPASS_REASON: examples are still evolving and a full generic rewrite would slow current delivery more than it helps
+T01_REVIEW_TRIGGER: revisit when the next non-BitPod adapter example is added
+```
