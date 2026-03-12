@@ -61,3 +61,4 @@ This quick check does not replace the fuller acceptance note, but it is a good e
 - `Verified`: Taylor-real to CJ is not yet proven by an explicit acceptance artifact.
 - `Verified`: Discord baseline transport proof exists.
 - `Verified`: Discord acceptance remains open.
+- `Verified`: the current `bitpod-tools/gpt_bridge` team-chat surface does not implement a Taylor responder path yet; `@taylor` is logged, but only `@gpt` is actually relayed.
