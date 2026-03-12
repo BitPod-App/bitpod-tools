@@ -9,6 +9,16 @@ Define the dedicated Vera-style QA lane as a real operating lane with explicit v
 
 This contract is the target operating model for technical QA in BitPod Phase 4. It is not a merge-policy replacement by itself.
 
+## Canonical skill source
+
+This repo contract is derived from the local Vera skill and should not drift from it:
+
+- `/Users/cjarguello/.agents/skills/qa-specialist/SKILL.md`
+- `/Users/cjarguello/.agents/skills/qa-specialist/references/QA_OUTPUT_CONTRACTS_v1.md`
+- `/Users/cjarguello/.agents/skills/qa-specialist/references/QA_REVIEW_CHECKLIST_v1.md`
+
+If this repo document and the skill disagree, the `qa-specialist` skill is the source of truth for Vera's verification behavior.
+
 ## What Makes This A Dedicated QA Lane
 
 The QA lane counts as dedicated only if all of the following are true:
@@ -38,6 +48,7 @@ If any of those are missing, the work falls back to the interim pattern rather t
 - implementation
 - merge approval authority
 - rewriting acceptance criteria after work is complete
+- cross-lane orchestration workflow beyond returning the verdict artifact
 
 ## Inputs Required
 
@@ -71,6 +82,11 @@ Allowed storage targets:
 - issue-linked repo artifact paths under `/linear/docs/process/**` when the report is part of a process proof
 - PR comments or Linear comments that link to the durable artifact rather than replacing it
 
+Optional companion artifacts may exist when useful, but they are not required to count as Vera operating correctly:
+
+- `test_plan.md`
+- `bug_report.md`
+
 ## Required Flow
 
 1. Taylor delegates QA with explicit acceptance criteria.
@@ -79,6 +95,12 @@ Allowed storage targets:
 4. Vera returns `PASSED` or `FAILED` with evidence links.
 5. Taylor synthesizes the verdict into the execution spine.
 6. CJ acceptance or admin bypass, if needed, remains a separate governance action.
+
+The minimum successful QA handoff is therefore:
+
+- Taylor or engineering supplies the verification target and criteria
+- Vera returns `verification_report.md`
+- Taylor or CJ decides what to do with that verdict
 
 ## Independence Rules
 

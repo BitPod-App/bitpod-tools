@@ -30,6 +30,12 @@ That gap was documented in:
 - [specialist_operating_lanes_proof_v1.md](./specialist_operating_lanes_proof_v1.md)
 - [interim_ai_technical_qa_cj_acceptance_policy_v1.md](./interim_ai_technical_qa_cj_acceptance_policy_v1.md)
 
+The stronger canonical QA behavior now lives in the Vera skill itself, not in Taylor:
+
+- `/Users/cjarguello/.agents/skills/qa-specialist/SKILL.md`
+
+Taylor's current skill now explicitly delegates final QA verification execution to `qa-specialist`, which is why BIT-90 should anchor to Vera's artifact contract rather than Taylor-style review behavior.
+
 ## Real Execution Record Used For Proof
 
 ### Chain
@@ -61,6 +67,7 @@ The lane is no longer only an informal review style because it now has:
 - a required evidence format aligned to `verification_report.md`
 - a verdict-only identity for Vera
 - a durable artifact linked to live Phase 4 work
+- a canonical skill source outside Taylor's planning lane
 
 That crosses the line from "interim QA happens somewhere" to "the QA lane exists as an operating lane."
 

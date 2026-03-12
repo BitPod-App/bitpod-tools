@@ -17,6 +17,8 @@
   - `/Users/cjarguello/bitpod-app/bitpod-tools/.worktrees/bitpod-tools-bit92/linear/docs/process/vera_qa_lane_contract_v1.md`
   - `/Users/cjarguello/bitpod-app/bitpod-tools/.worktrees/bitpod-tools-bit92/linear/docs/process/vera_qa_lane_operational_proof_v1.md`
   - `/Users/cjarguello/bitpod-app/bitpod-tools/.worktrees/bitpod-tools-bit92/linear/examples/verification_report_bit90_minimum_team_2026-03-12.md`
+- canonical QA behavior source:
+  - `/Users/cjarguello/.agents/skills/qa-specialist/SKILL.md`
 - QA lane truth after this package:
   - dedicated Vera-style QA lane = present at working-baseline level
   - interim [BIT-79 — Establish interim AI technical QA + CJ acceptance policy](https://linear.app/bitpod-app/issue/BIT-79/establish-interim-ai-technical-qa-cj-acceptance-policy) = downgraded from primary reliance but still required as temporary merge-governance fallback
