@@ -3,6 +3,11 @@
 Status: Working proof  
 Linked issue: [BIT-85 — Stand up specialist operating lanes for engineering, QA, and research/design](https://linear.app/bitpod-app/issue/BIT-85/stand-up-specialist-operating-lanes-for-engineering-qa-and)
 
+Historical note:
+
+- this proof records the state at BIT-85 completion time
+- later QA-lane status should be read from `./vera_qa_lane_operational_proof_v1.md`
+
 ## Objective
 
 Show which specialist lanes are already functioning in real work, which are only interim, and which still require a blocker note rather than a false completion claim.
