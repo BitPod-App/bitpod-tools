@@ -35,6 +35,18 @@ Pass only if all are true:
 
 - `TAYLOR_REAL_AI_AGENT=true|false`
 
+## Fast baseline check
+
+A lightweight early check is desirable before deeper transport work.
+
+Use any live operator surface and run one short exchange with:
+
+- one open-ended planning or status question
+- one follow-up clarification turn
+- one judgment about whether Taylor felt like a real agent versus a narrow wrapper
+
+This quick check does not replace the fuller acceptance note, but it is a good early truth signal.
+
 ## Relationship to Discord work
 
 - [BIT-86 — Real Discord acceptance for team session contract and bridge command surface](https://linear.app/bitpod-app/issue/BIT-86/real-discord-acceptance-for-team-session-contract-and-bridge-command) remains the Discord/session-surface closure gate.
