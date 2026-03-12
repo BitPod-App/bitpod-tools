@@ -19,6 +19,9 @@ That is still not enough to claim startup-ready.
 
 The missing gap is not one thing. It is the combination of:
 
+- no proof yet that Taylor is implemented as an embodied AI agent rather than only an orchestration/runtime concept
+- no proof yet that at least one specialist is implemented as an embodied AI agent rather than only a lane contract or skill-backed proxy
+- no proof yet of a real multi-agent team loop with embodied agents
 - no proven CJ-to-Taylor conversational agent acceptance yet
 - no passed real Discord session-surface acceptance yet
 - no completed reviewer-routing hardening beyond the interim policy
@@ -43,6 +46,9 @@ The missing gap is not one thing. It is the combination of:
 ### Not yet proven
 
 - `TAYLOR_CONVERSATIONAL_AGENT_TO_CJ=true`
+- `TAYLOR_EMBODIED_AI_AGENT=true`
+- `AT_LEAST_ONE_SPECIALIST_EMBODIED_AI_AGENT=true`
+- `REAL_MULTI_AGENT_TEAM_LOOP=true`
 - `DISCORD_REAL_ACCEPTANCE_PASSED=true`
 - `PHASE_4_COMPLETE=true`
 - `PHASE_5_COMPLETE=true`
@@ -56,6 +62,10 @@ The missing gap is not one thing. It is the combination of:
   - required to prove the Discord/session-surface side honestly
 - [BIT-97 — Prove Taylor as a real AI agent in any live operator surface](https://linear.app/bitpod-app/issue/BIT-97/prove-taylor-as-a-real-ai-agent-in-any-live-operator-surface)
   - required to prove Taylor-real without making that claim transport-exclusive
+- [BIT-99 — Embody first specialist as a real AI agent/runtime beyond lane or skill proxy](https://linear.app/bitpod-app/issue/BIT-99/embody-first-specialist-as-a-real-ai-agentruntime-beyond-lane-or-skill)
+  - required to prove the team is more than Taylor plus non-agent lanes
+- [BIT-98 — Prove real multi-agent team loop with Taylor plus embodied specialist agent(s)](https://linear.app/bitpod-app/issue/BIT-98/prove-real-multi-agent-team-loop-with-taylor-plus-embodied-specialist)
+  - required to prove the team exists as a team rather than as one embodied agent plus supporting contracts
 - [BIT-89 — Mature reviewer routing from temporary bypass policy to intended GitHub governance](https://linear.app/bitpod-app/issue/BIT-89/mature-reviewer-routing-from-temporary-bypass-policy-to-intended)
   - required to stop normal work from depending on interim bypass behavior
 - [BIT-91 — Raise governance, memory, and eval baseline artifacts to production-grade operations](https://linear.app/bitpod-app/issue/BIT-91/raise-governance-memory-and-eval-baseline-artifacts-to-production)
@@ -74,6 +84,9 @@ The missing gap is not one thing. It is the combination of:
 
 - Phase 4:
   - Taylor operational reality
+  - Taylor embodied AI-agent reality
+  - first specialist embodied AI-agent reality
+  - real multi-agent team existence
   - minimum team readiness
   - Taylor conversational reality to CJ
   - real Discord/session-surface acceptance
@@ -90,6 +103,9 @@ The next honest closeout package should not claim startup-ready yet.
 
 It should claim these narrower things separately:
 
+- `Taylor embodied AI agent = true|false`
+- `At least one specialist embodied AI agent = true|false`
+- `Real multi-agent team loop = true|false`
 - `Taylor as real AI agent to CJ = true|false`
 - `Discord real acceptance = true|false`
 
@@ -99,6 +115,13 @@ The Taylor-real verdict should be evaluated inside [BIT-97 — Prove Taylor as a
 - one follow-up/clarification turn
 - one explicit operator usability judgment from CJ
 - one note naming the proving surface used
+
+The specialist/team-loop verdicts should be evaluated in a dedicated Phase 4 existence gate with:
+
+- one embodied specialist selected explicitly
+- one real delegated task from Taylor to that specialist
+- one returned result artifact or verdict
+- one explicit note showing that the flow behaved as a team loop rather than a documentation-only lane
 
 The Discord verdict should be evaluated inside [BIT-86 — Real Discord acceptance for team session contract and bridge command surface](https://linear.app/bitpod-app/issue/BIT-86/real-discord-acceptance-for-team-session-contract-and-bridge-command) with:
 

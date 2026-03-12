@@ -11,6 +11,8 @@ Related issues:
 
 Define the minimum truthful pass/fail gate for whether Taylor is implemented strongly enough to count as a real AI agent to CJ.
 
+This contract is necessary for Phase 4, but it is not sufficient for full Phase 4 closure by itself.
+
 ## Core rule
 
 - Taylor-real is not transport-exclusive.
@@ -54,11 +56,18 @@ This quick check does not replace the fuller acceptance note, but it is a good e
 - A Taylor-real pass in Discord may satisfy both Taylor-real and part of Discord acceptance.
 - A Taylor-real pass in Zulip or Codex chat may satisfy Taylor-real without satisfying Discord acceptance.
 
+## Relationship to Phase 4 closure
+
+- A Taylor-real pass is only one part of honest Phase 4 closure.
+- Phase 4 also requires at least one specialist embodied AI agent and a real multi-agent team loop.
+- Those stronger team-existence conditions are defined separately in `phase4_real_multi_agent_team_acceptance_contract_v1.md`.
+
 ## Current truth
 
 - `Verified`: Taylor operational orchestrator proof exists.
 - `Verified`: minimum team proof exists.
 - `Verified`: Taylor-real to CJ is not yet proven by an explicit acceptance artifact.
+- `Verified`: Taylor-real alone would still not be enough to close Phase 4.
 - `Verified`: Discord baseline transport proof exists.
 - `Verified`: Discord acceptance remains open.
 - `Verified`: the current `bitpod-tools/gpt_bridge` team-chat surface does not implement a Taylor responder path yet; `@taylor` is logged, but only `@gpt` is actually relayed.
