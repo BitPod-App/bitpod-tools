@@ -42,7 +42,8 @@ Define the canonical way agents use Linear for execution tracking, evidence logg
 - Any relevant issue must include a Taylor01 Portability Check block.
 - Relevant means the issue touches agents, workflows, process docs, workspace policy, or tool integrations.
 - Product-only BitPod work does not need the block unless it changes reusable operating behavior.
-- Missing portability classification means the issue is not decision-complete.
+- Missing portability classification means the issue is not decision-complete unless the update explicitly declares a temporary Taylor01 bypass with reason and review trigger.
+- Temporary bypass is allowed for bounded experimental work; hidden coupling is not.
 
 ## Required issue evidence format
 
@@ -59,6 +60,9 @@ Define the canonical way agents use Linear for execution tracking, evidence logg
 - `T01_SPECIFICITY`: `portable | bitpod-specific | mixed`
 - `T01_COUPLING`: short note on what remains too coupled
 - `T01_ACTION`: `keep-local | move-later | create-generic-version-now`
+- `T01_BYPASS`: `none | temporary-coupling`
+- `T01_BYPASS_REASON`: why the portability fix is being deferred
+- `T01_REVIEW_TRIGGER`: when the coupling must be revisited
 
 ## Current workspace status model
 
@@ -91,4 +95,3 @@ If `v2` causes workflow regression:
 4. Post rollback evidence comment in the affected Linear issue(s).
 
 Rollback does not delete later docs; it re-activates `v1` as execution policy.
-

@@ -8,6 +8,10 @@ Project: [Taylor01](https://linear.app/bitpod-app/project/taylor01-b51442062c45)
 
 Require explicit Taylor01 portability classification for any work that could quietly hard-code BitPod-specific assumptions into reusable process, workflow, agent, or adapter layers.
 
+The goal is not to freeze experimentation.
+
+The goal is to make sure change lands in the correct bucket or is explicitly marked as temporary coupling.
+
 ## Gate applies when
 
 A ticket or PR touches any of:
@@ -30,11 +34,35 @@ Every relevant Linear issue and PR must include:
 - `T01_COUPLING`: short note on what is still too coupled
 - `T01_ACTION`: `keep-local | move-later | create-generic-version-now`
 
+Optional when bypassing portability work for now:
+
+- `T01_BYPASS`: `none | temporary-coupling`
+- `T01_BYPASS_REASON`: short reason the portability fix is not worth doing immediately
+- `T01_REVIEW_TRIGGER`: the condition that should cause the coupling to be revisited
+
 ## Decision rule
 
+- Default posture: be strict enough to notice coupling early.
+- Do not block experimentation by default.
 - If the work creates hard future lock-in, portability work may interrupt or reshape BitPod delivery.
 - If the work is acceptable for now, coupling must still be logged explicitly.
-- "We'll clean it up later" is not sufficient without a `T01_COUPLING` note.
+- A temporary bypass is allowed when the portability fix is not worth the immediate interruption.
+- "We'll clean it up later" is not sufficient without a `T01_COUPLING` note and bypass metadata when applicable.
+
+## Temporary bypass rule
+
+Use bypass only when all are true:
+
+- the work is still exploratory or rapidly evolving
+- the current coupling is understandable and bounded
+- fixing it now would create disproportionate drag
+- there is a clear future review trigger
+
+Do not use bypass when:
+
+- the coupling would be expensive to unwind even one or two steps later
+- the decision would hard-code Taylor01 to BitPod or one tool surface in a foundational way
+- nobody can explain what would trigger future cleanup
 
 ## Where to record it
 
@@ -57,7 +85,8 @@ See:
 
 ## Current policy stance
 
-This is a hard review gate, not a soft suggestion.
+This is a strict visibility gate with a controlled bypass path.
 
-Taylor01 is important enough that avoiding bad entanglement is allowed to slow BitPod work.
+Taylor01 is important enough that avoiding bad entanglement is allowed to slow BitPod work when needed.
 
+Taylor01 is also experimental enough that temporary coupling is acceptable when it is explicit, bounded, and reviewable.

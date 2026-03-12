@@ -75,6 +75,8 @@ When a new artifact is created, classify it with:
 - `T01_LAYER`
 - `T01_SPECIFICITY`
 - `T01_ACTION`
+- `T01_BYPASS` when portability is intentionally deferred for now
 
 Do not assume generic process/workflow artifacts belong to BitPod just because they are being proven inside BitPod.
 
+If immediate portability work is not worth the interruption, use a temporary bypass explicitly instead of silently leaving the artifact entangled.

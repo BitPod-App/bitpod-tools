@@ -74,5 +74,5 @@ Separate repo extraction becomes justified when two or more of the following are
 - no separate repo yet
 - explicit boundary now
 - portable-by-default classification for new reusable artifacts
+- controlled temporary bypass allowed when portability work is not yet worth the interruption
 - documented coupling log for anything still mixed
-

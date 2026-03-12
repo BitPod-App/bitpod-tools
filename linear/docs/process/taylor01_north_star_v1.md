@@ -43,4 +43,5 @@ That is intentional, not drift.
 - Keep implementation in-repo for now.
 - Define the future extraction boundary now.
 - Use BitPod as proof-of-concept without letting BitPod-specific assumptions quietly become Taylor01 defaults.
-
+- Treat Taylor01 as highly experimental and evolving quickly with the AI landscape.
+- Optimize for correct bucket placement and explicit temporary coupling, not for pretending the first structure will be final.

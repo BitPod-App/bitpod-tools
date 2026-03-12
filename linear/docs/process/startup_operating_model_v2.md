@@ -21,6 +21,14 @@ Define how BitPod runs as an AI-assisted startup while explicitly recognizing Ta
 
 Taylor01 portability concerns may legitimately slow or redirect BitPod work when the alternative would create bad long-term coupling.
 
+Taylor01 portability concerns do not require blocking all temporary coupling.
+
+The rule is:
+
+- portable by default
+- temporary coupling only when explicit
+- hidden coupling never
+
 ## Scope
 
 This document governs:
@@ -62,6 +70,7 @@ This document does not define final brand canon, legal policy, or billing policy
 
 1. Intake: request enters Linear issue with objective, scope, required outputs.
 2. Portability check: relevant issues are classified for Taylor01 portability before they are treated as ready.
+   - if immediate portability work is not worth the interruption, use an explicit temporary bypass with reason and review trigger
 3. Plan: Taylor decomposes into atomic tasks with explicit dependencies.
 4. Execute: specialists implement scoped changes only.
 5. Verify: QA validates against acceptance criteria and evidence requirements.
@@ -93,6 +102,8 @@ Use the Taylor01 portability review gate for:
 - tool integration behavior
 
 Do not assume a reusable behavior belongs to BitPod merely because BitPod is the proving ground.
+
+Experimental and fast-moving work may use a temporary bypass, but the bypass must be visible and reviewable.
 
 ## Delegation + Handoff Protocol
 
@@ -144,4 +155,3 @@ When capabilities degrade (tool outage, auth drift, MCP instability), execution 
 - Append updates to versioned docs; do not rewrite history in place.
 - Non-trivial changes require rationale + impact note.
 - If operating behavior diverges from this document, log a drift note and open follow-up ticket.
-

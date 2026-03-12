@@ -32,6 +32,12 @@ For issues touching agents, workflows, process docs, workspace policy, or tool i
 - `T01_COUPLING`: short note on what remains too coupled
 - `T01_ACTION`: `keep-local | move-later | create-generic-version-now`
 
+If portability is intentionally deferred for now, also include:
+
+- `T01_BYPASS`: `none | temporary-coupling`
+- `T01_BYPASS_REASON`
+- `T01_REVIEW_TRIGGER`
+
 ## `Needs-CJ` marker guidance
 
 Use `Needs-CJ` only when:
@@ -69,6 +75,9 @@ T01_LAYER: adapter
 T01_SPECIFICITY: mixed
 T01_COUPLING: evidence contract still uses BitPod-specific artifact paths
 T01_ACTION: move-later
+T01_BYPASS: temporary-coupling
+T01_BYPASS_REASON: issue template is still evolving quickly and immediate generic refactor would slow current migration work
+T01_REVIEW_TRIGGER: revisit when the next reusable adapter template is introduced outside BitPod
 
 Risk / follow-up:
 - `code_security` feature is plan-gated; tracked separately and not blocking this issue.
@@ -86,6 +95,5 @@ Risk / follow-up:
 ## Enforcement note
 
 - If a completion comment omits required evidence fields, status must not move to `Done`.
-- If a relevant issue omits the Taylor01 portability block, status must not be treated as decision-complete.
+- If a relevant issue omits the Taylor01 portability block, status must not be treated as decision-complete unless an explicit temporary-bypass note is present in the same update.
 - If uncertain, set/keep `In Review` and request missing evidence.
-

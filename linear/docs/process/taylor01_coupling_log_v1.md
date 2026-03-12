@@ -8,6 +8,16 @@ Project: [Taylor01](https://linear.app/bitpod-app/project/taylor01-b51442062c45)
 
 Record current examples where reusable Taylor01 behavior is still entangled with BitPod-specific paths, tool assumptions, or product framing.
 
+This log is meant to stay curated, not exhaustive.
+
+Do not dump every harmless temporary shortcut here.
+
+Use it only for couplings that:
+
+- are likely to matter later
+- could become expensive if repeated
+- or need explicit future review so they do not disappear from memory
+
 ## Active coupling entries
 
 | ID | Path or artifact | Coupling type | Verified problem | Recommended action |
@@ -30,6 +40,7 @@ Record current examples where reusable Taylor01 behavior is still entangled with
 - Product-specific artifacts are not a problem by themselves.
 - Mixed artifacts are the highest priority.
 - Missing portability metadata in tickets and PRs is a process gap, not just a documentation gap.
+- Temporary bypasses are acceptable when explicit, scoped, and worth revisiting later.
 
 ## Next cleanup order
 
@@ -37,4 +48,3 @@ Record current examples where reusable Taylor01 behavior is still entangled with
 2. publish Taylor01-aware operating docs (`v2` where versioning already exists)
 3. normalize mixed workspace/path policies
 4. prepare subtree landing zones before moving portable content
-
