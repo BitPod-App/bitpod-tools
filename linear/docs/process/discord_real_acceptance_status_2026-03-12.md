@@ -19,6 +19,7 @@ Missing proof:
 - one real Discord message linking back to a Linear issue and/or GitHub PR
 - one screenshot or transcript excerpt from actual Discord usage
 - one explicit operator-level usability judgment that the surface no longer depends on Zulip mental models
+- one explicit CJ operator judgment on whether Taylor is conversationally real as an agent in Discord
 
 ## What is verified now
 
@@ -63,6 +64,7 @@ Current state should be read as:
 
 - baseline Discord transport proof: `PASS`
 - real Discord session-surface acceptance: `NOT YET PROVEN`
+- Taylor conversational reality to CJ in Discord: `NOT YET PROVEN`
 
 That is enough to promote BIT-86 into active closure work.
 
@@ -73,5 +75,6 @@ It is not enough to close BIT-86.
 1. run one real intent-bearing Discord interaction
 2. run one real decision/update interaction with linked artifact
 3. capture one real screenshot or transcript excerpt
-4. write one acceptance note with pass/fail per section from `discord_real_acceptance_checklist_v1.md`
-5. then decide whether BIT-86 passes or must be split further into baseline versus final closure work
+4. run one real CJ-to-Taylor conversational exchange and record an explicit operator verdict
+5. write one acceptance note with pass/fail per section from `discord_real_acceptance_checklist_v1.md`
+6. then decide whether BIT-86 passes or must be split further into baseline versus final closure work

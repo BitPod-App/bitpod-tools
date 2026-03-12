@@ -15,6 +15,12 @@ Promote Discord from parity proof-of-concept to real acceptance surface for the 
 
 This issue is not complete when webhook parity is green. It is complete only when real team-style communication is exercised successfully in Discord with linked artifacts and a usable command/session flow.
 
+It must now also prove a stronger claim:
+
+- CJ can speak to Taylor conversationally in Discord as a real agent surface
+- Taylor can respond usefully beyond narrow command execution
+- Taylor can hold enough continuity, groundedness, and role stability that the interaction feels agent-real rather than skill-like or bot-like
+
 ## Promotion meaning
 
 This issue is now a promoted closure gate, not a lightweight deferred item.
@@ -68,6 +74,16 @@ Pass only if all are true:
 - at least one Discord interaction links back to a real Linear issue and/or PR
 - resulting artifact/memory flow is durable and legible enough to support team operations
 
+### D. Taylor conversational reality to CJ
+
+Pass only if all are true:
+
+- CJ has at least one non-trivial conversational exchange with Taylor in Discord
+- the exchange goes beyond a simple command/request-reply pattern
+- Taylor responds as an orchestrator/agent surface rather than a narrow bot wrapper
+- Taylor shows groundedness by separating observed, inferred, and unknown where it matters
+- CJ can make an explicit operator judgment that Taylor feels usable as a real AI agent surface
+
 ## Required live checks
 
 1. Post one real planning/intent message in the active Discord environment.
@@ -77,6 +93,11 @@ Pass only if all are true:
 5. Verify the channel flow is understandable to a human operator without hidden context.
 6. Verify command/session usage does not require Zulip-only mental models.
 7. Capture screenshot or transcript evidence from the real Discord environment.
+8. Run one CJ-to-Taylor conversational exchange that includes at least:
+   - one planning or scoping question
+   - one follow-up or clarification turn
+   - one response from Taylor that includes a next action, recommendation, or decision framing
+9. Record an explicit CJ operator verdict on whether Taylor felt conversationally real versus merely command-driven.
 
 ## Required outputs
 
@@ -84,8 +105,11 @@ Pass only if all are true:
   - Team-session usability
   - Bridge command surface usability
   - Artifact + memory flow
+  - Taylor conversational reality to CJ
 - one screenshot or transcript excerpt from real Discord usage
 - list of linked artifacts/Linear issues/PRs used in the acceptance run
+- one explicit operator note:
+  - `TAYLOR_CONVERSATIONAL_REAL_TO_CJ=true|false`
 - explicit completion verdict for:
   - [BIT-37 — Migrate team session chat commands from Zulip to chosen platform](https://linear.app/bitpod-app/issue/BIT-37/migrate-team-session-chat-commands-from-zulip-to-chosen-platform)
   - [BIT-39 — Bridge command surface cleanup (keep useful, remove obsolete, clarify behavior)](https://linear.app/bitpod-app/issue/BIT-39/bridge-command-surface-cleanup-keep-useful-remove-obsolete-clarify)
@@ -98,6 +122,7 @@ Any of the following means BIT-86 remains open:
 - command ownership between Bridge and Taylor remains confusing in practice
 - the live flow cannot carry plans, decisions, and artifact links cleanly
 - evidence depends on thread-local memory rather than durable references
+- Taylor only behaves like a narrow command bot rather than a usable conversational agent surface for CJ
 
 ## Completion rule
 
