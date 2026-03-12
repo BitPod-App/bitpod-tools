@@ -9,15 +9,22 @@ Define the dedicated Vera-style QA lane as a real operating lane with explicit v
 
 This contract is the target operating model for technical QA in BitPod Phase 4. It is not a merge-policy replacement by itself.
 
-## Canonical skill source
+## Current implementation reference
 
-This repo contract is derived from the local Vera skill and should not drift from it:
+This repo contract is currently implemented through the local `qa-specialist` skill:
 
 - `/Users/cjarguello/.agents/skills/qa-specialist/SKILL.md`
 - `/Users/cjarguello/.agents/skills/qa-specialist/references/QA_OUTPUT_CONTRACTS_v1.md`
 - `/Users/cjarguello/.agents/skills/qa-specialist/references/QA_REVIEW_CHECKLIST_v1.md`
 
-If this repo document and the skill disagree, the `qa-specialist` skill is the source of truth for Vera's verification behavior.
+That skill should be treated as a transitional implementation surface for Vera while the dedicated QA lane is still being operationalized as a fuller agent/runtime.
+
+The durable intent is:
+
+- Vera = QA specialist role/lane
+- `qa-specialist` = current implementation scaffold for that role
+
+The long-term role should not be constrained to remaining only a skill.
 
 ## What Makes This A Dedicated QA Lane
 
