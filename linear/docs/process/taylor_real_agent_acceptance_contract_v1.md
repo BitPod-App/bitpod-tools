@@ -62,3 +62,4 @@ This quick check does not replace the fuller acceptance note, but it is a good e
 - `Verified`: Discord baseline transport proof exists.
 - `Verified`: Discord acceptance remains open.
 - `Verified`: the current `bitpod-tools/gpt_bridge` team-chat surface does not implement a Taylor responder path yet; `@taylor` is logged, but only `@gpt` is actually relayed.
+- `Verified`: Zulip historical evidence proves Taylor existed as a real responding workflow bot/runtime there, but does not yet prove broad conversational agent reality to CJ.
