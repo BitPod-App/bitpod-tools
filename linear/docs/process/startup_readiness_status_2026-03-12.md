@@ -76,11 +76,11 @@ The missing gap is not one thing. It is the combination of:
   - Taylor conversational reality to CJ
   - real Discord/session-surface acceptance
 - Phase 5:
+  - startup-ready verdict
   - reviewer/governance/memory/eval hardening
+  - polish/smoothness required for reliable user-facing feature work by the team
 - Phase 3 residual hardening:
   - security and operator-surface cleanup that can still invalidate a startup-ready claim if left open
-- Program closeout after Phase 5:
-  - `STARTUP_READY=true`
 
 ## Recommended next proof package
 
@@ -97,4 +97,4 @@ and it should be evaluated inside [BIT-86 — Real Discord acceptance for team s
 - one decision/update exchange with artifact link
 - one operator usability judgment from CJ
 
-After that, startup-ready can be evaluated as a combined bootstrap closeout decision rather than as a Phase 4 synonym.
+After that, startup-ready should be evaluated inside Phase 5 rather than treated as a Phase 4 synonym.

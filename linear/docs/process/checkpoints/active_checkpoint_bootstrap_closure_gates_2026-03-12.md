@@ -27,7 +27,7 @@
 - Taylor operational orchestrator proof is real
 - Taylor conversationally real to CJ is not yet proven
 - Phase 4 is therefore not closed yet
-- startup-ready should be treated as program closeout after Phase 5 plus critical residual Phase 3 hardening, not as a synonym for minimum-team-ready
+- startup-ready should be treated as Phase 5 truth plus critical residual Phase 3 hardening, not as a synonym for minimum-team-ready
 
 ## Durable references
 
@@ -41,4 +41,4 @@
 1. wire the Taylor conversational-agent proof explicitly into [BIT-86 — Real Discord acceptance for team session contract and bridge command surface](https://linear.app/bitpod-app/issue/BIT-86/real-discord-acceptance-for-team-session-contract-and-bridge-command)
 2. keep Phase 4 closure tied to real Discord acceptance plus the [BIT-37 — Migrate team session chat commands from Zulip to chosen platform](https://linear.app/bitpod-app/issue/BIT-37/migrate-team-session-chat-commands-from-zulip-to-chosen-platform) / [BIT-39 — Bridge command surface cleanup (keep useful, remove obsolete, clarify behavior)](https://linear.app/bitpod-app/issue/BIT-39/bridge-command-surface-cleanup-keep-useful-remove-obsolete-clarify) closure chain
 3. treat [BIT-89 — Mature reviewer routing from temporary bypass policy to intended GitHub governance](https://linear.app/bitpod-app/issue/BIT-89/mature-reviewer-routing-from-temporary-bypass-policy-to-intended), [BIT-91 — Raise governance, memory, and eval baseline artifacts to production-grade operations](https://linear.app/bitpod-app/issue/BIT-91/raise-governance-memory-and-eval-baseline-artifacts-to-production), and [BIT-49 — Lock down personal GitHub account to human-only access (remove AI/runtime paths)](https://linear.app/bitpod-app/issue/BIT-49/lock-down-personal-github-account-to-human-only-access-remove) as the strongest startup-ready blockers after Phase 4
-4. only then create or execute a dedicated bootstrap closeout / startup-readiness verdict package
+4. only then create or execute the Phase 5 startup-readiness / polished-and-hardened verdict package
