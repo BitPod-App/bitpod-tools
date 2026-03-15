@@ -263,8 +263,8 @@ run_quick() {
   [[ -d "$ROOT/local-workspace/local-trash-delete" ]] && trash_pending="$(find "$ROOT/local-workspace/local-trash-delete" -type f -mtime +$trash_pending_days | wc -l | tr -d ' ')"
   echo "- trash_soft_purge_pending_files=$trash_pending"
   echo "- trash_soft_purge_threshold_days=$trash_pending_days"
-  echo "- trash_soft_purge_mode=SOFT_ONLY (informational review signal only; no deletion)"
-  echo "- trash_soft_purge_next_action=review_for_local_purge_or_keep_in_quarantine"
+  echo "- trash_soft_purge_mode=SOFT_ONLY (high-certainty purge-candidate review signal only; no deletion)"
+  echo "- trash_soft_purge_next_action=review_for_promotion_from_quarantine_to_local_purge_or_keep_in_quarantine"
 
   echo "[likely duplicates estimate]"
   local tmp_canon="/tmp/audit_ctl_canon_names.txt"
