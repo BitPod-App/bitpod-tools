@@ -1,9 +1,10 @@
 # Tools Docs Pointer
 
-Canonical product documentation now lives in:
-- `/Users/cjarguello/bitpod-app/docs`
+Shared workspace policy, archive canon, and cross-repo indexing now live in:
+- `/Users/cjarguello/bitpod-app/bitpod-docs`
 
-Use this folder for tools-runtime notes and migration guardrails only.
+Use this folder for repo-local tooling notes, runtime references, and
+migration guardrails only.
 
 ## Runtime Domain Docs (BIT-36)
 
@@ -15,7 +16,7 @@ Use this folder for tools-runtime notes and migration guardrails only.
 - `bridge_gpt_prompts.md`
 - `taylor_runtime_prompts.md`
 
-Do not duplicate product canon bundles here.
+Do not duplicate shared product canon bundles here.
 
 
 ## Integration Baselines
