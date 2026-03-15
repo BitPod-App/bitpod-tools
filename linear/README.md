@@ -84,6 +84,13 @@ Legacy bootstrap docs that still live in other repos should be treated as refere
 
 ## Current implementation coverage (v1)
 
+Important truth note:
+
+- this section describes the currently checked-in engine/service behavior
+- it does not fully represent the preferred future Linear acceptance workflow
+- current real governance still relies on the temporary [BIT-79 — Establish interim AI technical QA + CJ acceptance policy](https://linear.app/bitpod-app/issue/BIT-79/establish-interim-ai-technical-qa-cj-acceptance-policy)
+- where the engine behavior and the CJ-approved operating model differ, treat the engine as transitional
+
 Implemented in engine/service:
 - GitHub events:
   - `pull_request.opened`
@@ -96,10 +103,23 @@ Implemented in engine/service:
   - daily aging scan payload handler
 - Gating behavior:
   - Ready gate (required Type + required headings)
-  - QA/PM label defaults in review flow
+  - QA/PM label defaults in review flow (older transitional behavior)
   - merge gate requires QA Passed + PM Approved
   - fail-closed comments when gates are not met
 - Dry-run default and simulation runner
+
+## Preferred workflow note
+
+The preferred operating model is:
+
+- engineering moves work into `In Review`
+- QA runs in `In Review`
+- `QA: Passed` should move work to `In Acceptance`
+- PM labels should belong to `In Acceptance`
+- `PM: Approved` should establish merge readiness
+- `PM: Rejected` should send work back to `In Progress`
+
+That model is not yet fully represented in the checked-in engine and simulation files, so treat it as the target workflow rather than the current implementation truth.
 
 ## Status model note (important)
 
