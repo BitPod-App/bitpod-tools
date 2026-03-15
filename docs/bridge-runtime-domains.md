@@ -1,13 +1,13 @@
-# Bridge Runtime Domains (Legacy + New)
+# Bridge Runtime Domains (Current + Historical)
 
 ## Purpose
 
-Define the canonical runtime paths and endpoint behavior for Bridge GPT across legacy and new BitPod layouts.
+Define the canonical runtime path and endpoint behavior for Bridge GPT in the current workspace, while preserving the retired legacy path only as historical context.
 
 ## Canonical Local Runtime Path
 
-- Preferred: `/Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge`
-- Legacy compatibility path (if present): `/Users/cjarguello/bitpod-app/tools/gpt_bridge`
+- Canonical: `/Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge`
+- Retired historical path: `/Users/cjarguello/bitpod-app/tools/gpt_bridge`
 
 ## Endpoint Modes
 
@@ -31,7 +31,6 @@ When callers need to locate Bridge locally, resolve in this order:
 1. `BITPOD_GPT_BRIDGE_ROOT` (explicit override)
 2. `GPT_BRIDGE_ROOT` (compat override)
 3. `/Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge`
-4. `/Users/cjarguello/bitpod-app/tools/gpt_bridge`
 
 ## Smoke Tests
 
@@ -88,5 +87,5 @@ Notes:
 
 ## Migration Notes
 
-- Keep legacy path references only as compatibility hints.
+- Treat `/Users/cjarguello/bitpod-app/tools/gpt_bridge` as retired historical context, not an active expected layout.
 - New docs/automation should always use `bitpod-tools/gpt_bridge`.
