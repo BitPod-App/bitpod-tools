@@ -20,17 +20,17 @@ The required conditions from the minimum-team contract are now satisfied at a wo
 ## Evidence set
 
 - contract:
-  - `/Users/cjarguello/bitpod-app/bitpod-tools/.worktrees/bitpod-tools-bit92-ready/linear/docs/process/minimum_phase4_agent_team_contract_v1.md`
+  - `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/minimum_phase4_agent_team_contract_v1.md`
 - matrix:
-  - `/Users/cjarguello/bitpod-app/bitpod-tools/.worktrees/bitpod-tools-bit92-ready/linear/docs/process/minimum_phase4_agent_team_operating_matrix_v1.md`
+  - `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/minimum_phase4_agent_team_operating_matrix_v1.md`
 - execution record:
-  - `/Users/cjarguello/bitpod-app/bitpod-tools/.worktrees/bitpod-tools-bit92-ready/linear/docs/process/minimum_phase4_agent_team_execution_record_v1.md`
+  - `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/minimum_phase4_agent_team_execution_record_v1.md`
 - Taylor proof:
-  - `/Users/cjarguello/bitpod-app/bitpod-tools/.worktrees/bitpod-tools-bit92-ready/linear/docs/process/taylor_orchestrator_operational_proof_v1.md`
+  - `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/taylor_orchestrator_operational_proof_v1.md`
 - Vera proof:
-  - `/Users/cjarguello/bitpod-app/bitpod-tools/.worktrees/bitpod-tools-bit92-ready/linear/docs/process/vera_qa_lane_operational_proof_v1.md`
+  - `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/vera_qa_lane_operational_proof_v1.md`
 - engineering proof:
-  - `/Users/cjarguello/bitpod-app/bitpod-tools/.worktrees/bitpod-tools-bit92-ready/linear/docs/process/engineering_specialist_lane_operational_proof_v1.md`
+  - `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/engineering_specialist_lane_operational_proof_v1.md`
 
 ## What remains interim / simulated
 
