@@ -25,6 +25,15 @@ What matters for v1 is the QA behavior and artifact contract, not whether Vera a
 
 Fuller embodiment can come later.
 
+That later embodiment path is explicitly still in scope, not ignored:
+
+- [BIT-99 — Embody first specialist as a real AI agent/runtime beyond lane or skill proxy](https://linear.app/bitpod-app/issue/BIT-99/embody-first-specialist-as-a-real-ai-agentruntime-beyond-lane-or-skill)
+
+So the current rule is:
+
+- do not force full Vera embodiment into v1 prematurely
+- do not treat thin v1 as the permanent end state
+
 ## Inputs
 
 This minimum is derived from:
@@ -154,3 +163,13 @@ So the current skill is acceptable as a transitional interface, but not as the f
 4. add high-risk PR metadata
 5. add optional PR receipt-post audit flow
 6. only then decide whether the skill should remain a thin wrapper or disappear
+
+## Explicit future question
+
+Once Vera v1 is stable, revisit whether Vera should become a more embodied agent/runtime that can:
+
+- accumulate QA pattern memory
+- improve recommendation quality over time
+- suggest stronger QA coverage and low-risk improvements
+
+That later decision belongs to the specialist-embodiment lane, not the v1 minimum lane.
