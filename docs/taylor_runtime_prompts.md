@@ -2,7 +2,10 @@
 
 ## Runtime Path
 - `/Users/cjarguello/bitpod-app/bitpod-taylor-runtime`
-- Legacy compatibility path: `/Users/cjarguello/bitpod-app/taylor-runtime`
+
+## Historical Note
+- Older migration-era notes may mention `/Users/cjarguello/bitpod-app/taylor-runtime`.
+- Treat that path as retired historical context, not as a current runtime target.
 
 ## Start
 ```bash

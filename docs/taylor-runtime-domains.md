@@ -1,13 +1,12 @@
-# Taylor Runtime Domains (Legacy + New)
+# Taylor Runtime Domains
 
 ## Purpose
 
-Define canonical runtime paths and operational expectations for Taylor across old and new BitPod layouts.
+Define the canonical runtime path and operational expectations for Taylor in the current BitPod workspace.
 
 ## Canonical Runtime Path
 
-- Preferred: `/Users/cjarguello/bitpod-app/bitpod-taylor-runtime`
-- Legacy compatibility path (if still present): `/Users/cjarguello/bitpod-app/taylor-runtime`
+- Canonical: `/Users/cjarguello/bitpod-app/bitpod-taylor-runtime`
 
 ## Runtime Modes
 
@@ -56,7 +55,7 @@ print(json.loads(urllib.request.urlopen(req, timeout=20).read()).get("result"))
 PY
 ```
 
-## Migration Notes
+## Historical Note
 
-- New docs and scripts should target `bitpod-taylor-runtime` path.
-- Keep compatibility notes for `taylor-runtime` only until fully retired.
+- Older migration-era docs may mention `/Users/cjarguello/bitpod-app/taylor-runtime`.
+- Treat that path as retired historical context, not as an active compatibility target.
