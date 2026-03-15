@@ -15,7 +15,7 @@ This file exists because "mostly clean" is not specific enough for the current s
 | Concern | Status | Current read | Next action |
 |---|---|---|---|
 | Active `~/.agents` dependence in live repos | `PASS` | `sector-feeds` no longer treats `~/.agents` as canonical, and its Taylor skill check now points to `local-codex` | keep removing active repo/runtime dependence where found |
-| `~/.agents` mirror still exists at all | `PASS_WITH_LIMITS` | mirror still exists, but its status is now explicitly demoted in `legacy_agents_mirror_retirement_note_v1.md`; the remaining question is compatibility timing, not source-of-truth ambiguity | quarantine or retire the mirror in a fresh pass once runtime/session dependence is honestly clear |
+| `~/.agents` mirror still exists at all | `PASS_WITH_LIMITS` | home-directory paths still exist, but only as compatibility symlinks to `local-codex`; the duplicate source-of-truth problem is removed | retire the compatibility shim only once runtime/session dependence is honestly clear |
 | Final canonical branch strategy | `PASS_WITH_LIMITS` | final forever strategy is not done, but the exact pre-rename execution branch map is now recorded in `pre_rename_execution_branch_map_v1.md` | use the explicit pre-rename branch map for Mac Mini work until later normalization |
 | Stale local Codex app metadata | `PASS_WITH_LIMITS` | `.codex-global-state.json` is still stale, but `local_codex_app_state_tolerance_note_v1.md` now makes the decision explicit: treat it as tolerated app residue, not canonical workspace truth | only reset if it causes real runtime problems or the Mac Mini needs a clean exported app-state baseline |
 | `local-trash-delete` still physically large | `SOFT_FAIL` | quarantine is no longer active, but still contains large cooling-period residue | treat as hygiene unless user explicitly wants stronger purge posture before T3 |
@@ -31,7 +31,7 @@ This file exists because "mostly clean" is not specific enough for the current s
 
 ## Suggested execution order
 
-1. Retire or quarantine `~/.agents` in a fresh pass once runtime/session dependence is honestly clear.
+1. Retire the `~/.agents` compatibility shim in a fresh pass once runtime/session dependence is honestly clear.
 2. Keep using the explicit pre-rename execution branch map until later normalization replaces it.
 3. Re-open stale Codex app-state only if it causes runtime behavior problems or export needs.
 4. Keep [BIT-102 — Complete T3 workspace parity, legacy root retirement, and repo-rename preparation](https://linear.app/bitpod-app/issue/BIT-102/complete-t3-workspace-parity-legacy-root-retirement-and-repo-rename) aligned with reality instead of leaving it as stale planning state.

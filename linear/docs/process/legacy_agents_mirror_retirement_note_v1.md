@@ -14,14 +14,20 @@ Make the current `~/.agents` status explicit so it is no longer treated as myste
 - canonical local skill home for this workspace:
   - `/Users/cjarguello/bitpod-app/local-workspace/local-codex/skills/taylor`
   - `/Users/cjarguello/bitpod-app/local-workspace/local-codex/skills/qa-specialist`
-- legacy mirror under review:
+- compatibility shim paths:
   - `/Users/cjarguello/.agents/skills/taylor`
   - `/Users/cjarguello/.agents/skills/qa-specialist`
+
+Current verified implementation:
+
+- the home-directory paths now resolve as symlinks to the `local-codex` copies
+- the original duplicate directories were quarantined under:
+  - `/Users/cjarguello/bitpod-app/local-workspace/local-trash-delete/agents-mirror-retirement-20260315/`
 
 ## Working interpretation
 
 - `local-codex` is the canonical local operating surface.
-- `~/.agents` is compatibility residue and historical mirror state.
+- `~/.agents` is compatibility residue and historical shim state.
 - repo docs and health checks should prefer `local-codex`.
 - the existence of the mirror alone is not proof that it remains the correct source of truth.
 
@@ -35,7 +41,7 @@ It should not be quarantined blindly while any of the following remain true:
 
 ## Retirement condition
 
-Retire or quarantine the `~/.agents` mirror only when all are true:
+Retire the `~/.agents` compatibility shim only when all are true:
 
 1. active repo/runtime surfaces no longer depend on it
 2. canonical local copies under `local-codex` are verified complete
