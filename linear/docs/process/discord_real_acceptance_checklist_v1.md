@@ -51,7 +51,7 @@ Current verified baseline artifacts:
 - `/Users/cjarguello/bitpod-app/local-workspace/local-working-files/discord_phase2_evidence_pack_live_matrix.md`
 - `/Users/cjarguello/bitpod-app/local-workspace/local-working-files/discord_phase2_parity_report_live.md`
 - `/Users/cjarguello/bitpod-app/local-workspace/local-working-files/discord_parity_matrix_report_current.md`
-- `/Users/cjarguello/bitpod-app/bitpod-tools/.worktrees/bitpod-tools-bit92-ready/linear/docs/process/minimum_phase4_agent_team_readiness_v1.md`
+- `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/minimum_phase4_agent_team_readiness_v1.md`
 
 ## Acceptance scope
 
