@@ -32,7 +32,10 @@ That gap was documented in:
 
 The stronger QA behavior now lives in Vera's dedicated QA contract and is currently implemented through the local skill surface:
 
-- `/Users/cjarguello/.agents/skills/qa-specialist/SKILL.md`
+- canonical local surface:
+  - `/Users/cjarguello/bitpod-app/local-workspace/local-codex/skills/qa-specialist/SKILL.md`
+- legacy mirror under review:
+  - `/Users/cjarguello/.agents/skills/qa-specialist/SKILL.md`
 
 Taylor's current skill now explicitly delegates final QA verification execution to `qa-specialist`, which is why BIT-90 should anchor to Vera's artifact contract rather than Taylor-style review behavior.
 

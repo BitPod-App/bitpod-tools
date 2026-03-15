@@ -27,7 +27,7 @@ Critical acceptance criteria evidence:
 1. Open `linear/docs/process/vera_qa_lane_contract_v1.md`.
 2. Confirm the file defines Vera as a dedicated QA lane with verdict-only ownership, required inputs, and required outputs.
 3. Confirm it separates the primary QA path from the temporary BIT-79 merge-governance fallback.
-4. Confirm it points to `/Users/cjarguello/.agents/skills/qa-specialist/SKILL.md` as the current transitional implementation surface, not Vera's permanent identity.
+4. Confirm it points to `/Users/cjarguello/bitpod-app/local-workspace/local-codex/skills/qa-specialist/SKILL.md` as the current canonical local implementation surface, with `~/.agents` only as legacy mirror state under review.
 
 Observed result:
 
@@ -38,6 +38,7 @@ Observed result:
 - the contract requires explicit QA handoff, structured evidence, and final `PASSED` or `FAILED`
 - the contract states that [BIT-79 — Establish interim AI technical QA + CJ acceptance policy](https://linear.app/bitpod-app/issue/BIT-79/establish-interim-ai-technical-qa-cj-acceptance-policy) remains only as a temporary merge-governance fallback
 - the contract explicitly treats `qa-specialist` as Vera's current implementation scaffold, not the long-term identity of the QA lane
+- the canonical local path is now `local-codex`, not `~/.agents`
 
 ### QA-AC-2: one real QA artifact flow exists under the Vera contract
 
