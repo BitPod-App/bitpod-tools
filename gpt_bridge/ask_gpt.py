@@ -10,6 +10,7 @@ import sys
 from pathlib import Path
 from typing import Any
 from urllib.error import HTTPError, URLError
+from urllib.parse import urlparse
 from urllib.request import Request, urlopen
 
 DEFAULT_URL = "http://127.0.0.1:8787/ask"
@@ -93,6 +94,19 @@ def build_headers() -> dict[str, str]:
     return headers
 
 
+def enforce_allowed_bridge_url(url: str) -> None:
+    allow_raw = os.getenv("GPT_BRIDGE_ALLOWED_HOSTS", "").strip()
+    if not allow_raw:
+        return
+    allowed = {h.strip().lower() for h in allow_raw.split(",") if h.strip()}
+    parsed = urlparse(url)
+    host = (parsed.hostname or "").strip().lower()
+    if not host or host not in allowed:
+        raise ValueError(
+            f"Bridge URL host '{host or 'unknown'}' is not in GPT_BRIDGE_ALLOWED_HOSTS"
+        )
+
+
 def main() -> int:
     args = parse_args()
 
@@ -127,6 +141,12 @@ def main() -> int:
     }
 
     url = os.getenv("GPT_BRIDGE_URL", DEFAULT_URL)
+    try:
+        enforce_allowed_bridge_url(url)
+    except ValueError as exc:
+        print(json.dumps({"error": str(exc)}), file=sys.stderr)
+        return 2
+
     req = Request(
         url,
         data=json.dumps(payload).encode("utf-8"),

@@ -3,9 +3,11 @@
 
 from __future__ import annotations
 
+import hmac
 import json
 import os
 import threading
+import time
 import uuid
 from datetime import datetime, timezone
 from http import HTTPStatus
@@ -20,6 +22,10 @@ from schemas import AnswerPayload, GPTRequest, GPTResponse, ResponseStatus
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8787
 DEFAULT_MODEL = "gpt-5.2"
+DEFAULT_MAX_REQUEST_BYTES = 128 * 1024
+DEFAULT_MAX_TOKENS_CAP = 2000
+DEFAULT_RATE_LIMIT_PER_MINUTE = 120
+DEFAULT_LOG_MAX_CHARS = 400
 OPENAI_URL = "https://api.openai.com/v1/responses"
 SYSTEM_IDENTITY_PROMPT = (
     "You are GPT Bridge, a pragmatic assistant for terminal workflows. "
@@ -48,6 +54,20 @@ class BridgeConfig:
         self.bridge_token = os.getenv("GPT_BRIDGE_TOKEN", "").strip()
         self.bridge_shared_secret = os.getenv("GPT_BRIDGE_SHARED_SECRET", "").strip()
         self.log_file = Path(os.getenv("GPT_BRIDGE_LOG_FILE", "logs/bridge.jsonl"))
+        self.max_request_bytes = int(
+            os.getenv("GPT_BRIDGE_MAX_REQUEST_BYTES", str(DEFAULT_MAX_REQUEST_BYTES))
+        )
+        self.max_tokens_cap = int(os.getenv("GPT_BRIDGE_MAX_TOKENS_CAP", str(DEFAULT_MAX_TOKENS_CAP)))
+        self.rate_limit_per_minute = int(
+            os.getenv("GPT_BRIDGE_RATE_LIMIT_PER_MINUTE", str(DEFAULT_RATE_LIMIT_PER_MINUTE))
+        )
+        self.log_redact = os.getenv("GPT_BRIDGE_LOG_REDACT", "1").strip().lower() in {
+            "1",
+            "true",
+            "yes",
+            "on",
+        }
+        self.log_max_chars = int(os.getenv("GPT_BRIDGE_LOG_MAX_CHARS", str(DEFAULT_LOG_MAX_CHARS)))
 
     def validate_startup(self) -> None:
         if self.host != "127.0.0.1" and not self.allow_nonlocalhost:
@@ -60,11 +80,21 @@ class BridgeConfig:
             raise RuntimeError(
                 "Set GPT_BRIDGE_TOKEN and/or GPT_BRIDGE_SHARED_SECRET for request authentication"
             )
+        if self.max_request_bytes <= 0:
+            raise RuntimeError("GPT_BRIDGE_MAX_REQUEST_BYTES must be > 0")
+        if self.max_tokens_cap <= 0:
+            raise RuntimeError("GPT_BRIDGE_MAX_TOKENS_CAP must be > 0")
+        if self.rate_limit_per_minute <= 0:
+            raise RuntimeError("GPT_BRIDGE_RATE_LIMIT_PER_MINUTE must be > 0")
+        if self.log_max_chars <= 0:
+            raise RuntimeError("GPT_BRIDGE_LOG_MAX_CHARS must be > 0")
 
 
 class BridgeHandler(BaseHTTPRequestHandler):
     config: BridgeConfig
     log_lock = threading.Lock()
+    rate_lock = threading.Lock()
+    rate_buckets: dict[str, tuple[int, int]] = {}
 
     def log_message(self, format: str, *args: Any) -> None:
         return
@@ -87,10 +117,10 @@ class BridgeHandler(BaseHTTPRequestHandler):
         if self.config.bridge_token:
             if auth.startswith("Bearer "):
                 token = auth.split(" ", 1)[1].strip()
-                token_ok = token == self.config.bridge_token
+                token_ok = hmac.compare_digest(token, self.config.bridge_token)
 
         if self.config.bridge_shared_secret:
-            secret_ok = secret == self.config.bridge_shared_secret
+            secret_ok = hmac.compare_digest(secret, self.config.bridge_shared_secret)
 
         if self.config.bridge_token and self.config.bridge_shared_secret:
             return token_ok or secret_ok
@@ -105,6 +135,38 @@ class BridgeHandler(BaseHTTPRequestHandler):
             with self.config.log_file.open("a", encoding="utf-8") as f:
                 f.write(line + "\n")
 
+    def _client_ip(self) -> str:
+        xff = self.headers.get("X-Forwarded-For", "")
+        if xff:
+            first = xff.split(",", 1)[0].strip()
+            if first:
+                return first
+        return self.client_address[0] if self.client_address else "unknown"
+
+    def _is_rate_limited(self, client_ip: str) -> bool:
+        now_window = int(time.time() // 60)
+        with self.rate_lock:
+            window, count = self.rate_buckets.get(client_ip, (now_window, 0))
+            if window != now_window:
+                window, count = now_window, 0
+            count += 1
+            self.rate_buckets[client_ip] = (window, count)
+            return count > self.config.rate_limit_per_minute
+
+    def _sanitize_request_for_log(self, payload: dict[str, Any]) -> dict[str, Any]:
+        if not self.config.log_redact:
+            return payload
+        message = payload.get("message", "")
+        context = payload.get("context", [])
+        return {
+            "task_type": payload.get("task_type"),
+            "message_excerpt": str(message)[: self.config.log_max_chars],
+            "context_items": len(context) if isinstance(context, list) else 0,
+            "context_chars": sum(len(c) for c in context if isinstance(c, str)) if isinstance(context, list) else 0,
+            "constraints": payload.get("constraints", {}),
+            "meta_keys": sorted(payload.get("meta", {}).keys()) if isinstance(payload.get("meta"), dict) else [],
+        }
+
     def do_POST(self) -> None:
         if self.path != "/ask":
             self._write_json(HTTPStatus.NOT_FOUND, {"error": "Not found"})
@@ -112,6 +174,14 @@ class BridgeHandler(BaseHTTPRequestHandler):
 
         request_id = str(uuid.uuid4())
         timestamp = datetime.now(timezone.utc).isoformat()
+        client_ip = self._client_ip()
+
+        if self._is_rate_limited(client_ip):
+            self._write_json(
+                HTTPStatus.TOO_MANY_REQUESTS,
+                {"error": "Rate limit exceeded", "request_id": request_id},
+            )
+            return
 
         if not self._is_authorized():
             self._write_json(HTTPStatus.UNAUTHORIZED, {"error": "Unauthorized", "request_id": request_id})
@@ -123,7 +193,19 @@ class BridgeHandler(BaseHTTPRequestHandler):
             return
 
         try:
-            body = self.rfile.read(int(content_length))
+            request_bytes = int(content_length)
+        except ValueError:
+            self._write_json(HTTPStatus.BAD_REQUEST, {"error": "Invalid Content-Length", "request_id": request_id})
+            return
+        if request_bytes > self.config.max_request_bytes:
+            self._write_json(
+                HTTPStatus.REQUEST_ENTITY_TOO_LARGE,
+                {"error": "Request too large", "request_id": request_id},
+            )
+            return
+
+        try:
+            body = self.rfile.read(request_bytes)
             payload = json.loads(body.decode("utf-8"))
             gpt_request = GPTRequest.from_dict(payload)
         except (ValueError, json.JSONDecodeError) as exc:
@@ -132,6 +214,14 @@ class BridgeHandler(BaseHTTPRequestHandler):
                 {"error": f"Invalid request: {exc}", "request_id": request_id},
             )
             return
+
+        warnings_prefix: list[str] = []
+        max_tokens_raw = gpt_request.constraints.get("max_tokens")
+        if isinstance(max_tokens_raw, (int, float)) and int(max_tokens_raw) > self.config.max_tokens_cap:
+            gpt_request.constraints["max_tokens"] = self.config.max_tokens_cap
+            warnings_prefix.append(
+                f"constraints.max_tokens capped to {self.config.max_tokens_cap} by bridge policy"
+            )
 
         selected_model = resolve_model(gpt_request, self.config)
 
@@ -156,12 +246,16 @@ class BridgeHandler(BaseHTTPRequestHandler):
                 trace={"request_id": request_id, "model": selected_model},
             )
 
+        if warnings_prefix:
+            gpt_response.warnings = warnings_prefix + list(gpt_response.warnings)
+
         response_payload = gpt_response.to_dict()
         self._log_jsonl(
             {
                 "timestamp": timestamp,
                 "request_id": request_id,
-                "request": gpt_request.to_dict(),
+                "client_ip": client_ip,
+                "request": self._sanitize_request_for_log(gpt_request.to_dict()),
                 "response": response_payload,
             }
         )
