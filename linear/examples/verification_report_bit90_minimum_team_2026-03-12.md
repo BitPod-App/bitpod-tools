@@ -1,5 +1,14 @@
 Verdict: `PASSED`
 
+Scope note:
+
+- Primary concept anchor: [BIT-92 — Stand up minimum Phase 4 agent team in practice (Taylor + Vera + engineering lane(s))](https://linear.app/bitpod-app/issue/BIT-92/stand-up-minimum-phase-4-agent-team-in-practice-taylor-vera)
+- Specific QA evidence anchor: [BIT-90 — Stand up dedicated QA lane beyond interim AI technical QA policy](https://linear.app/bitpod-app/issue/BIT-90/stand-up-dedicated-qa-lane-beyond-interim-ai-technical-qa-policy)
+- Intended interpretation:
+  - this report is useful as minimum-team evidence because it proves the low-bar Taylor + Vera operating shape
+  - its detailed acceptance criteria still primarily validate the dedicated QA lane under BIT-90
+  - it should not be read as a broad proof of later multi-agent plans beyond that minimum operating model
+
 Environment matrix:
 
 - Date: 2026-03-12
