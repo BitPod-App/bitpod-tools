@@ -46,12 +46,13 @@ These behaviors are already clearly preserved in the current Vera lane:
 
 These behaviors exist in the Zulip-era runtime and tests, but are not yet explicitly preserved in the current Vera contract/skill docs:
 
-1. `DEGRADED` result class
+1. legacy `DEGRADED` result class
    - review can fail closed as `DEGRADED`, not just `PASSED` or `FAILED`
    - examples verified in tests:
      - missing PR context
      - malformed/irreparable review JSON
      - GitHub API failures
+   - for Vera v1, the clearer future label is likely `NO_VERDICT` rather than `DEGRADED`
 
 2. structured machine-readable receipt/manifest
    - `manifest.json`
@@ -118,7 +119,7 @@ These behaviors exist in the Zulip-era runtime and tests, but are not yet explic
 
 These are the highest-value runtime behaviors to keep:
 
-- `DEGRADED` state with explicit reason and next action
+- fail-closed no-verdict state with explicit reason and next action
 - machine-readable `manifest.json` receipt
 - high-risk PR detection metadata
 - PR posting audit trail
@@ -159,7 +160,7 @@ So the migration risk is real, but now explicit.
 
 The next BIT-94 step should define a compact Vera runtime minimum that includes:
 
-1. `PASSED` / `FAILED` / `DEGRADED`
+1. `PASSED` / `FAILED` / `NO_VERDICT` semantics that preserve the old `DEGRADED` behavior more clearly
 2. `verification_report.md`
 3. `manifest.json`
 4. degraded reason + next action fields

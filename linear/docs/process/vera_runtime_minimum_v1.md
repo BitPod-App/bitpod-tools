@@ -56,13 +56,15 @@ Optional but recommended when the runtime is mature enough:
 3. structured QA sidecar (`qa_review.json` or equivalent)
 4. PR-post audit artifact when PR receipt posting is used
 
+For Vera v1, only `verification_report.md` and `manifest.json` should be treated as true minimum required artifacts.
+
 ## Required verdict model
 
 The minimum Vera runtime should support:
 
 - `PASSED`
 - `FAILED`
-- `DEGRADED`
+- `NO_VERDICT`
 
 ### Meaning
 
@@ -70,19 +72,27 @@ The minimum Vera runtime should support:
   - acceptance criteria have sufficient pass evidence
 - `FAILED`
   - at least one critical acceptance criterion has reproducible failure evidence
-- `DEGRADED`
+- `NO_VERDICT`
   - Vera could not safely issue `PASSED` or `FAILED` because required context, execution quality, or runtime integrity was missing
 
-`DEGRADED` is a required preservation from the Zulip-era runtime.
+`NO_VERDICT` preserves the useful old `DEGRADED` behavior, but says more clearly what happened.
 
 Without it, Vera would regress to a thinner and less truthful QA surface.
+
+### Legacy mapping
+
+The Zulip-era Taylor runtime used the label `DEGRADED`.
+
+For Vera v1, preserve the behavior but prefer the clearer label:
+
+- legacy `DEGRADED` -> Vera `NO_VERDICT`
 
 ## Required `manifest.json` fields
 
 Minimum required manifest fields:
 
 - `qa_result`
-- `degraded_reason`
+- `no_verdict_reason`
 - `next_action`
 - `artifacts`
 
@@ -99,6 +109,8 @@ When output repair is attempted, also include:
 - `repaired`
 - `repair_sha256`
 
+For transitional compatibility with old Taylor-era receipts, `degraded_reason` may temporarily survive as an alias, but it should not be the preferred long-term field name for Vera.
+
 ## Required fail-closed behaviors
 
 The Vera runtime minimum should fail closed in these cases:
@@ -110,8 +122,8 @@ The Vera runtime minimum should fail closed in these cases:
 
 In those cases, Vera should prefer:
 
-- `DEGRADED`
-- explicit `degraded_reason`
+- `NO_VERDICT`
+- explicit `no_verdict_reason`
 - explicit `next_action`
 
 not silent success and not vague apology text
@@ -122,13 +134,26 @@ not silent success and not vague apology text
 
 If the runtime is asked to review a PR or change surface, the target must be explicit enough to inspect.
 
-If not, Vera should fail closed as `DEGRADED` or reject the handoff.
+If not, Vera should fail closed as `NO_VERDICT` or reject the handoff.
 
 ### High-risk review guardrail
 
 If changed-file evidence shows high-risk patterns, Vera should record that in manifest metadata and steer toward stronger QA expectations.
 
 This is a required preservation because the Zulip-era runtime already proved the value of file-based risk escalation.
+
+## What is probably unnecessary for Vera v1
+
+These are useful historical behaviors, but they should not be treated as v1 requirements:
+
+- Taylor/Zulip `review:` topic conventions
+- Taylor-branded artifact names like `qa_review.md`
+- `session_summary.md`
+- `worth_remembering.json`
+- mandatory PR receipt-post flow
+- mandatory `repair_sha256` outside cases where repair tracking is actually valuable
+
+The v1 goal is a clear QA verdict surface with durable evidence, not a full reproduction of the old Taylor runtime package.
 
 ## Transitional allowances
 
@@ -158,7 +183,7 @@ So the current skill is acceptable as a transitional interface, but not as the f
 ## Recommended implementation order
 
 1. keep current skill contract active
-2. add `DEGRADED` semantics to Vera runtime design
+2. add `NO_VERDICT` semantics to Vera runtime design while preserving compatibility with the old `DEGRADED` concept
 3. add `manifest.json`
 4. add high-risk PR metadata
 5. add optional PR receipt-post audit flow
