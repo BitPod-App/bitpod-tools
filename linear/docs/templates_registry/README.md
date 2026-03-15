@@ -33,31 +33,31 @@ This registry is the single source of truth for templates across BitPod repos.
   - `linear_project_update_template.md`
   - `linear_incident_update_template.md`
 
-## 2) Agent Templates (Lean Set)
+## 2) Agent Templates (Legacy Bootstrap References)
 
-- **Active**: Verification report
-  - Path: `/Users/cjarguello/bitpod-app/sector-feeds/docs/agents/proving-run/templates/verification_report_template_v1.md`
-  - Use: evidence-first QA/result reporting
+- **Historical**: Verification report
+  - Path: `/Users/cjarguello/bitpod-app/bitpod-docs/archive/legacy-context/sector-feeds-agent-bootstrap/agents/proving-run/templates/verification_report_template_v1.md`
+  - Use: preserved bootstrap reference only; not active canon
 
-- **Active**: Execution notes
-  - Path: `/Users/cjarguello/bitpod-app/sector-feeds/docs/agents/proving-run/templates/execution_notes_template_v1.md`
-  - Use: short execution logs
+- **Historical**: Execution notes
+  - Path: `/Users/cjarguello/bitpod-app/bitpod-docs/archive/legacy-context/sector-feeds-agent-bootstrap/agents/proving-run/templates/execution_notes_template_v1.md`
+  - Use: preserved bootstrap reference only; not active canon
 
 ## 3) Planning and Proposal Templates
 
-- **Active**: Plan template
-  - Path: `/Users/cjarguello/bitpod-app/sector-feeds/docs/agents/proving-run/templates/plan_template_v1.md`
-  - Use: scoped plan before execution
+- **Historical**: Plan template
+  - Path: `/Users/cjarguello/bitpod-app/bitpod-docs/archive/legacy-context/sector-feeds-agent-bootstrap/agents/proving-run/templates/plan_template_v1.md`
+  - Use: preserved bootstrap reference only; not active canon
 
 - **Active**: Linear change proposal
-  - Path: `/Users/cjarguello/bitpod-app/sector-feeds/docs/agents/linear/templates/linear_change_proposal_template_v1.md`
+  - Path: `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/linear_change_proposal_template_v1.md`
   - Use: workflow/status/automation change proposals
 
 ## 4) Retrospective Templates (Max 2)
 
-- **Active**: Standard retrospective
-  - Path: `/Users/cjarguello/bitpod-app/sector-feeds/docs/agents/proving-run/templates/retrospective_template_v1.md`
-  - Use: regular retrospectives
+- **Historical**: Standard retrospective
+  - Path: `/Users/cjarguello/bitpod-app/bitpod-docs/archive/legacy-context/sector-feeds-agent-bootstrap/agents/proving-run/templates/retrospective_template_v1.md`
+  - Use: preserved bootstrap reference only; not active canon
 
 - **Active**: Incident/capability regression retro
   - Path: `/Users/cjarguello/bitpod-app/bitpod-docs/archive/learnings/retro-2026-03-02-capability-regression-protocol.md`
@@ -65,11 +65,11 @@ This registry is the single source of truth for templates across BitPod repos.
 
 ## 5) Artifact Templates
 
-- **Active**: Verification report (artifact-oriented)
-  - Path: `/Users/cjarguello/bitpod-app/sector-feeds/docs/agents/proving-run/templates/verification_report_template_v1.md`
+- **Historical**: Verification report (artifact-oriented)
+  - Path: `/Users/cjarguello/bitpod-app/bitpod-docs/archive/legacy-context/sector-feeds-agent-bootstrap/agents/proving-run/templates/verification_report_template_v1.md`
 
-- **Active**: Result template
-  - Path: `/Users/cjarguello/bitpod-app/sector-feeds/docs/agents/proving-run/templates/result_template_v1.md`
+- **Historical**: Result template
+  - Path: `/Users/cjarguello/bitpod-app/bitpod-docs/archive/legacy-context/sector-feeds-agent-bootstrap/agents/proving-run/templates/result_template_v1.md`
 
 ## 6) Handoff Templates
 
