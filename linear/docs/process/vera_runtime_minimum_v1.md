@@ -11,6 +11,20 @@ This is a target minimum for Vera evolution.
 
 It is not a claim that the current `qa-specialist` skill already implements everything below.
 
+## v1 embodiment rule
+
+Vera v1 does not need to be a fully embodied standalone AI agent.
+
+Acceptable v1 forms include:
+
+- a skill-backed QA lane
+- a thin runtime wrapper around the current QA contract
+- a small dedicated execution surface that still relies on existing operator tooling
+
+What matters for v1 is the QA behavior and artifact contract, not whether Vera already exists as a rich autonomous agent surface.
+
+Fuller embodiment can come later.
+
 ## Inputs
 
 This minimum is derived from:
@@ -124,6 +138,7 @@ Current skill truth:
 
 - the `qa-specialist` skill is still useful as the live minimal verdict contract
 - it preserves independent QA authority and evidence-first `verification_report.md`
+- it can still be a valid part of Vera v1
 
 Current gap:
 
