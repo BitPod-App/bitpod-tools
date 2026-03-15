@@ -38,6 +38,8 @@ class BridgeChatRouteTests(unittest.TestCase):
 
     def test_taylor_mention_routes_with_persona_override(self):
         captured: dict[str, object] = {}
+        ref_file = Path(self.tmpdir.name) / "taylor-reference.md"
+        ref_file.write_text("Taylor canonical context", encoding="utf-8")
 
         def _fake_run_ask_once(**kwargs: object) -> dict[str, object]:
             captured.update(kwargs)
@@ -45,6 +47,7 @@ class BridgeChatRouteTests(unittest.TestCase):
 
         stdout = io.StringIO()
         with (
+            patch.object(bridge_chat, "DEFAULT_TAYLOR_REFERENCE_FILES", (ref_file,)),
             patch.object(bridge_chat, "_run_ask_once", side_effect=_fake_run_ask_once),
             patch.object(bridge_chat, "_set_active_session", return_value=None),
             contextlib.redirect_stdout(stdout),
@@ -55,6 +58,8 @@ class BridgeChatRouteTests(unittest.TestCase):
         self.assertEqual(captured["message"], "can you sanity-check this?")
         self.assertEqual(captured["meta"]["route_actor"], "taylor")
         self.assertIn("Taylor, CJ's senior product architect", captured["meta"]["system_prompt"])
+        self.assertIn("[Reference: taylor-reference.md]", captured["context_text"])
+        self.assertIn("Taylor canonical context", captured["context_text"])
         self.assertIn("taylor: Taylor is online.", stdout.getvalue())
 
     def test_gpt_mention_keeps_default_route(self):

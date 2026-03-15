@@ -29,6 +29,15 @@ TAYLOR_SYSTEM_PROMPT = (
     "Be direct, concrete, and honest. Keep replies short but useful. Ask at most one clarifying "
     "question only when it prevents an error."
 )
+LOCAL_CODEX_SKILLS_ROOT = Path("/Users/cjarguello/bitpod-app/local-workspace/local-codex/skills")
+TAYLOR_SKILL_REFERENCES_ROOT = LOCAL_CODEX_SKILLS_ROOT / "taylor" / "references"
+DEFAULT_TAYLOR_REFERENCE_FILES = (
+    TAYLOR_SKILL_REFERENCES_ROOT / "taylor-agent-contract.md",
+    TAYLOR_SKILL_REFERENCES_ROOT / "personal-preferences-interactions.md",
+    TAYLOR_SKILL_REFERENCES_ROOT / "app-mission-vision.md",
+    TAYLOR_SKILL_REFERENCES_ROOT / "key-memories-and-examples.md",
+)
+MAX_REFERENCE_CHARS = 6000
 
 
 def utc_now_iso() -> str:
@@ -621,6 +630,25 @@ def _load_memory_context(memory_store: Path, limit: int) -> str:
     return "Persistent memory for BitPod decisions:\n" + "\n".join(snippets)
 
 
+def _load_reference_context(paths: tuple[Path, ...], max_chars: int) -> str:
+    chunks: list[str] = []
+    used = 0
+    for path in paths:
+        try:
+            text = path.read_text(encoding="utf-8").strip()
+        except OSError:
+            continue
+        if not text:
+            continue
+        remaining = max_chars - used
+        if remaining <= 0:
+            break
+        snippet = text[:remaining]
+        chunks.append(f"[Reference: {path.name}]\n{snippet}")
+        used += len(snippet)
+    return "\n\n".join(chunks)
+
+
 def call_bridge_via_ask_once(
     args: argparse.Namespace,
     injected_context: str | None = None,
@@ -1051,6 +1079,12 @@ def _send_to_gpt(
     memory_context = ""
     if use_memory:
         memory_context = _load_memory_context(memory_store, memory_items)
+    reference_context = ""
+    if reply_actor == "taylor":
+        reference_context = _load_reference_context(DEFAULT_TAYLOR_REFERENCE_FILES, MAX_REFERENCE_CHARS)
+    context_text = "\n\n".join(
+        chunk for chunk in [memory_context, reference_context] if chunk
+    ) or None
 
     status_steps = [
         "Bridge GPT | Checking config...",
@@ -1061,6 +1095,8 @@ def _send_to_gpt(
         status_steps.append(preface_status)
     if memory_context:
         status_steps.append("Bridge GPT | Loading memory...")
+    if reference_context:
+        status_steps.append("Bridge GPT | Loading Taylor references...")
     status_steps.append("Bridge GPT | Sending prompt...")
     for status_text in status_steps:
         status_ts = utc_now_iso()
@@ -1087,7 +1123,7 @@ def _send_to_gpt(
             json_only=True,
             meta=meta,
             model=model,
-            context_text=memory_context if memory_context else None,
+            context_text=context_text,
         )
     except RuntimeError as exc:
         err_ts = utc_now_iso()
