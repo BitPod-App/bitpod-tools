@@ -3,10 +3,10 @@
 # - REPORT_ONLY: cleanup audit only reports metrics (counts/dup names/large files), no action pressure.
 # - STRICT_CANONICAL: canonical zone, expected to stay organized and auditable.
 
-coordination_docs|REPORT_ONLY|bitpod/docs/coordination|coordination drop zone for operational notes; report metrics only
+coordination_docs|REPORT_ONLY|bitpod/docs/coordination|legacy coordination drop zone pending relocation; report metrics only
 cj_pm_dropbox|REPORT_ONLY|local-workspace/local-cj-pm-only|explicit user-managed keep zone; no cleanup pressure
 codex_state_home|REPORT_ONLY|local-workspace/local-codex|codex state home; canonical keep zone; report/count only
 local_working_files|REPORT_ONLY|local-workspace/local-working-files|active scratch/work queue; report metrics only
-agent_scratch|REPORT_ONLY|bitpod/docs/agents/runs|agent-generated run artifacts; monitor growth only
-templates_registry|STRICT_CANONICAL|docs/templates_registry|canonical template index and references
-learnings_ledger|STRICT_CANONICAL|bitpod/docs/learnings|canonical retros/protocol learnings
+agent_scratch|REPORT_ONLY|sector-feeds/docs/agents/runs|agent-generated run artifacts; monitor growth only
+templates_registry|STRICT_CANONICAL|bitpod-tools/linear/docs/templates_registry|canonical template index and references
+learnings_ledger|STRICT_CANONICAL|bitpod-docs/archive/learnings|canonical retros/protocol learnings
