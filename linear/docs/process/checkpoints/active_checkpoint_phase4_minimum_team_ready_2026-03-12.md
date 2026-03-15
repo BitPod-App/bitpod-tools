@@ -6,7 +6,8 @@
   - [BIT-92 — Stand up minimum Phase 4 agent team in practice (Taylor + Vera + engineering lane(s))](https://linear.app/bitpod-app/issue/BIT-92/stand-up-minimum-phase-4-agent-team-in-practice-taylor-vera)
   - [BIT-86 — Real Discord acceptance for team session contract and bridge command surface](https://linear.app/bitpod-app/issue/BIT-86/real-discord-acceptance-for-team-session-contract-and-bridge-command)
   - [BIT-94 — Preserve Vera QA runtime behaviors from Zulip-era implementation for dedicated agent path](https://linear.app/bitpod-app/issue/BIT-94/preserve-vera-qa-runtime-behaviors-from-zulip-era-implementation-for)
-- repo/worktree: `/Users/cjarguello/bitpod-app/bitpod-tools/.worktrees/bitpod-tools-bit92-ready`
+- repo/worktree at checkpoint time (retired): `/Users/cjarguello/bitpod-app/bitpod-tools/.worktrees/bitpod-tools-bit92-ready`
+- current surviving repo path: `/Users/cjarguello/bitpod-app/bitpod-tools`
 - branch: `codex/bit-92-minimum-team-ready`
 
 ## Current state
@@ -15,18 +16,18 @@
   - [PR #43 — [BIT-90] Stand up dedicated Vera QA lane BIT-90](https://github.com/BitPod-App/bitpod-tools/pull/43)
   - [PR #44 — [BIT-93] Stand up first engineering specialist lane BIT-93](https://github.com/BitPod-App/bitpod-tools/pull/44)
 - repo-side BIT-92 readiness package added:
-  - `/Users/cjarguello/bitpod-app/bitpod-tools/.worktrees/bitpod-tools-bit92-ready/linear/docs/process/minimum_phase4_agent_team_operating_matrix_v1.md`
-  - `/Users/cjarguello/bitpod-app/bitpod-tools/.worktrees/bitpod-tools-bit92-ready/linear/docs/process/minimum_phase4_agent_team_execution_record_v1.md`
-  - `/Users/cjarguello/bitpod-app/bitpod-tools/.worktrees/bitpod-tools-bit92-ready/linear/docs/process/minimum_phase4_agent_team_readiness_v1.md`
+  - `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/minimum_phase4_agent_team_operating_matrix_v1.md`
+  - `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/minimum_phase4_agent_team_execution_record_v1.md`
+  - `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/minimum_phase4_agent_team_readiness_v1.md`
 - explicit readiness verdict:
   - `MINIMUM_TEAM_READY=true`
 
 ## Durable references
 
-- `/Users/cjarguello/bitpod-app/bitpod-tools/.worktrees/bitpod-tools-bit92-ready/linear/docs/process/minimum_phase4_agent_team_contract_v1.md`
-- `/Users/cjarguello/bitpod-app/bitpod-tools/.worktrees/bitpod-tools-bit92-ready/linear/docs/process/minimum_phase4_agent_team_operating_matrix_v1.md`
-- `/Users/cjarguello/bitpod-app/bitpod-tools/.worktrees/bitpod-tools-bit92-ready/linear/docs/process/minimum_phase4_agent_team_execution_record_v1.md`
-- `/Users/cjarguello/bitpod-app/bitpod-tools/.worktrees/bitpod-tools-bit92-ready/linear/docs/process/minimum_phase4_agent_team_readiness_v1.md`
+- `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/minimum_phase4_agent_team_contract_v1.md`
+- `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/minimum_phase4_agent_team_operating_matrix_v1.md`
+- `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/minimum_phase4_agent_team_execution_record_v1.md`
+- `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/minimum_phase4_agent_team_readiness_v1.md`
 
 ## Next actions
 
