@@ -298,9 +298,13 @@ Team-first routing:
 ./bridge_chat.sh chat "@taylor can you sanity-check this?"
 ```
 
-`@gpt` causes GPT relay in the same active session.  
+`@gpt` causes the default GPT relay in the same active session.
+`@taylor` routes through the same bridge with a Taylor-specific persona prompt and replies as `taylor`.
 `@codex` triggers explicit Codex acknowledgment in timeline.  
 Other mentions are team-visible intent tags.
+
+Advanced note:
+- `meta.system_prompt` can override the default bridge identity prompt for actor-specific surfaces.
 
 Recommended in Codex UI: Bridge tilde commands (`~...`)
 

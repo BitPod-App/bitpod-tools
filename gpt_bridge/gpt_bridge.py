@@ -273,6 +273,13 @@ def resolve_model(gpt_request: GPTRequest, config: BridgeConfig) -> str:
     return config.model
 
 
+def resolve_system_prompt(gpt_request: GPTRequest) -> str:
+    meta_prompt = gpt_request.meta.get("system_prompt")
+    if isinstance(meta_prompt, str) and meta_prompt.strip():
+        return meta_prompt.strip()
+    return SYSTEM_IDENTITY_PROMPT
+
+
 def _extract_output_text(data: dict[str, Any]) -> str:
     output = data.get("output", [])
     chunks: list[str] = []
@@ -320,6 +327,7 @@ def call_openai(
 ) -> GPTResponse:
     json_only = bool(gpt_request.constraints.get("json_only", True))
     max_tokens = int(gpt_request.constraints.get("max_tokens", 1200))
+    system_prompt = resolve_system_prompt(gpt_request)
 
     context_block = "\n".join(gpt_request.context) if gpt_request.context else "(none)"
     user_instructions = {
@@ -349,7 +357,7 @@ def call_openai(
             {
                 "role": "system",
                 "content": [
-                    {"type": "input_text", "text": SYSTEM_IDENTITY_PROMPT},
+                    {"type": "input_text", "text": system_prompt},
                     {"type": "input_text", "text": format_instruction},
                 ],
             },
@@ -427,6 +435,7 @@ def call_openai(
         trace={
             "request_id": request_id,
             "model": selected_model,
+            "route_actor": gpt_request.meta.get("route_actor", ""),
             "token_usage": usage,
         },
     )
