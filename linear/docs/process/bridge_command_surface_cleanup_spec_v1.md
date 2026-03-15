@@ -114,7 +114,7 @@ into one fake “universal command list.”
 
 After cleanup:
 
-- `docs/bridge-runtime-domains.md` must reflect actual Bridge commands
+- live Bridge scripts and README surfaces must reflect actual Bridge commands
 - `gpt_bridge/README.md` must reflect actual Bridge commands
 - Taylor runtime docs must remain explicit that `!status`, `!end`, and `!intent` belong to Taylor/Zulip runtime semantics
 

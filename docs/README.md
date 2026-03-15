@@ -8,13 +8,10 @@ migration guardrails only.
 
 ## Runtime Domain Docs (BIT-36)
 
-- `bridge-runtime-domains.md`
-- `taylor-runtime-domains.md`
 
 ## Operational Prompt Surfaces
 
 - `bridge_gpt_prompts.md`
-- `taylor_runtime_prompts.md`
 
 Do not duplicate shared product canon bundles here.
 
