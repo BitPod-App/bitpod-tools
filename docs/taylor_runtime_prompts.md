@@ -1,19 +1,19 @@
 # Taylor Runtime Prompts (Run + Test)
 
 ## Runtime Path
-- `/Users/cjarguello/bitpod-app/taylor-runtime`
-- Legacy compatibility path: `/Users/cjarguello/bitpod-app/bitpod-taylor-runtime`
+- `/Users/cjarguello/bitpod-app/bitpod-taylor-runtime`
+- Legacy compatibility path: `/Users/cjarguello/bitpod-app/taylor-runtime`
 
 ## Start
 ```bash
-cd /Users/cjarguello/bitpod-app/taylor-runtime
+cd /Users/cjarguello/bitpod-app/bitpod-taylor-runtime
 set -a; source .env; set +a
 PYTHONPATH=src python3 -m taylor
 ```
 
 ## One-Shot Check
 ```bash
-cd /Users/cjarguello/bitpod-app/taylor-runtime
+cd /Users/cjarguello/bitpod-app/bitpod-taylor-runtime
 set -a; source .env; set +a
 PYTHONPATH=src python3 -m taylor --once
 ```
@@ -27,7 +27,7 @@ PYTHONPATH=src python3 -m taylor --once
 
 ## Credential/API Verification
 ```bash
-cd /Users/cjarguello/bitpod-app/taylor-runtime
+cd /Users/cjarguello/bitpod-app/bitpod-taylor-runtime
 set -a; source .env; set +a
 python3 - <<'PY'
 import os, base64, json, urllib.request

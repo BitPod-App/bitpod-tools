@@ -6,15 +6,15 @@ Define canonical runtime paths and operational expectations for Taylor across ol
 
 ## Canonical Runtime Path
 
-- Preferred: `/Users/cjarguello/bitpod-app/taylor-runtime`
-- Legacy compatibility path (if still present): `/Users/cjarguello/bitpod-app/bitpod-taylor-runtime`
+- Preferred: `/Users/cjarguello/bitpod-app/bitpod-taylor-runtime`
+- Legacy compatibility path (if still present): `/Users/cjarguello/bitpod-app/taylor-runtime`
 
 ## Runtime Modes
 
 1. Continuous runtime
 
 ```bash
-cd /Users/cjarguello/bitpod-app/taylor-runtime
+cd /Users/cjarguello/bitpod-app/bitpod-taylor-runtime
 set -a; source .env; set +a
 PYTHONPATH=src python3 -m taylor
 ```
@@ -22,7 +22,7 @@ PYTHONPATH=src python3 -m taylor
 2. One-shot health check
 
 ```bash
-cd /Users/cjarguello/bitpod-app/taylor-runtime
+cd /Users/cjarguello/bitpod-app/bitpod-taylor-runtime
 set -a; source .env; set +a
 PYTHONPATH=src python3 -m taylor --once
 ```
@@ -43,7 +43,7 @@ PYTHONPATH=src python3 -m taylor --once
 ## Credential/API Smoke Test
 
 ```bash
-cd /Users/cjarguello/bitpod-app/taylor-runtime
+cd /Users/cjarguello/bitpod-app/bitpod-taylor-runtime
 set -a; source .env; set +a
 python3 - <<'PY'
 import os, base64, json, urllib.request
@@ -58,5 +58,5 @@ PY
 
 ## Migration Notes
 
-- New docs and scripts should target `taylor-runtime` path.
-- Keep compatibility notes for `bitpod-taylor-runtime` only until fully retired.
+- New docs and scripts should target `bitpod-taylor-runtime` path.
+- Keep compatibility notes for `taylor-runtime` only until fully retired.
