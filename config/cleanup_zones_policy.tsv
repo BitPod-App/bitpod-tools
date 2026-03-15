@@ -6,10 +6,10 @@
 coordination_docs|REPORT_ONLY|bitpod/docs/coordination|legacy coordination drop zone pending relocation; report metrics only
 cj_pm_dropbox|REPORT_ONLY|local-workspace/local-cj-pm-only|explicit user-managed keep zone; no cleanup pressure
 codex_state_home|REPORT_ONLY|local-workspace/local-codex|codex state home; preserve architecture, but do not blindly mirror machine auth/secrets
-local_archive|REPORT_ONLY|local-workspace/local-archive|preserved local historical material; monitor size and keep browseable
-local_handoffs|STRICT_CANONICAL|local-workspace/local-handoffs|active local handoff exchange zone; keep minimal and self-describing
+legacy_local_archive_drift|REPORT_ONLY|local-workspace/local-archive|legacy top-level zone under review; do not expand until redistributed or explicitly approved
+local_handoffs|REPORT_ONLY|local-workspace/local-handoffs|temporary handoff lane under review; keep minimal and use only when actual handoff is needed
 local_trash_delete|REPORT_ONLY|local-workspace/local-trash-delete|disposal quarantine; do not replicate; review only for purge
-local_working_files|REPORT_ONLY|local-workspace/local-working-files|active scratch/work queue; move dated inactive bundles to local-archive
+local_working_files|REPORT_ONLY|local-workspace/local-working-files|default explicit working path for retained local files that are still active or under review
 legacy_agent_bootstrap|REPORT_ONLY|bitpod-docs/archive/legacy-context/sector-feeds-agent-bootstrap|archived non-feed bootstrap material moved out of sector-feeds; preserve and monitor only
 templates_registry|STRICT_CANONICAL|bitpod-tools/linear/docs/templates_registry|canonical template index and references
 learnings_ledger|STRICT_CANONICAL|bitpod-docs/archive/learnings|canonical retros/protocol learnings
