@@ -57,8 +57,6 @@ Artifacts that exist because the product is BitPod:
 | `/Users/cjarguello/bitpod-app/bitpod-docs/process/local-workspace-cleanup-runbook.md` | Taylor01 Workspace / Org Policy | `mixed` | `create-generic-version-now` | Reusable policy with BitPod path overlay currently mixed in |
 | `/Users/cjarguello/bitpod-app/bitpod-docs/process/canonical-path-contract.md` | Mixed | `mixed` | `create-generic-version-now` | Needs split into portable path rules plus BitPod path map |
 | `/Users/cjarguello/bitpod-app/bitpod-docs/process/project-sources/13_AGENT_EXECUTION_GATES_v1.md` | Taylor01 Workspace / Org Policy | `mixed` | `move-later` | Gate model is reusable; current framing is BitPod-era |
-| `/Users/cjarguello/.agents/skills/qa-specialist/**` | Taylor01 Portable Core | `portable` | `retire-mirror-later` | Legacy home-directory mirror remains for compatibility, but canonical local surface now lives under `local-codex` |
-| `/Users/cjarguello/.agents/skills/taylor/**` | Taylor01 Portable Core | `portable` | `retire-mirror-later` | Legacy home-directory mirror remains for compatibility, but canonical local surface now lives under `local-codex` |
 | `/Users/cjarguello/bitpod-app/local-workspace/local-codex/skills/qa-specialist/**` | Taylor01 Portable Core | `portable` | `keep-local-now` | Workspace-local canonical copy exists and should replace the home-directory mirror over time |
 | `linear/docs/process/taylor_orchestrator_contract_v1.md` | Taylor01 Portable Core | `portable` | `move-later` | Strong core candidate once subtree is active |
 | `linear/docs/process/specialist_agent_registry_v1.md` | Taylor01 Portable Core | `portable` | `move-later` | Registry semantics are reusable beyond BitPod |

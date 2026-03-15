@@ -17,10 +17,6 @@ This repo contract is currently implemented through the local `qa-specialist` sk
   - `/Users/cjarguello/bitpod-app/local-workspace/local-codex/skills/qa-specialist/SKILL.md`
   - `/Users/cjarguello/bitpod-app/local-workspace/local-codex/skills/qa-specialist/references/QA_OUTPUT_CONTRACTS_v1.md`
   - `/Users/cjarguello/bitpod-app/local-workspace/local-codex/skills/qa-specialist/references/QA_REVIEW_CHECKLIST_v1.md`
-- legacy mirror under review:
-  - `/Users/cjarguello/.agents/skills/qa-specialist/SKILL.md`
-  - `/Users/cjarguello/.agents/skills/qa-specialist/references/QA_OUTPUT_CONTRACTS_v1.md`
-  - `/Users/cjarguello/.agents/skills/qa-specialist/references/QA_REVIEW_CHECKLIST_v1.md`
 
 That skill should be treated as a transitional implementation surface for Vera while the dedicated QA lane is still being operationalized as a fuller agent/runtime.
 

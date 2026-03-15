@@ -28,10 +28,6 @@ Current Vera contract surface:
   - `/Users/cjarguello/bitpod-app/local-workspace/local-codex/skills/qa-specialist/SKILL.md`
   - `/Users/cjarguello/bitpod-app/local-workspace/local-codex/skills/qa-specialist/references/QA_OUTPUT_CONTRACTS_v1.md`
   - `/Users/cjarguello/bitpod-app/local-workspace/local-codex/skills/qa-specialist/references/QA_REVIEW_CHECKLIST_v1.md`
-- legacy mirror under review:
-  - `/Users/cjarguello/.agents/skills/qa-specialist/SKILL.md`
-  - `/Users/cjarguello/.agents/skills/qa-specialist/references/QA_OUTPUT_CONTRACTS_v1.md`
-  - `/Users/cjarguello/.agents/skills/qa-specialist/references/QA_REVIEW_CHECKLIST_v1.md`
 
 ## Verified behavior inventory
 
