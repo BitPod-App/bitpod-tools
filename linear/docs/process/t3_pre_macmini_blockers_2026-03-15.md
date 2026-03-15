@@ -10,6 +10,10 @@ Record the remaining objections that still prevent an honest T3 pass before the 
 
 This file exists because "mostly clean" is not specific enough for the current standard.
 
+Status note:
+- superseded as an active blocker list by [`strict_cleanup_audit_pass_2026-03-15.md`](./checkpoints/strict_cleanup_audit_pass_2026-03-15.md)
+- keep this file as the historical pre-pass blocker snapshot
+
 ## Current blocker matrix
 
 | Concern | Status | Current read | Next action |
