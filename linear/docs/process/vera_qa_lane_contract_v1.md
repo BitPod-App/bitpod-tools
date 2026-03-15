@@ -29,6 +29,7 @@ The long-term role should not be constrained to remaining only a skill.
 For preserved Zulip-era QA/runtime behaviors that should not be lost during Vera migration, see:
 
 - [vera_runtime_behavior_inventory_from_zulip_v1.md](./vera_runtime_behavior_inventory_from_zulip_v1.md)
+- [vera_runtime_minimum_v1.md](./vera_runtime_minimum_v1.md)
 
 ## What Makes This A Dedicated QA Lane
 
