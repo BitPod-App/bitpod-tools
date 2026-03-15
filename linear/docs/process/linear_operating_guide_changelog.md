@@ -2,9 +2,29 @@
 
 ## Active version
 
-- `v2` (effective 2026-03-12)
+- `v3` (effective 2026-03-14)
 
 ## Entries
+
+### v3 — 2026-03-14
+
+Reason:
+- Merge the still-useful Linear issue hygiene rules from the bootstrap-era best-practices note into the active operating guide.
+- Add explicit change-control for high-blast Linear admin/process changes without reviving legacy `M-9` terminology.
+
+Includes:
+- issue readiness minimums and small-issue hygiene
+- status-truth and explicit-blocker rules
+- weekly hygiene guidance
+- Linear admin/process change-control and proposal template references
+
+Linked artifacts:
+- `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/linear_operating_guide_v3.md`
+- `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/linear_admin_change_control_v1.md`
+- `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/linear_change_proposal_template_v1.md`
+
+Rollback target:
+- `v2`
 
 ### v1 — 2026-03-07
 
