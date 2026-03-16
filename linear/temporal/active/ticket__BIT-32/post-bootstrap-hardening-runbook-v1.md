@@ -95,6 +95,6 @@ Do not treat legacy BitPod Isolation Mode v1 as the hardening implementation pat
 
 That legacy feature is now retired as an active protection system and should only be referenced as historical scaffolding:
 
-- [isolation_mode_retirement_and_hardening_mapping_v1.md](./isolation_mode_retirement_and_hardening_mapping_v1.md)
+- [isolation_mode_retirement_and_hardening_mapping_v1.md](../ticket__BIT-74/isolation-mode-retirement-and-hardening-mapping-v1.md)
 
 If stronger isolation is needed later, implement it through the approved hardening/runtime path instead of reviving the old local queue/enforcement system. The definitive superseding control lane for the personal machine is [BIT-117 — Personal-machine Codex scope lockdown to BitPod-App + Git/GitHub/SSH](https://linear.app/bitpod-app/issue/BIT-117/personal-machine-codex-scope-lockdown-to-bitpod-app-gitgithub-ssh).
