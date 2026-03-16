@@ -69,7 +69,7 @@ Commands/UI checks:
 - GitHub UI: Org Settings -> Security -> Require 2FA = enabled
 
 Artifacts:
-- `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/github_org_baseline_evidence_2026-03-06.md`
+- `/Users/cjarguello/BitPod-App/bitpod-tools/linear/docs/process/github_org_baseline_evidence_2026-03-06.md`
 - [PR #6](https://github.com/BitPod-App/bitpod-tools/pull/6)
 
 Pass/Fail:

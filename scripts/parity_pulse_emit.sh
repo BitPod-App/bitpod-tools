@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT="${BITPOD_APP_ROOT:-/Users/cjarguello/bitpod-app}"
+ROOT="${BITPOD_APP_ROOT:-/Users/cjarguello/BitPod-App}"
 AUDIT_CTL="$ROOT/bitpod-tools/audit_ctl.sh"
 PULSE_ROOT="$ROOT/local-workspace/local-working-files/local-parity-pulse"
 REGISTRY_FILE="${BITPOD_REPO_REGISTRY_FILE:-$ROOT/bitpod-tools/config/repo_registry.tsv}"

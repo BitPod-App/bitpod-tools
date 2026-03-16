@@ -5,9 +5,9 @@ The highest-risk theme is internet exposure of the GPT bridge endpoint (`/ask`) 
 
 ## Scope and assumptions
 - In-scope paths:
-  - `/Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge`
-  - `/Users/cjarguello/bitpod-app/bitpod-tools/costs`
-  - `/Users/cjarguello/bitpod-app/bitpod-tools/audit_ctl.sh` (operational helper, low runtime criticality)
+  - `/Users/cjarguello/BitPod-App/bitpod-tools/gpt_bridge`
+  - `/Users/cjarguello/BitPod-App/bitpod-tools/costs`
+  - `/Users/cjarguello/BitPod-App/bitpod-tools/audit_ctl.sh` (operational helper, low runtime criticality)
 - Out-of-scope:
   - Product app repos outside this directory.
   - Cloudflare/Zulip dashboard configuration not represented in this repo.
@@ -97,11 +97,11 @@ flowchart LR
 ## Entry points and attack surfaces
 | Surface | How reached | Trust boundary | Notes | Evidence (repo path / symbol) |
 |---|---|---|---|---|
-| `POST /ask` | Internet via domain/tunnel or local URL | External caller -> bridge service | Core auth and validation chokepoint | `/Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge/gpt_bridge.py` (`do_POST`, `_is_authorized`) |
-| MCP tool `gpt_bridge_ask` | MCP stdio clients | MCP client -> bridge | Forwards args to `GPT_BRIDGE_URL`; auth header from env | `/Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge/gpt_bridge_mcp.py` (`_call_bridge`, `_build_headers`) |
-| CLI wrapper `ask_gpt.py` | Local shell scripts/users | Operator shell -> bridge | Can post to remote bridge URL from env | `/Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge/ask_gpt.py` |
-| Chat command relay | `bridge_chat.sh chat` / team command aliases | User text -> GPT relay + memory pipeline | Mention parsing and auto memory operations | `/Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge/bridge_chat.py` (`run_team`, `_finalize_session_memory`) |
-| Log files | Local FS reads/writes | App process -> filesystem | Contains high-value transcript and trace content | `/Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge/gpt_bridge.py` (`_log_jsonl`), `bridge_chat.py` (`append_event`) |
+| `POST /ask` | Internet via domain/tunnel or local URL | External caller -> bridge service | Core auth and validation chokepoint | `/Users/cjarguello/BitPod-App/bitpod-tools/gpt_bridge/gpt_bridge.py` (`do_POST`, `_is_authorized`) |
+| MCP tool `gpt_bridge_ask` | MCP stdio clients | MCP client -> bridge | Forwards args to `GPT_BRIDGE_URL`; auth header from env | `/Users/cjarguello/BitPod-App/bitpod-tools/gpt_bridge/gpt_bridge_mcp.py` (`_call_bridge`, `_build_headers`) |
+| CLI wrapper `ask_gpt.py` | Local shell scripts/users | Operator shell -> bridge | Can post to remote bridge URL from env | `/Users/cjarguello/BitPod-App/bitpod-tools/gpt_bridge/ask_gpt.py` |
+| Chat command relay | `bridge_chat.sh chat` / team command aliases | User text -> GPT relay + memory pipeline | Mention parsing and auto memory operations | `/Users/cjarguello/BitPod-App/bitpod-tools/gpt_bridge/bridge_chat.py` (`run_team`, `_finalize_session_memory`) |
+| Log files | Local FS reads/writes | App process -> filesystem | Contains high-value transcript and trace content | `/Users/cjarguello/BitPod-App/bitpod-tools/gpt_bridge/gpt_bridge.py` (`_log_jsonl`), `bridge_chat.py` (`append_event`) |
 
 ## Top abuse paths
 1. **Bridge credential theft -> unauthorized prompt relay**
@@ -156,13 +156,13 @@ flowchart LR
 ## Focus paths for security review
 | Path | Why it matters | Related Threat IDs |
 |---|---|---|
-| `/Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge/gpt_bridge.py` | Primary auth, request parsing, external API forwarding, logging | TM-001, TM-002, TM-003, TM-004 |
-| `/Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge/gpt_bridge_mcp.py` | MCP->HTTP forwarding and auth header construction | TM-001, TM-006 |
-| `/Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge/bridge_chat.py` | Chat relay, memory extraction/sync, persistent event logging | TM-004, TM-005 |
-| `/Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge/bridge_ctl.sh` | Runtime control logic and remote/local endpoint behavior | TM-002, TM-006 |
-| `/Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge/ask_gpt.py` | Client-side endpoint and auth usage path | TM-001, TM-006 |
-| `/Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge/config.example.env` | Secret and endpoint configuration contract | TM-001, TM-006 |
-| `/Users/cjarguello/bitpod-app/bitpod-tools/costs/cost_ctl.py` | Cost anomaly signal path for abuse detection | TM-003 |
+| `/Users/cjarguello/BitPod-App/bitpod-tools/gpt_bridge/gpt_bridge.py` | Primary auth, request parsing, external API forwarding, logging | TM-001, TM-002, TM-003, TM-004 |
+| `/Users/cjarguello/BitPod-App/bitpod-tools/gpt_bridge/gpt_bridge_mcp.py` | MCP->HTTP forwarding and auth header construction | TM-001, TM-006 |
+| `/Users/cjarguello/BitPod-App/bitpod-tools/gpt_bridge/bridge_chat.py` | Chat relay, memory extraction/sync, persistent event logging | TM-004, TM-005 |
+| `/Users/cjarguello/BitPod-App/bitpod-tools/gpt_bridge/bridge_ctl.sh` | Runtime control logic and remote/local endpoint behavior | TM-002, TM-006 |
+| `/Users/cjarguello/BitPod-App/bitpod-tools/gpt_bridge/ask_gpt.py` | Client-side endpoint and auth usage path | TM-001, TM-006 |
+| `/Users/cjarguello/BitPod-App/bitpod-tools/gpt_bridge/config.example.env` | Secret and endpoint configuration contract | TM-001, TM-006 |
+| `/Users/cjarguello/BitPod-App/bitpod-tools/costs/cost_ctl.py` | Cost anomaly signal path for abuse detection | TM-003 |
 
 ## Quality check
 - Entry points covered: `/ask`, MCP tool, CLI wrapper, chat relay, local logs.

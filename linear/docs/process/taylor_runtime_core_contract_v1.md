@@ -94,10 +94,10 @@ Before any fallback:
 
 Runtime behavior depends on these machine-readable artifacts:
 
-- `/Users/cjarguello/bitpod-app/bitpod-tools/linear/contracts/runtime_states_v1.json`
-- `/Users/cjarguello/bitpod-app/bitpod-tools/linear/contracts/agent_registry_v1.json`
-- `/Users/cjarguello/bitpod-app/bitpod-tools/linear/contracts/tool_registry_v1.json`
-- `/Users/cjarguello/bitpod-app/bitpod-tools/linear/examples/taylor_delegated_trace_v1.json`
+- `/Users/cjarguello/BitPod-App/bitpod-tools/linear/contracts/runtime_states_v1.json`
+- `/Users/cjarguello/BitPod-App/bitpod-tools/linear/contracts/agent_registry_v1.json`
+- `/Users/cjarguello/BitPod-App/bitpod-tools/linear/contracts/tool_registry_v1.json`
+- `/Users/cjarguello/BitPod-App/bitpod-tools/linear/examples/taylor_delegated_trace_v1.json`
 
 ## Non-Goals
 

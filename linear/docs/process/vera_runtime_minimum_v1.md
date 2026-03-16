@@ -41,8 +41,8 @@ This minimum is derived from:
 - [vera_qa_lane_contract_v1.md](./vera_qa_lane_contract_v1.md)
 - [vera_runtime_behavior_inventory_from_zulip_v1.md](./vera_runtime_behavior_inventory_from_zulip_v1.md)
 - verified Zulip-era behavior in:
-  - `/Users/cjarguello/bitpod-app/bitpod-taylor-runtime/src/taylor/bot.py`
-  - `/Users/cjarguello/bitpod-app/bitpod-taylor-runtime/tests/test_phase0_bot.py`
+  - `/Users/cjarguello/BitPod-App/bitpod-taylor-runtime/src/taylor/bot.py`
+  - `/Users/cjarguello/BitPod-App/bitpod-taylor-runtime/tests/test_phase0_bot.py`
 
 ## Required outputs
 

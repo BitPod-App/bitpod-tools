@@ -41,7 +41,7 @@ Org: `BitPod-App`
 ## Commands used
 
 ```bash
-cd /Users/cjarguello/bitpod-app/bitpod-tools
+cd /Users/cjarguello/BitPod-App/bitpod-tools
 python3 -m unittest linear/tests/test_engine.py linear/tests/test_runtime.py linear/tests/test_e2e_flow.py
 
 gh search prs --owner BitPod-App --state open --limit 100 --json number,title,repository,url

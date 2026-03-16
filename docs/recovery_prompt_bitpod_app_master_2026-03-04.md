@@ -7,7 +7,7 @@ Recovery Context
 This thread is a controlled restart after a multi-factor incident involving Codex thread instability and connector turbulence (Linear/GitHub-triggered workflow noise, disappearing/reappearing threads, delayed outputs, and intermittent submit failures). Prior thread history may be incomplete, stale, or partially replayed.
 
 Primary Goal
-Continue execution safely from `/Users/cjarguello/bitpod-app` with strict verification discipline, while rebuilding reliable continuity for pending Linear/GitHub-heavy work.
+Continue execution safely from `/Users/cjarguello/BitPod-App` with strict verification discipline, while rebuilding reliable continuity for pending Linear/GitHub-heavy work.
 
 Mandatory Operating Rules
 1) Capability declaration first:
@@ -34,10 +34,10 @@ Known Reference PR
 - BIT-36 merged PR: https://github.com/BitPod-App/bitpod-tools/pull/3
 
 Known Local Artifacts to Read First
-- /Users/cjarguello/bitpod-app/bitpod-tools/docs/capability_state_truth_label_incident_protocol.md
-- /Users/cjarguello/bitpod-app/bitpod-tools/docs/handoff_2026-03-03_codex_linear_bridge_incident.md
-- /Users/cjarguello/bitpod-app/bitpod-tools/docs/thread_restart_linear_prompts_2026-03-03.md
-- /Users/cjarguello/bitpod-app/bitpod-tools/docs/thread_restart_linear_prompts_2026-03-03.md
+- /Users/cjarguello/BitPod-App/bitpod-tools/docs/capability_state_truth_label_incident_protocol.md
+- /Users/cjarguello/BitPod-App/bitpod-tools/docs/handoff_2026-03-03_codex_linear_bridge_incident.md
+- /Users/cjarguello/BitPod-App/bitpod-tools/docs/thread_restart_linear_prompts_2026-03-03.md
+- /Users/cjarguello/BitPod-App/bitpod-tools/docs/thread_restart_linear_prompts_2026-03-03.md
 
 Git/Repo Snapshot Constraints (carry forward, then re-verify)
 - bitpod-tools branch context seen: codex/bit-36-bridge-taylor-runbooks

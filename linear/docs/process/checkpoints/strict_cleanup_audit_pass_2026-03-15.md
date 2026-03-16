@@ -15,7 +15,7 @@ Record the stricter post-T3 cleanup baseline after the workspace passed a full c
 
 ## Current baseline
 
-- active repos under `/Users/cjarguello/bitpod-app` are clean on their current upstream branches
+- active repos under `/Users/cjarguello/BitPod-App` are clean on their current upstream branches
 - `~/.agents` no longer exists as active mirror or compatibility shim
 - `local-trash-delete/` is the default quarantine/disposal intake path
 - `local-trash-delete/local-purge/` is promotion-only and remains the only approved hard-delete lane
@@ -26,8 +26,8 @@ Record the stricter post-T3 cleanup baseline after the workspace passed a full c
 ## What still exists, but no longer fails the audit
 
 - live-session prompt history in local Codex app state
-- quarantined residue in `/Users/cjarguello/bitpod-app/local-workspace/local-trash-delete`
-- purge-ready residue in `/Users/cjarguello/bitpod-app/local-workspace/local-trash-delete/local-purge`
+- quarantined residue in `/Users/cjarguello/BitPod-App/local-workspace/local-trash-delete`
+- purge-ready residue in `/Users/cjarguello/BitPod-App/local-workspace/local-trash-delete/local-purge`
 - deferred naming normalization work tracked separately under [BIT-103 — Defer post-T3 naming normalization for repos, packages, and artifact paths](https://linear.app/bitpod-app/issue/BIT-103/defer-post-t3-naming-normalization-for-repos-packages-and-artifact)
 
 ## Baseline rule going forward

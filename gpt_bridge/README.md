@@ -20,7 +20,7 @@ HTTP bridge so Codex workflows can call GPT directly (local or remote-managed en
 1. Go to folder:
 
 ```bash
-cd /Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge
+cd /Users/cjarguello/BitPod-App/bitpod-tools/gpt_bridge
 ```
 
 2. Create local env file from template:
@@ -47,7 +47,7 @@ set +a
 START (one time per machine boot/session):
 
 ```bash
-cd /Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge
+cd /Users/cjarguello/BitPod-App/bitpod-tools/gpt_bridge
 set -a; source .env; set +a
 ./bridge_ctl.sh start --session team
 cloudflared tunnel run gpt-bridge
@@ -63,7 +63,7 @@ CHAT (Codex chat):
 STOP:
 
 ```bash
-cd /Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge
+cd /Users/cjarguello/BitPod-App/bitpod-tools/gpt_bridge
 ./bridge_ctl.sh stop --session team
 ```
 
@@ -74,14 +74,14 @@ Use this in order. Stop when one step explains/fixes the issue.
 1. Check bridge health:
 
 ```bash
-cd /Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge
+cd /Users/cjarguello/BitPod-App/bitpod-tools/gpt_bridge
 ./bridge_ctl.sh status
 ```
 
 2. Validate env/auth is loaded in current shell:
 
 ```bash
-cd /Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge
+cd /Users/cjarguello/BitPod-App/bitpod-tools/gpt_bridge
 set -a; source .env; set +a
 echo OPENAI_API_KEY=${OPENAI_API_KEY:+set}
 echo GPT_BRIDGE_TOKEN=${GPT_BRIDGE_TOKEN:+set}
@@ -91,7 +91,7 @@ echo GPT_BRIDGE_SHARED_SECRET=${GPT_BRIDGE_SHARED_SECRET:+set}
 3. If inactive, start explicitly and re-check:
 
 ```bash
-cd /Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge
+cd /Users/cjarguello/BitPod-App/bitpod-tools/gpt_bridge
 ./bridge_ctl.sh start --session team
 ./bridge_ctl.sh status
 ```
@@ -99,7 +99,7 @@ cd /Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge
 4. If start fails, inspect startup log:
 
 ```bash
-cd /Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge
+cd /Users/cjarguello/BitPod-App/bitpod-tools/gpt_bridge
 tail -n 120 logs/bridge_start.log
 ```
 
@@ -112,7 +112,7 @@ Common signatures:
 5. If local bridge is unstable, test direct ask path:
 
 ```bash
-cd /Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge
+cd /Users/cjarguello/BitPod-App/bitpod-tools/gpt_bridge
 ./ask_once.sh "ping"
 ```
 
@@ -124,7 +124,7 @@ cd /Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge
 7. Final reset (local bridge only):
 
 ```bash
-cd /Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge
+cd /Users/cjarguello/BitPod-App/bitpod-tools/gpt_bridge
 ./bridge_ctl.sh stop --session team
 ./bridge_ctl.sh start --session team
 ```
@@ -240,7 +240,7 @@ With explicit model override:
 Use this when you want "start bridge if needed + call GPT" in one step:
 
 ```bash
-cd /Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge
+cd /Users/cjarguello/BitPod-App/bitpod-tools/gpt_bridge
 ./ask_once.sh "ping"
 ```
 
@@ -261,7 +261,7 @@ If you run without a message, it defaults to `ping`:
 Use this to simulate chat with shared logs:
 
 ```bash
-cd /Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge
+cd /Users/cjarguello/BitPod-App/bitpod-tools/gpt_bridge
 ./bridge_chat.sh send "ping"
 ```
 
@@ -512,7 +512,7 @@ env -u GPT_BRIDGE_TOKEN -u GPT_BRIDGE_SHARED_SECRET ./ask_gpt.sh "ping"
 1. Start HTTP bridge:
 
 ```bash
-cd /Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge
+cd /Users/cjarguello/BitPod-App/bitpod-tools/gpt_bridge
 python3 gpt_bridge.py
 ```
 
@@ -521,7 +521,7 @@ python3 gpt_bridge.py
 ```toml
 [mcp_servers.gpt_bridge]
 command = "python3"
-args = ["/Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge/gpt_bridge_mcp.py"]
+args = ["/Users/cjarguello/BitPod-App/bitpod-tools/gpt_bridge/gpt_bridge_mcp.py"]
 
 [mcp_servers.gpt_bridge.env]
 GPT_BRIDGE_URL = "http://127.0.0.1:8787/ask"

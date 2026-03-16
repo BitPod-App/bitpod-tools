@@ -19,9 +19,9 @@ Includes:
 - Linear admin/process change-control and proposal template references
 
 Linked artifacts:
-- `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/linear_operating_guide_v3.md`
-- `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/linear_admin_change_control_v1.md`
-- `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/linear_change_proposal_template_v1.md`
+- `/Users/cjarguello/BitPod-App/bitpod-tools/linear/docs/process/linear_operating_guide_v3.md`
+- `/Users/cjarguello/BitPod-App/bitpod-tools/linear/docs/process/linear_admin_change_control_v1.md`
+- `/Users/cjarguello/BitPod-App/bitpod-tools/linear/docs/process/linear_change_proposal_template_v1.md`
 
 Rollback target:
 - `v2`
@@ -38,12 +38,12 @@ Includes:
 - Explicit rollback procedure
 
 Linked artifacts:
-- `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/linear_operating_guide_v1.md`
-- `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/github_org_baseline_policy_v1.md`
-- `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/github_org_baseline_evidence_2026-03-06.md`
-- `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/github_org_team_access_map_2026-03-07.md`
-- `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/github_repo_security_matrix_2026-03-07.md`
-- `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/governance_parity_checklist_2026-03-07.md`
+- `/Users/cjarguello/BitPod-App/bitpod-tools/linear/docs/process/linear_operating_guide_v1.md`
+- `/Users/cjarguello/BitPod-App/bitpod-tools/linear/docs/process/github_org_baseline_policy_v1.md`
+- `/Users/cjarguello/BitPod-App/bitpod-tools/linear/docs/process/github_org_baseline_evidence_2026-03-06.md`
+- `/Users/cjarguello/BitPod-App/bitpod-tools/linear/docs/process/github_org_team_access_map_2026-03-07.md`
+- `/Users/cjarguello/BitPod-App/bitpod-tools/linear/docs/process/github_repo_security_matrix_2026-03-07.md`
+- `/Users/cjarguello/BitPod-App/bitpod-tools/linear/docs/process/governance_parity_checklist_2026-03-07.md`
 
 Rollback target:
 - This is baseline v1; rollback target is itself until v2 exists.
@@ -59,9 +59,9 @@ Includes:
 - guidance for classifying reusable work as `core`, `policy`, `adapter`, `bitpod-embedding`, or `mixed`
 
 Linked artifacts:
-- `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/linear_operating_guide_v2.md`
-- `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/linear_issue_template_evidence_contract_v2.md`
-- `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/taylor01_portability_review_gate_v1.md`
+- `/Users/cjarguello/BitPod-App/bitpod-tools/linear/docs/process/linear_operating_guide_v2.md`
+- `/Users/cjarguello/BitPod-App/bitpod-tools/linear/docs/process/linear_issue_template_evidence_contract_v2.md`
+- `/Users/cjarguello/BitPod-App/bitpod-tools/linear/docs/process/taylor01_portability_review_gate_v1.md`
 
 Rollback target:
 - `v1`

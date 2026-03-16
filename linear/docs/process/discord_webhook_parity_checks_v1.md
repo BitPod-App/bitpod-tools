@@ -31,13 +31,13 @@ Validate end-to-end event routing parity after Discord onboarding for core syste
 ## Runner command
 
 ```bash
-cd /Users/cjarguello/bitpod-app/bitpod-tools
+cd /Users/cjarguello/BitPod-App/bitpod-tools
 python3 linear/scripts/discord_parity_matrix_runner.py \
   --config /ABS/PATH/private.discord.config.json \
-  --report /Users/cjarguello/bitpod-app/local-workspace/local-working-files/discord_parity_matrix_report.md \
+  --report /Users/cjarguello/BitPod-App/local-workspace/local-working-files/discord_parity_matrix_report.md \
   --dry-run
 
 python3 linear/scripts/discord_parity_matrix_runner.py \
   --config /ABS/PATH/private.discord.config.json \
-  --report /Users/cjarguello/bitpod-app/local-workspace/local-working-files/discord_parity_matrix_report.md
+  --report /Users/cjarguello/BitPod-App/local-workspace/local-working-files/discord_parity_matrix_report.md
 ```

@@ -10,7 +10,7 @@
 
 Local BitPod/Codex operational state that must persist outside repo source trees should live under:
 
-- `/Users/cjarguello/bitpod-app/local-workspace/local-codex/.codex/`
+- `/Users/cjarguello/BitPod-App/.codex/`
 
 This is the default workspace-safe destination for:
 
@@ -39,7 +39,7 @@ Disallowed examples:
 
 Allowed roots:
 
-- `/Users/cjarguello/bitpod-app`
+- `/Users/cjarguello/BitPod-App`
 - migration-era dated backup workspace roots when explicitly preserved
 
 ## Repo vs Local State Split
@@ -55,7 +55,7 @@ Keep in repo only when the output is:
 
 ### Local workspace state
 
-Keep under `local-workspace/local-codex/.codex/` when the output is:
+Keep under `.codex/` when the output is:
 
 - operational
 - machine-maintained
@@ -89,4 +89,3 @@ For low-value transient files:
 This policy decides **where** local state may live.
 
 The companion policy `global_artifact_naming_policy_v1.md` decides **how** persisted artifacts should be named when they are intentionally retained.
-

@@ -27,15 +27,15 @@ Missing proof:
 
 Verified commands and artifacts:
 
-- `python3 linear/scripts/discord_config_preflight.py --config /Users/cjarguello/bitpod-app/local-workspace/local-working-files/private.discord.config.json`
+- `python3 linear/scripts/discord_config_preflight.py --config /Users/cjarguello/BitPod-App/local-workspace/local-working-files/private.discord.config.json`
   - result: `discord config preflight PASS`
-- `python3 linear/scripts/discord_phase2_evidence_pack.py --config /Users/cjarguello/bitpod-app/local-workspace/local-working-files/private.discord.config.json --out /Users/cjarguello/bitpod-app/local-workspace/local-working-files/discord_phase2_evidence_pack_live.md --live`
+- `python3 linear/scripts/discord_phase2_evidence_pack.py --config /Users/cjarguello/BitPod-App/local-workspace/local-working-files/private.discord.config.json --out /Users/cjarguello/BitPod-App/local-workspace/local-working-files/discord_phase2_evidence_pack_live.md --live`
   - result: `SUMMARY smoke_rc=0 parity_rc=0`
 
 Baseline evidence artifacts:
 
-- `/Users/cjarguello/bitpod-app/local-workspace/local-working-files/discord_phase2_evidence_pack_live.md`
-- `/Users/cjarguello/bitpod-app/local-workspace/local-working-files/discord_phase2_evidence_pack_live_matrix.md`
+- `/Users/cjarguello/BitPod-App/local-workspace/local-working-files/discord_phase2_evidence_pack_live.md`
+- `/Users/cjarguello/BitPod-App/local-workspace/local-working-files/discord_phase2_evidence_pack_live_matrix.md`
 
 Observed verified baseline:
 
@@ -53,7 +53,7 @@ Observed verified baseline:
 
 The minimum-team prerequisite is now satisfied:
 
-- `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/minimum_phase4_agent_team_readiness_v1.md`
+- `/Users/cjarguello/BitPod-App/bitpod-tools/linear/docs/process/minimum_phase4_agent_team_readiness_v1.md`
 - merged repo-side verdict: `MINIMUM_TEAM_READY=true`
 
 This means Discord acceptance is now a meaningful closure gate rather than a premature plumbing test.

@@ -32,7 +32,7 @@ Background evidence:
 ```md
 Appendix: pending git state snapshot to keep context aligned.
 
-Repo: /Users/cjarguello/bitpod-app/bitpod-tools
+Repo: /Users/cjarguello/BitPod-App/bitpod-tools
 - Branch: codex/bit-36-bridge-taylor-runbooks
 - PR #3 merged
 - Uncommitted files:

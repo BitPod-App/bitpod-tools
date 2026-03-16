@@ -1,7 +1,7 @@
 # Workspace Parity Snapshot (2026-03-07)
 
-Active: /Users/cjarguello/bitpod-app
-Backup: /Users/cjarguello/bitpod-app-backup-2026-03-02
+Active: /Users/cjarguello/BitPod-App
+Backup: /Users/cjarguello/BitPod-App-backup-2026-03-02
 
 ## Top-level entries
 

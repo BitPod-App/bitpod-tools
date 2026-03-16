@@ -30,7 +30,7 @@ Mark `T3_READY_FOR_MAC_MINI=true` only if all are true:
    - Canonical repo identity is clear enough that the Mac Mini will clone from the cleaned GitHub state, not from retired local roots.
 
 3. Hidden local operating state is mapped.
-   - `local-codex` is treated as the canonical local operating zone.
+   - root `.codex` is treated as the canonical local operating zone.
    - Important local skills/config references are no longer effectively “missing” because of relocation.
 
 4. `local-trash-delete` is no longer active.
@@ -58,7 +58,7 @@ If the checklist does not pass:
 
 - `Verified`: active root workspace is materially clean.
 - `Verified`: useful repo state has been preserved to GitHub branches.
-- `Verified`: `local-codex` has been audited enough to stop treating it as a hidden black box.
+- `Verified`: root `.codex` has been audited enough to stop treating it as a hidden black box.
 - `Verified`: `local-trash-delete` no longer appears to be part of the active operating surface.
 - `Verified`: rename work is already deferred separately under [BIT-103 — Defer post-T3 naming normalization for repos, packages, and artifact paths](https://linear.app/bitpod-app/issue/BIT-103/defer-post-t3-naming-normalization-for-repos-packages-and-artifact).
 

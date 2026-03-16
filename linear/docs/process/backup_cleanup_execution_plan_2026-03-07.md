@@ -17,10 +17,10 @@ Current satisfied gates:
 ## Destructive candidates (from classification)
 
 Drop candidates:
-- `/Users/cjarguello/bitpod-app-backup-2026-03-02/bitpod/.venv*`
-- `/Users/cjarguello/bitpod-app-backup-2026-03-02/tools/costs/__pycache__`
-- `/Users/cjarguello/bitpod-app-backup-2026-03-02/tools/gpt_bridge/.env`
-- `/Users/cjarguello/bitpod-app-backup-2026-03-02/App Downloads` (empty)
+- `/Users/cjarguello/BitPod-App-backup-2026-03-02/bitpod/.venv*`
+- `/Users/cjarguello/BitPod-App-backup-2026-03-02/tools/costs/__pycache__`
+- `/Users/cjarguello/BitPod-App-backup-2026-03-02/tools/gpt_bridge/.env`
+- `/Users/cjarguello/BitPod-App-backup-2026-03-02/App Downloads` (empty)
 
 Archive-only (already covered by cold archive):
 - artifacts buckets under backup root, `taylor-runtime`, `bitpod`, `bitregime-core`
@@ -29,19 +29,19 @@ Archive-only (already covered by cold archive):
 
 ```bash
 # confirm targets exist before deletion
-ls -ld /Users/cjarguello/bitpod-app-backup-2026-03-02/bitpod/.venv* || true
-ls -ld /Users/cjarguello/bitpod-app-backup-2026-03-02/tools/costs/__pycache__ || true
-ls -l  /Users/cjarguello/bitpod-app-backup-2026-03-02/tools/gpt_bridge/.env || true
-ls -ld /Users/cjarguello/bitpod-app-backup-2026-03-02/App\ Downloads || true
+ls -ld /Users/cjarguello/BitPod-App-backup-2026-03-02/bitpod/.venv* || true
+ls -ld /Users/cjarguello/BitPod-App-backup-2026-03-02/tools/costs/__pycache__ || true
+ls -l  /Users/cjarguello/BitPod-App-backup-2026-03-02/tools/gpt_bridge/.env || true
+ls -ld /Users/cjarguello/BitPod-App-backup-2026-03-02/App\ Downloads || true
 ```
 
 ## Destructive commands (execute only after explicit approval)
 
 ```bash
-rm -rf /Users/cjarguello/bitpod-app-backup-2026-03-02/bitpod/.venv*
-rm -rf /Users/cjarguello/bitpod-app-backup-2026-03-02/tools/costs/__pycache__
-rm -f  /Users/cjarguello/bitpod-app-backup-2026-03-02/tools/gpt_bridge/.env
-rmdir  /Users/cjarguello/bitpod-app-backup-2026-03-02/App\ Downloads || true
+rm -rf /Users/cjarguello/BitPod-App-backup-2026-03-02/bitpod/.venv*
+rm -rf /Users/cjarguello/BitPod-App-backup-2026-03-02/tools/costs/__pycache__
+rm -f  /Users/cjarguello/BitPod-App-backup-2026-03-02/tools/gpt_bridge/.env
+rmdir  /Users/cjarguello/BitPod-App-backup-2026-03-02/App\ Downloads || true
 ```
 
 ## Final backup removal (separate explicit approval)
@@ -49,11 +49,11 @@ rmdir  /Users/cjarguello/bitpod-app-backup-2026-03-02/App\ Downloads || true
 Only after verifying post-cleanup parity and confirming no unresolved REVIEW items:
 
 ```bash
-rm -rf /Users/cjarguello/bitpod-app-backup-2026-03-02
+rm -rf /Users/cjarguello/BitPod-App-backup-2026-03-02
 ```
 
 ## Post-delete verification
 
 ```bash
-test -d /Users/cjarguello/bitpod-app-backup-2026-03-02 && echo STILL_EXISTS || echo REMOVED
+test -d /Users/cjarguello/BitPod-App-backup-2026-03-02 && echo STILL_EXISTS || echo REMOVED
 ```

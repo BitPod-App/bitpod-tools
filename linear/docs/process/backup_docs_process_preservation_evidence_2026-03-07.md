@@ -6,16 +6,16 @@ Related issue: https://linear.app/bitpod-app/issue/BIT-50/retire-legacy-local-ba
 
 Preserve unique `backup/docs/process` files non-destructively in active workspace under a namespaced archive path.
 
-- Source: `/Users/cjarguello/bitpod-app-backup-2026-03-02/docs/process`
-- Destination: `/Users/cjarguello/bitpod-app/docs/archive/backup-2026-03-02/process`
+- Source: `/Users/cjarguello/BitPod-App-backup-2026-03-02/docs/process`
+- Destination: `/Users/cjarguello/BitPod-App/docs/archive/backup-2026-03-02/process`
 
 ## Method
 
 ```bash
-mkdir -p /Users/cjarguello/bitpod-app/docs/archive/backup-2026-03-02/process
+mkdir -p /Users/cjarguello/BitPod-App/docs/archive/backup-2026-03-02/process
 rsync -av --ignore-existing \
-  /Users/cjarguello/bitpod-app-backup-2026-03-02/docs/process/ \
-  /Users/cjarguello/bitpod-app/docs/archive/backup-2026-03-02/process/
+  /Users/cjarguello/BitPod-App-backup-2026-03-02/docs/process/ \
+  /Users/cjarguello/BitPod-App/docs/archive/backup-2026-03-02/process/
 ```
 
 ## Result

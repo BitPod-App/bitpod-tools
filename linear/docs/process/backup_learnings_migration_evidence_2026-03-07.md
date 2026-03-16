@@ -6,16 +6,16 @@ Related issue: https://linear.app/bitpod-app/issue/BIT-50/retire-legacy-local-ba
 
 Non-destructive migration of low-risk historical learnings docs from backup workspace into active workspace namespaced archive path.
 
-- Source: `/Users/cjarguello/bitpod-app-backup-2026-03-02/docs/archive/learnings`
-- Destination: `/Users/cjarguello/bitpod-app/docs/archive/backup-2026-03-02/learnings`
+- Source: `/Users/cjarguello/BitPod-App-backup-2026-03-02/docs/archive/learnings`
+- Destination: `/Users/cjarguello/BitPod-App/docs/archive/backup-2026-03-02/learnings`
 
 ## Method
 
 ```bash
-mkdir -p /Users/cjarguello/bitpod-app/docs/archive/backup-2026-03-02/learnings
+mkdir -p /Users/cjarguello/BitPod-App/docs/archive/backup-2026-03-02/learnings
 rsync -av --ignore-existing \
-  /Users/cjarguello/bitpod-app-backup-2026-03-02/docs/archive/learnings/ \
-  /Users/cjarguello/bitpod-app/docs/archive/backup-2026-03-02/learnings/
+  /Users/cjarguello/BitPod-App-backup-2026-03-02/docs/archive/learnings/ \
+  /Users/cjarguello/BitPod-App/docs/archive/backup-2026-03-02/learnings/
 ```
 
 ## Result

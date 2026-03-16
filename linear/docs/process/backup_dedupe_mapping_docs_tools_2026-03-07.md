@@ -66,103 +66,103 @@ Related issue: https://linear.app/bitpod-app/issue/BIT-50/retire-legacy-local-ba
 
 - .DS_Store
   - status: MATCH_IN_BITPOD_TOOLS
-  - target: /Users/cjarguello/bitpod-app/bitpod-tools/.DS_Store
+  - target: /Users/cjarguello/BitPod-App/bitpod-tools/.DS_Store
 - .gitignore
   - status: MATCH_IN_BITPOD_TOOLS
-  - target: /Users/cjarguello/bitpod-app/bitpod-tools/.gitignore
+  - target: /Users/cjarguello/BitPod-App/bitpod-tools/.gitignore
 - artifacts/cost-meter/cost_events.jsonl
   - status: NO_DIRECT_MATCH
   - target: (none)
 - audit_ctl.sh
   - status: MATCH_IN_BITPOD_TOOLS
-  - target: /Users/cjarguello/bitpod-app/bitpod-tools/audit_ctl.sh
+  - target: /Users/cjarguello/BitPod-App/bitpod-tools/audit_ctl.sh
 - chatgpt-prompts/README.md
   - status: MATCH_IN_BITPOD_TOOLS
-  - target: /Users/cjarguello/bitpod-app/bitpod-tools/chatgpt-prompts/README.md
+  - target: /Users/cjarguello/BitPod-App/bitpod-tools/chatgpt-prompts/README.md
 - chatgpt-prompts/weekly-btc/weekly-btc-prompts.md
   - status: MATCH_IN_BITPOD_TOOLS
-  - target: /Users/cjarguello/bitpod-app/bitpod-tools/chatgpt-prompts/weekly-btc/weekly-btc-prompts.md
+  - target: /Users/cjarguello/BitPod-App/bitpod-tools/chatgpt-prompts/weekly-btc/weekly-btc-prompts.md
 - costs/__pycache__/cost_meter.cpython-311.pyc
   - status: NO_DIRECT_MATCH
   - target: (none)
 - costs/cost_ctl.py
   - status: MATCH_IN_BITPOD_TOOLS
-  - target: /Users/cjarguello/bitpod-app/bitpod-tools/costs/cost_ctl.py
+  - target: /Users/cjarguello/BitPod-App/bitpod-tools/costs/cost_ctl.py
 - costs/cost_meter.py
   - status: MATCH_IN_BITPOD_TOOLS
-  - target: /Users/cjarguello/bitpod-app/bitpod-tools/costs/cost_meter.py
+  - target: /Users/cjarguello/BitPod-App/bitpod-tools/costs/cost_meter.py
 - docs/README.md
   - status: MATCH_IN_BITPOD_TOOLS
-  - target: /Users/cjarguello/bitpod-app/bitpod-tools/docs/README.md
+  - target: /Users/cjarguello/BitPod-App/bitpod-tools/docs/README.md
 - gpt_bridge/.env
   - status: MATCH_IN_BITPOD_TOOLS
-  - target: /Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge/.env
+  - target: /Users/cjarguello/BitPod-App/bitpod-tools/gpt_bridge/.env
 - gpt_bridge/.gitignore
   - status: MATCH_IN_BITPOD_TOOLS
-  - target: /Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge/.gitignore
+  - target: /Users/cjarguello/BitPod-App/bitpod-tools/gpt_bridge/.gitignore
 - gpt_bridge/README.md
   - status: MATCH_IN_BITPOD_TOOLS
-  - target: /Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge/README.md
+  - target: /Users/cjarguello/BitPod-App/bitpod-tools/gpt_bridge/README.md
 - gpt_bridge/ask_gpt.py
   - status: MATCH_IN_BITPOD_TOOLS
-  - target: /Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge/ask_gpt.py
+  - target: /Users/cjarguello/BitPod-App/bitpod-tools/gpt_bridge/ask_gpt.py
 - gpt_bridge/ask_gpt.sh
   - status: MATCH_IN_BITPOD_TOOLS
-  - target: /Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge/ask_gpt.sh
+  - target: /Users/cjarguello/BitPod-App/bitpod-tools/gpt_bridge/ask_gpt.sh
 - gpt_bridge/ask_once.sh
   - status: MATCH_IN_BITPOD_TOOLS
-  - target: /Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge/ask_once.sh
+  - target: /Users/cjarguello/BitPod-App/bitpod-tools/gpt_bridge/ask_once.sh
 - gpt_bridge/bridge_chat.py
   - status: MATCH_IN_BITPOD_TOOLS
-  - target: /Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge/bridge_chat.py
+  - target: /Users/cjarguello/BitPod-App/bitpod-tools/gpt_bridge/bridge_chat.py
 - gpt_bridge/bridge_chat.sh
   - status: MATCH_IN_BITPOD_TOOLS
-  - target: /Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge/bridge_chat.sh
+  - target: /Users/cjarguello/BitPod-App/bitpod-tools/gpt_bridge/bridge_chat.sh
 - gpt_bridge/bridge_ctl.sh
   - status: MATCH_IN_BITPOD_TOOLS
-  - target: /Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge/bridge_ctl.sh
+  - target: /Users/cjarguello/BitPod-App/bitpod-tools/gpt_bridge/bridge_ctl.sh
 - gpt_bridge/config.example.env
   - status: MATCH_IN_BITPOD_TOOLS
-  - target: /Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge/config.example.env
+  - target: /Users/cjarguello/BitPod-App/bitpod-tools/gpt_bridge/config.example.env
 - gpt_bridge/gpt_bridge.py
   - status: MATCH_IN_BITPOD_TOOLS
-  - target: /Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge/gpt_bridge.py
+  - target: /Users/cjarguello/BitPod-App/bitpod-tools/gpt_bridge/gpt_bridge.py
 - gpt_bridge/gpt_bridge_mcp.py
   - status: MATCH_IN_BITPOD_TOOLS
-  - target: /Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge/gpt_bridge_mcp.py
+  - target: /Users/cjarguello/BitPod-App/bitpod-tools/gpt_bridge/gpt_bridge_mcp.py
 - gpt_bridge/logs/.gitkeep
   - status: MATCH_IN_BITPOD_TOOLS
-  - target: /Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge/logs/.gitkeep
+  - target: /Users/cjarguello/BitPod-App/bitpod-tools/gpt_bridge/logs/.gitkeep
 - gpt_bridge/logs/bridge.jsonl
   - status: MATCH_IN_BITPOD_TOOLS
-  - target: /Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge/logs/bridge.jsonl
+  - target: /Users/cjarguello/BitPod-App/bitpod-tools/gpt_bridge/logs/bridge.jsonl
 - gpt_bridge/logs/bridge.pid
   - status: MATCH_IN_BITPOD_TOOLS
-  - target: /Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge/logs/bridge.pid
+  - target: /Users/cjarguello/BitPod-App/bitpod-tools/gpt_bridge/logs/bridge.pid
 - gpt_bridge/logs/bridge_start.log
   - status: MATCH_IN_BITPOD_TOOLS
-  - target: /Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge/logs/bridge_start.log
+  - target: /Users/cjarguello/BitPod-App/bitpod-tools/gpt_bridge/logs/bridge_start.log
 - gpt_bridge/logs/chat.jsonl
   - status: MATCH_IN_BITPOD_TOOLS
-  - target: /Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge/logs/chat.jsonl
+  - target: /Users/cjarguello/BitPod-App/bitpod-tools/gpt_bridge/logs/chat.jsonl
 - gpt_bridge/logs/memory_store.jsonl
   - status: NO_DIRECT_MATCH
   - target: (none)
 - gpt_bridge/logs/session_state.json
   - status: MATCH_IN_BITPOD_TOOLS
-  - target: /Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge/logs/session_state.json
+  - target: /Users/cjarguello/BitPod-App/bitpod-tools/gpt_bridge/logs/session_state.json
 - gpt_bridge/logs/view_state.json
   - status: MATCH_IN_BITPOD_TOOLS
-  - target: /Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge/logs/view_state.json
+  - target: /Users/cjarguello/BitPod-App/bitpod-tools/gpt_bridge/logs/view_state.json
 - gpt_bridge/quick_test.sh
   - status: MATCH_IN_BITPOD_TOOLS
-  - target: /Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge/quick_test.sh
+  - target: /Users/cjarguello/BitPod-App/bitpod-tools/gpt_bridge/quick_test.sh
 - gpt_bridge/schemas.py
   - status: MATCH_IN_BITPOD_TOOLS
-  - target: /Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge/schemas.py
+  - target: /Users/cjarguello/BitPod-App/bitpod-tools/gpt_bridge/schemas.py
 - linear/docs/README.md
   - status: MATCH_IN_ACTIVE_TOOLS
-  - target: /Users/cjarguello/bitpod-app/tools/linear/docs/README.md
+  - target: /Users/cjarguello/BitPod-App/tools/linear/docs/README.md
 
 ## Computed summary
 

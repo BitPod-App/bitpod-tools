@@ -7,14 +7,14 @@ Run after completing UI actions for:
 ## 1) Load runtime token context
 
 ```bash
-cd /Users/cjarguello/bitpod-app/bitpod
+cd /Users/cjarguello/BitPod-App/bitpod
 set -a; source .bitpod_runtime.env; set +a
 ```
 
 ## 2) Run combined verifier
 
 ```bash
-/Users/cjarguello/bitpod-app/bitpod-tools/linear/scripts/post_ui_blockers_verify.sh /tmp/post_ui_blockers_verify_after_ui.md
+/Users/cjarguello/BitPod-App/bitpod-tools/linear/scripts/post_ui_blockers_verify.sh /tmp/post_ui_blockers_verify_after_ui.md
 ```
 
 ## 3) Quick inspect results

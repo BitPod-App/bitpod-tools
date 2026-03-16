@@ -7,7 +7,7 @@ if [[ $# -lt 1 ]]; then
 fi
 
 OUT="$1"
-ROOT="/Users/cjarguello/bitpod-app"
+ROOT="/Users/cjarguello/BitPod-App"
 PATTERNS=("bitipod\\.com" "@bitipod\\.com" "\\bbitipod\\b")
 
 REPOS=()

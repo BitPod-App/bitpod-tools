@@ -19,7 +19,7 @@ Related issue: https://linear.app/bitpod-app/issue/BIT-50/retire-legacy-local-ba
 ## Remaining decisions before full backup deletion
 
 - [ ] Explicit delete approval for full folder removal:
-  - `/Users/cjarguello/bitpod-app-backup-2026-03-02`
+  - `/Users/cjarguello/BitPod-App-backup-2026-03-02`
 
 ## Immediate safe next command set (non-destructive)
 
@@ -32,5 +32,5 @@ cat /Users/cjarguello/cold-archive/bitpod-backup-artifacts-2026-03-07.sha256
 ## Final destructive command (approval required)
 
 ```bash
-rm -rf /Users/cjarguello/bitpod-app-backup-2026-03-02
+rm -rf /Users/cjarguello/BitPod-App-backup-2026-03-02
 ```

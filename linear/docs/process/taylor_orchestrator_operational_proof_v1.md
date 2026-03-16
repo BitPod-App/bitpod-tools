@@ -43,7 +43,7 @@ The proof is based on real issues, PRs, and artifacts, not a hypothetical exampl
 #### Research lane evidence
 
 - GPT consumer expectations were incorporated into:
-  - `/Users/cjarguello/bitpod-app/sector-feeds/docs/runbooks/weekly_run_track_audit_v1.md`
+  - `/Users/cjarguello/BitPod-App/sector-feeds/docs/runbooks/weekly_run_track_audit_v1.md`
 - The audit concluded:
   - `legacy_tuesday_track` only survives as a reliability/backfill lane
   - `experimental_track` only survives as a diff/evaluation lane
@@ -61,18 +61,18 @@ The proof is based on real issues, PRs, and artifacts, not a hypothetical exampl
 Key execution outcomes:
 
 - duplicate paused `mallers-*` automation debris archived
-- surviving canonical Tuesday automations repointed to `/Users/cjarguello/bitpod-app/sector-feeds`
+- surviving canonical Tuesday automations repointed to `/Users/cjarguello/BitPod-App/sector-feeds`
 - recurring run-summary artifacts made unique and timestamped
 - transcript contract preserved as full transcript, not summary
 
 #### QA/verification evidence
 
 - sample legacy run:
-  - `/Users/cjarguello/bitpod-app/sector-feeds/artifacts/runs/legacy_tuesday_track/jack_mallers_show/20260311T065208Z__summary.md`
-  - `/Users/cjarguello/bitpod-app/sector-feeds/artifacts/runs/legacy_tuesday_track/jack_mallers_show/20260311T065208Z__status.json`
+  - `/Users/cjarguello/BitPod-App/sector-feeds/artifacts/runs/legacy_tuesday_track/jack_mallers_show/20260311T065208Z__summary.md`
+  - `/Users/cjarguello/BitPod-App/sector-feeds/artifacts/runs/legacy_tuesday_track/jack_mallers_show/20260311T065208Z__status.json`
 - sample experimental run:
-  - `/Users/cjarguello/bitpod-app/sector-feeds/artifacts/runs/experimental_track/jack_mallers_show/20260311T065224Z__summary.md`
-  - `/Users/cjarguello/bitpod-app/sector-feeds/artifacts/runs/experimental_track/jack_mallers_show/20260311T065224Z__status.json`
+  - `/Users/cjarguello/BitPod-App/sector-feeds/artifacts/runs/experimental_track/jack_mallers_show/20260311T065224Z__summary.md`
+  - `/Users/cjarguello/BitPod-App/sector-feeds/artifacts/runs/experimental_track/jack_mallers_show/20260311T065224Z__status.json`
 
 Verified results from those artifacts:
 
@@ -98,9 +98,9 @@ Verified results from those artifacts:
 
 Relevant artifacts:
 
-- `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/startup_operating_model_v1.md`
-- `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/stage4_5_agent_stack_execution_plan_v1.md`
-- `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/bootstrap_phase_normalization_plan_v1.md`
+- `/Users/cjarguello/BitPod-App/bitpod-tools/linear/docs/process/startup_operating_model_v1.md`
+- `/Users/cjarguello/BitPod-App/bitpod-tools/linear/docs/process/stage4_5_agent_stack_execution_plan_v1.md`
+- `/Users/cjarguello/BitPod-App/bitpod-tools/linear/docs/process/bootstrap_phase_normalization_plan_v1.md`
 
 #### Engineering lane evidence
 

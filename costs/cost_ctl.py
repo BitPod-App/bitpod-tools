@@ -66,7 +66,7 @@ def _flt_env(name: str, default: float) -> float:
 
 def main() -> int:
     parser = argparse.ArgumentParser(prog="cost_ctl")
-    parser.add_argument("--meter", default="/Users/cjarguello/bitpod-app/bitpod-tools/artifacts/cost-meter/cost_events.jsonl")
+    parser.add_argument("--meter", default="/Users/cjarguello/BitPod-App/bitpod-tools/artifacts/cost-meter/cost_events.jsonl")
     parser.add_argument("--source", default=None)
     parser.add_argument("--window-hours", type=int, default=24)
 

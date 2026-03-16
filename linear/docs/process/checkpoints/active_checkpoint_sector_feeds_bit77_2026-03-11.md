@@ -3,7 +3,7 @@
 ## Lane
 
 - active issue: [BIT-77 — Implement weekly run-track cleanup and operator-facing summary contract](https://linear.app/bitpod-app/issue/BIT-77/implement-weekly-run-track-cleanup-and-operator-facing-summary)
-- repo/worktree: `/Users/cjarguello/bitpod-app/sector-feeds/.worktrees/sector-feeds-bit77`
+- repo/worktree: `/Users/cjarguello/BitPod-App/sector-feeds/.worktrees/sector-feeds-bit77`
 - branch: `codex/bit-77-run-track-cleanup`
 
 ## Current state
@@ -23,11 +23,11 @@
 ## Durable references
 
 - key runbooks/specs:
-  - `/Users/cjarguello/bitpod-app/sector-feeds/.worktrees/sector-feeds-bit75/docs/runbooks/weekly_run_track_audit_v1.md`
-  - `/Users/cjarguello/bitpod-app/sector-feeds/.worktrees/sector-feeds-bit77/docs/runbooks/legacy_tuesday_report.md`
-  - `/Users/cjarguello/bitpod-app/sector-feeds/.worktrees/sector-feeds-bit77/docs/runbooks/experimental_weekly_btc_gate.md`
+  - `/Users/cjarguello/BitPod-App/sector-feeds/.worktrees/sector-feeds-bit75/docs/runbooks/weekly_run_track_audit_v1.md`
+  - `/Users/cjarguello/BitPod-App/sector-feeds/.worktrees/sector-feeds-bit77/docs/runbooks/legacy_tuesday_report.md`
+  - `/Users/cjarguello/BitPod-App/sector-feeds/.worktrees/sector-feeds-bit77/docs/runbooks/experimental_weekly_btc_gate.md`
 - related backup archive:
-  - `/Users/cjarguello/bitpod-app/local-workspace/local-working-files/automation_backups/duplicate_mallers_automations_20260311T041710Z`
+  - `/Users/cjarguello/BitPod-App/local-workspace/local-working-files/automation_backups/duplicate_mallers_automations_20260311T041710Z`
 
 ## Next actions
 

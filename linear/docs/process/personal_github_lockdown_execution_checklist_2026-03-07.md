@@ -63,7 +63,7 @@ If org access breaks after revoke:
 ## One-command verification helper
 
 ```bash
-/Users/cjarguello/bitpod-app/bitpod-tools/linear/scripts/personal_lockdown_verify.sh
+/Users/cjarguello/BitPod-App/bitpod-tools/linear/scripts/personal_lockdown_verify.sh
 ```
 
 Generates a markdown report under `/tmp/` with auth/install/reachability smoke outputs.

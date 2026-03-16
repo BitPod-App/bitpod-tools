@@ -32,30 +32,30 @@ Taylor participation is evidenced by:
 
 Key references:
 
-- `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/taylor_orchestrator_contract_v1.md`
-- `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/taylor_orchestrator_operational_proof_v1.md`
-- `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/agent_handoff_templates_v1.md`
+- `/Users/cjarguello/BitPod-App/bitpod-tools/linear/docs/process/taylor_orchestrator_contract_v1.md`
+- `/Users/cjarguello/BitPod-App/bitpod-tools/linear/docs/process/taylor_orchestrator_operational_proof_v1.md`
+- `/Users/cjarguello/BitPod-App/bitpod-tools/linear/docs/process/agent_handoff_templates_v1.md`
 
 ### Engineering participation
 
 Engineering participation is evidenced by the merged BIT-93 package plus its underlying real delegated implementation chain:
 
-- `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/engineering_specialist_lane_contract_v1.md`
-- `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/engineering_specialist_lane_operational_proof_v1.md`
+- `/Users/cjarguello/BitPod-App/bitpod-tools/linear/docs/process/engineering_specialist_lane_contract_v1.md`
+- `/Users/cjarguello/BitPod-App/bitpod-tools/linear/docs/process/engineering_specialist_lane_operational_proof_v1.md`
 - [BitPod-App/sector-feeds PR #32 — [BIT-77] Implement weekly run-track cleanup and operator-facing summary contract](https://github.com/BitPod-App/sector-feeds/pull/32)
 
 Representative engineering artifacts:
 
-- `/Users/cjarguello/bitpod-app/sector-feeds/artifacts/runs/legacy_tuesday_track/jack_mallers_show/20260311T065208Z__status.json`
-- `/Users/cjarguello/bitpod-app/sector-feeds/artifacts/runs/experimental_track/jack_mallers_show/20260311T065224Z__status.json`
+- `/Users/cjarguello/BitPod-App/sector-feeds/artifacts/runs/legacy_tuesday_track/jack_mallers_show/20260311T065208Z__status.json`
+- `/Users/cjarguello/BitPod-App/sector-feeds/artifacts/runs/experimental_track/jack_mallers_show/20260311T065224Z__status.json`
 
 ### QA participation
 
 QA participation is evidenced by the merged BIT-90 package:
 
-- `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/vera_qa_lane_contract_v1.md`
-- `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/vera_qa_lane_operational_proof_v1.md`
-- `/Users/cjarguello/bitpod-app/bitpod-tools/linear/examples/verification_report_bit90_minimum_team_2026-03-12.md`
+- `/Users/cjarguello/BitPod-App/bitpod-tools/linear/docs/process/vera_qa_lane_contract_v1.md`
+- `/Users/cjarguello/BitPod-App/bitpod-tools/linear/docs/process/vera_qa_lane_operational_proof_v1.md`
+- `/Users/cjarguello/BitPod-App/bitpod-tools/linear/examples/verification_report_bit90_minimum_team_2026-03-12.md`
 
 Representative QA evidence:
 

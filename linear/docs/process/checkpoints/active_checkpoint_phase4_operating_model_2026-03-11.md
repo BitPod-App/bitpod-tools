@@ -7,8 +7,8 @@
   - [BIT-84 — Prove Taylor orchestrator in a real multi-agent execution loop](https://linear.app/bitpod-app/issue/BIT-84/prove-taylor-orchestrator-in-a-real-multi-agent-execution-loop)
   - [BIT-85 — Stand up specialist operating lanes for engineering, QA, and research/design](https://linear.app/bitpod-app/issue/BIT-85/stand-up-specialist-operating-lanes-for-engineering-qa-and)
   - [BIT-87 — Prove durable decision, memory, and artifact flow in live AI-team operations](https://linear.app/bitpod-app/issue/BIT-87/prove-durable-decision-memory-and-artifact-flow-in-live-ai-team)
-- repo/worktree at checkpoint time (retired): `/Users/cjarguello/bitpod-app/bitpod-tools/.worktrees/bitpod-tools-bit88`
-- current surviving repo path: `/Users/cjarguello/bitpod-app/bitpod-tools`
+- repo/worktree at checkpoint time (retired): `/Users/cjarguello/BitPod-App/bitpod-tools/.worktrees/bitpod-tools-bit88`
+- current surviving repo path: `/Users/cjarguello/BitPod-App/bitpod-tools`
 - branch: `codex/bit-88-checkpoint-operationalization`
 
 ## Current state
@@ -28,10 +28,10 @@
 
 ## Durable references
 
-- `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/bootstrap_phase_normalization_plan_v1.md`
-- `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/taylor_orchestrator_operational_proof_v1.md`
-- `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/specialist_operating_lanes_proof_v1.md`
-- `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/durable_artifact_memory_flow_proof_v1.md`
+- `/Users/cjarguello/BitPod-App/bitpod-tools/linear/docs/process/bootstrap_phase_normalization_plan_v1.md`
+- `/Users/cjarguello/BitPod-App/bitpod-tools/linear/docs/process/taylor_orchestrator_operational_proof_v1.md`
+- `/Users/cjarguello/BitPod-App/bitpod-tools/linear/docs/process/specialist_operating_lanes_proof_v1.md`
+- `/Users/cjarguello/BitPod-App/bitpod-tools/linear/docs/process/durable_artifact_memory_flow_proof_v1.md`
 
 ## Next actions
 

@@ -37,7 +37,7 @@ If a prerequisite cannot be completed without new credentials/UI access, park th
 Use the webhook sender script once secrets are present:
 
 ```bash
-cd /Users/cjarguello/bitpod-app/bitpod-tools
+cd /Users/cjarguello/BitPod-App/bitpod-tools
 python3 linear/scripts/discord_webhook_smoke.py --config linear/config.discord.example.json --dry-run
 ```
 
@@ -48,19 +48,19 @@ Then run live with real config file outside git.
 Generate one markdown pack covering sanitized route map + smoke + parity outputs:
 
 ```bash
-cd /Users/cjarguello/bitpod-app/bitpod-tools
+cd /Users/cjarguello/BitPod-App/bitpod-tools
 python3 linear/scripts/discord_phase2_evidence_pack.py \
   --config /ABS/PATH/private.discord.config.json \
-  --out /Users/cjarguello/bitpod-app/local-workspace/local-working-files/discord_phase2_evidence_pack.md
+  --out /Users/cjarguello/BitPod-App/local-workspace/local-working-files/discord_phase2_evidence_pack.md
 ```
 
 Live check mode:
 
 ```bash
-cd /Users/cjarguello/bitpod-app/bitpod-tools
+cd /Users/cjarguello/BitPod-App/bitpod-tools
 python3 linear/scripts/discord_phase2_evidence_pack.py \
   --config /ABS/PATH/private.discord.config.json \
-  --out /Users/cjarguello/bitpod-app/local-workspace/local-working-files/discord_phase2_evidence_pack_live.md \
+  --out /Users/cjarguello/BitPod-App/local-workspace/local-working-files/discord_phase2_evidence_pack_live.md \
   --live
 ```
 

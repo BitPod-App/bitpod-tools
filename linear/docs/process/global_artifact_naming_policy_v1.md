@@ -164,7 +164,7 @@ Artifact persistence is only allowed inside approved workspace roots.
 
 Current approved roots:
 
-- `/Users/cjarguello/bitpod-app`
+- `/Users/cjarguello/BitPod-App`
 - dated backup workspace roots created during migration
 
 Anything outside those roots is out of policy.

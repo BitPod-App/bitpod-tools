@@ -5,8 +5,8 @@ Date: 2026-03-07
 
 ## Paths
 
-- Active workspace: `/Users/cjarguello/bitpod-app`
-- Legacy backup: `/Users/cjarguello/bitpod-app-backup-2026-03-02`
+- Active workspace: `/Users/cjarguello/BitPod-App`
+- Legacy backup: `/Users/cjarguello/BitPod-App-backup-2026-03-02`
 
 ## Snapshot summary
 
@@ -15,7 +15,7 @@ Date: 2026-03-07
   - Active: `4832`
   - Backup: `9144`
 - Detailed parity artifact:
-  - `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/backup_workspace_parity_snapshot_2026-03-07.md`
+  - `/Users/cjarguello/BitPod-App/bitpod-tools/linear/docs/process/backup_workspace_parity_snapshot_2026-03-07.md`
 
 ## Top-level directory delta
 
@@ -69,7 +69,7 @@ Remote mismatch captured:
 ## Commands used
 
 ```bash
-find /Users/cjarguello/bitpod-app -maxdepth 2 -type d -name .git
-find /Users/cjarguello/bitpod-app-backup-2026-03-02 -maxdepth 2 -type d -name .git
+find /Users/cjarguello/BitPod-App -maxdepth 2 -type d -name .git
+find /Users/cjarguello/BitPod-App-backup-2026-03-02 -maxdepth 2 -type d -name .git
 find <path> -type f | wc -l
 ```

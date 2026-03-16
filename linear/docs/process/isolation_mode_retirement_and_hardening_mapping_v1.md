@@ -14,8 +14,8 @@ Make the current truth explicit:
 
 Policy artifacts still exist:
 
-- `/Users/cjarguello/bitpod-app/local-workspace/local-codex/policy/isolation/enforcement_state.json`
-- `/Users/cjarguello/bitpod-app/local-workspace/local-codex/policy/isolation/violation_queue.json`
+- `/Users/cjarguello/bitpod-app-retired-2026-03-16/local-workspace/local-codex/policy/isolation/enforcement_state.json`
+- `/Users/cjarguello/bitpod-app-retired-2026-03-16/local-workspace/local-codex/policy/isolation/violation_queue.json`
 
 Current state is dormant:
 
@@ -25,9 +25,9 @@ Current state is dormant:
 
 Last known implementation exists only in quarantined legacy paths:
 
-- `/Users/cjarguello/bitpod-app/local-workspace/local-trash-delete/bitpod/scripts/isolation_ctl.py`
-- `/Users/cjarguello/bitpod-app/local-workspace/local-trash-delete/bitpod/tools/isolation/cli.py`
-- `/Users/cjarguello/bitpod-app/local-workspace/local-trash-delete/bitpod/tools/isolation/runtime.py`
+- `/Users/cjarguello/BitPod-App/local-workspace/local-trash-delete/bitpod/scripts/isolation_ctl.py`
+- `/Users/cjarguello/BitPod-App/local-workspace/local-trash-delete/bitpod/tools/isolation/cli.py`
+- `/Users/cjarguello/BitPod-App/local-workspace/local-trash-delete/bitpod/tools/isolation/runtime.py`
 
 ## Retirement decision
 

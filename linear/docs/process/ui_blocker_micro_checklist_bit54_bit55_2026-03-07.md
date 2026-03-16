@@ -32,7 +32,7 @@ Related issues:
 Run:
 
 ```bash
-/Users/cjarguello/bitpod-app/bitpod-tools/linear/scripts/post_ui_blockers_verify.sh
+/Users/cjarguello/BitPod-App/bitpod-tools/linear/scripts/post_ui_blockers_verify.sh
 ```
 
 Expected:

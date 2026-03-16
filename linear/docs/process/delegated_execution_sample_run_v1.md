@@ -27,10 +27,10 @@ Goal: add/update operating-model documents and publish via PR with validation ev
 - Commands:
   - `bash linear/scripts/local_smoke.sh`
 - Artifacts:
-  - `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/startup_operating_model_v1.md`
-  - `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/ai_team_topology_raci_v1.md`
-  - `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/taylor_orchestrator_contract_v1.md`
-  - `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/agent_handoff_templates_v1.md`
+  - `/Users/cjarguello/BitPod-App/bitpod-tools/linear/docs/process/startup_operating_model_v1.md`
+  - `/Users/cjarguello/BitPod-App/bitpod-tools/linear/docs/process/ai_team_topology_raci_v1.md`
+  - `/Users/cjarguello/BitPod-App/bitpod-tools/linear/docs/process/taylor_orchestrator_contract_v1.md`
+  - `/Users/cjarguello/BitPod-App/bitpod-tools/linear/docs/process/agent_handoff_templates_v1.md`
 - PR:
   - [BitPod-App/bitpod-tools PR #12 — Add startup operating model v1 [BIT-61]](https://github.com/BitPod-App/bitpod-tools/pull/12)
 

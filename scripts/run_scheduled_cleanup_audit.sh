@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT="${BITPOD_APP_ROOT:-/Users/cjarguello/bitpod-app}"
+ROOT="${BITPOD_APP_ROOT:-/Users/cjarguello/BitPod-App}"
 AUDIT_CTL="$ROOT/bitpod-tools/audit_ctl.sh"
 STATE_DIR="$ROOT/local-workspace/local-working-files/local-cleanup-audit"
 STATE_FILE="$STATE_DIR/scheduled_cleanup_state.env"

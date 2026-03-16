@@ -51,13 +51,13 @@ Artifacts that exist because the product is BitPod:
 
 | Artifact or area | Layer | Specificity | Current action | Notes |
 | --- | --- | --- | --- | --- |
-| `/Users/cjarguello/bitpod-app/bitpod-docs/product-mvp/**` | BitPod Product Embedding | `bitpod-specific` | `keep-local` | Product canon should remain BitPod-owned |
-| `/Users/cjarguello/bitpod-app/bitpod-assets/assets/brand/**` | BitPod Product Embedding | `bitpod-specific` | `keep-local` | Brand assets should not be normalized into Taylor01 |
-| `/Users/cjarguello/bitpod-app/bitpod-docs/process/anti-drift-playbook.md` | Taylor01 Workspace / Org Policy | `portable` | `move-later` | Strong candidate for future `tools/taylor01/policy` |
-| `/Users/cjarguello/bitpod-app/bitpod-docs/process/local-workspace-cleanup-runbook.md` | Taylor01 Workspace / Org Policy | `mixed` | `create-generic-version-now` | Reusable policy with BitPod path overlay currently mixed in |
-| `/Users/cjarguello/bitpod-app/bitpod-docs/process/canonical-path-contract.md` | Mixed | `mixed` | `create-generic-version-now` | Needs split into portable path rules plus BitPod path map |
-| `/Users/cjarguello/bitpod-app/bitpod-docs/process/project-sources/13_AGENT_EXECUTION_GATES_v1.md` | Taylor01 Workspace / Org Policy | `mixed` | `move-later` | Gate model is reusable; current framing is BitPod-era |
-| `/Users/cjarguello/bitpod-app/local-workspace/local-codex/skills/qa-specialist/**` | Taylor01 Portable Core | `portable` | `keep-local-now` | Workspace-local canonical copy exists and should replace the home-directory mirror over time |
+| `/Users/cjarguello/BitPod-App/bitpod-docs/product-mvp/**` | BitPod Product Embedding | `bitpod-specific` | `keep-local` | Product canon should remain BitPod-owned |
+| `/Users/cjarguello/BitPod-App/bitpod-assets/assets/brand/**` | BitPod Product Embedding | `bitpod-specific` | `keep-local` | Brand assets should not be normalized into Taylor01 |
+| `/Users/cjarguello/BitPod-App/bitpod-docs/process/anti-drift-playbook.md` | Taylor01 Workspace / Org Policy | `portable` | `move-later` | Strong candidate for future `tools/taylor01/policy` |
+| `/Users/cjarguello/BitPod-App/bitpod-docs/process/local-workspace-cleanup-runbook.md` | Taylor01 Workspace / Org Policy | `mixed` | `create-generic-version-now` | Reusable policy with BitPod path overlay currently mixed in |
+| `/Users/cjarguello/BitPod-App/bitpod-docs/process/canonical-path-contract.md` | Mixed | `mixed` | `create-generic-version-now` | Needs split into portable path rules plus BitPod path map |
+| `/Users/cjarguello/BitPod-App/bitpod-docs/process/project-sources/13_AGENT_EXECUTION_GATES_v1.md` | Taylor01 Workspace / Org Policy | `mixed` | `move-later` | Gate model is reusable; current framing is BitPod-era |
+| `/Users/cjarguello/BitPod-App/local-workspace/local-codex/skills/qa-specialist/**` | Taylor01 Portable Core | `portable` | `keep-local-now` | Workspace-local canonical copy exists and should replace the home-directory mirror over time |
 | `linear/docs/process/taylor_orchestrator_contract_v1.md` | Taylor01 Portable Core | `portable` | `move-later` | Strong core candidate once subtree is active |
 | `linear/docs/process/specialist_agent_registry_v1.md` | Taylor01 Portable Core | `portable` | `move-later` | Registry semantics are reusable beyond BitPod |
 | `linear/docs/process/agent_runtime_portability_plan_v1.md` | Taylor01 Portable Core | `mixed` | `move-later` | Concept is portable, examples are tied to current repo layout |
@@ -69,7 +69,7 @@ Artifacts that exist because the product is BitPod:
 | `linear/docs/process/team_session_platform_migration_contract_v1.md` | Taylor01 Adapter Layer | `mixed` | `move-later` | Current transport migration story is still tied to Zulip/Discord lineage |
 | `linear/docs/process/startup_operating_model_v1.md` | Mixed | `mixed` | `create-generic-version-now` | Needs explicit Taylor01/BitPod dual-product framing |
 | `linear/docs/process/workspace_local_state_location_policy_v1.md` | Taylor01 Workspace / Org Policy | `mixed` | `create-generic-version-now` | Policy is reusable; current absolute path is BitPod-specific |
-| `/Users/cjarguello/bitpod-app/local-workspace/local-codex/skills/isolation-mode/SKILL.md` | Taylor01 Workspace / Org Policy | `mixed` | `retire` | Preserve only the hardening intent; do not revive the dormant legacy isolation feature as portable core |
+| `/Users/cjarguello/BitPod-App/local-workspace/local-codex/skills/isolation-mode/SKILL.md` | Taylor01 Workspace / Org Policy | `mixed` | `retire` | Preserve only the hardening intent; do not revive the dormant legacy isolation feature as portable core |
 
 ## Immediate working rule
 

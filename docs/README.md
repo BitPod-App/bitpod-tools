@@ -1,7 +1,7 @@
 # Tools Docs Pointer
 
 Shared workspace policy, archive canon, and cross-repo indexing now live in:
-- `/Users/cjarguello/bitpod-app/bitpod-docs`
+- `/Users/cjarguello/BitPod-App/bitpod-docs`
 
 Use this folder for repo-local tooling notes, runtime references, and
 migration guardrails only.

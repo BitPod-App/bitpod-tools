@@ -35,11 +35,11 @@ Do not do now:
 
 Start from:
 
-- `/Users/cjarguello/bitpod-app/bitpod-tools/linear/config.discord.example.json`
+- `/Users/cjarguello/BitPod-App/bitpod-tools/linear/config.discord.example.json`
 
 Create a private copy outside git, for example:
 
-- `/Users/cjarguello/bitpod-app/local-workspace/local-working-files/private.discord.config.json`
+- `/Users/cjarguello/BitPod-App/local-workspace/local-working-files/private.discord.config.json`
 
 Fill in:
 - `discord.server_id`
@@ -67,23 +67,23 @@ Never paste raw webhook URLs into Linear, GitHub, or tracked repo files.
 
 ## Verification Commands
 
-Run these from `/Users/cjarguello/bitpod-app/bitpod-tools`:
+Run these from `/Users/cjarguello/BitPod-App/bitpod-tools`:
 
 ```bash
 python3 linear/scripts/discord_config_preflight.py \
-  --config /Users/cjarguello/bitpod-app/local-workspace/local-working-files/private.discord.config.json
+  --config /Users/cjarguello/BitPod-App/local-workspace/local-working-files/private.discord.config.json
 ```
 
 ```bash
 python3 linear/scripts/discord_webhook_smoke.py \
-  --config /Users/cjarguello/bitpod-app/local-workspace/local-working-files/private.discord.config.json \
+  --config /Users/cjarguello/BitPod-App/local-workspace/local-working-files/private.discord.config.json \
   --live
 ```
 
 ```bash
 python3 linear/scripts/discord_phase2_evidence_pack.py \
-  --config /Users/cjarguello/bitpod-app/local-workspace/local-working-files/private.discord.config.json \
-  --out /Users/cjarguello/bitpod-app/local-workspace/local-working-files/discord_phase2_evidence_pack_live.md \
+  --config /Users/cjarguello/BitPod-App/local-workspace/local-working-files/private.discord.config.json \
+  --out /Users/cjarguello/BitPod-App/local-workspace/local-working-files/discord_phase2_evidence_pack_live.md \
   --live
 ```
 
@@ -91,7 +91,7 @@ python3 linear/scripts/discord_phase2_evidence_pack.py \
 
 Attach or reference:
 - channel-list screenshot
-- `/Users/cjarguello/bitpod-app/local-workspace/local-working-files/discord_phase2_evidence_pack_live.md`
+- `/Users/cjarguello/BitPod-App/local-workspace/local-working-files/discord_phase2_evidence_pack_live.md`
 - generated parity matrix file next to that evidence pack
 
 ## Done Condition

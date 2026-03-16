@@ -1,16 +1,16 @@
 # Local Remotes & Git Operations Validation (BIT-14)
 
 Date: 2026-03-07
-Workspace root: `/Users/cjarguello/bitpod-app`
+Workspace root: `/Users/cjarguello/BitPod-App`
 
 ## Scope checked
 
 Local clones validated:
-- `/Users/cjarguello/bitpod-app/bitpod`
-- `/Users/cjarguello/bitpod-app/bitpod-docs`
-- `/Users/cjarguello/bitpod-app/bitpod-taylor-runtime`
-- `/Users/cjarguello/bitpod-app/bitpod-tools`
-- `/Users/cjarguello/bitpod-app/bitregime-core`
+- `/Users/cjarguello/BitPod-App/bitpod`
+- `/Users/cjarguello/BitPod-App/bitpod-docs`
+- `/Users/cjarguello/BitPod-App/bitpod-taylor-runtime`
+- `/Users/cjarguello/BitPod-App/bitpod-tools`
+- `/Users/cjarguello/BitPod-App/bitregime-core`
 
 ## Canonical remote normalization
 
@@ -53,14 +53,14 @@ Result:
 
 ```bash
 # inventory
-find /Users/cjarguello/bitpod-app -maxdepth 2 -type d -name .git | sed 's#/.git$##' | sort
+find /Users/cjarguello/BitPod-App -maxdepth 2 -type d -name .git | sed 's#/.git$##' | sort
 
 # canonicalize old bitpod remote
- git -C /Users/cjarguello/bitpod-app/bitpod remote set-url origin https://github.com/BitPod-App/sector-feeds.git
+ git -C /Users/cjarguello/BitPod-App/bitpod remote set-url origin https://github.com/BitPod-App/sector-feeds.git
 
 # verify
 for r in bitpod bitpod-docs bitpod-taylor-runtime bitpod-tools bitregime-core; do
-  git -C /Users/cjarguello/bitpod-app/$r remote get-url origin
-  git -C /Users/cjarguello/bitpod-app/$r ls-remote --symref origin HEAD | sed -n '1,2p'
+  git -C /Users/cjarguello/BitPod-App/$r remote get-url origin
+  git -C /Users/cjarguello/BitPod-App/$r ls-remote --symref origin HEAD | sed -n '1,2p'
 done
 ```

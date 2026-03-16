@@ -47,11 +47,11 @@ Representative chain:
 Real outputs used by the workflow:
 
 - recurring per-run status artifacts:
-  - `/Users/cjarguello/bitpod-app/sector-feeds/artifacts/runs/legacy_tuesday_track/jack_mallers_show/20260311T065208Z__status.json`
-  - `/Users/cjarguello/bitpod-app/sector-feeds/artifacts/runs/experimental_track/jack_mallers_show/20260311T065224Z__status.json`
+  - `/Users/cjarguello/BitPod-App/sector-feeds/artifacts/runs/legacy_tuesday_track/jack_mallers_show/20260311T065208Z__status.json`
+  - `/Users/cjarguello/BitPod-App/sector-feeds/artifacts/runs/experimental_track/jack_mallers_show/20260311T065224Z__status.json`
 - recurring per-run operator summaries:
-  - `/Users/cjarguello/bitpod-app/sector-feeds/artifacts/runs/legacy_tuesday_track/jack_mallers_show/20260311T065208Z__summary.md`
-  - `/Users/cjarguello/bitpod-app/sector-feeds/artifacts/runs/experimental_track/jack_mallers_show/20260311T065224Z__summary.md`
+  - `/Users/cjarguello/BitPod-App/sector-feeds/artifacts/runs/legacy_tuesday_track/jack_mallers_show/20260311T065208Z__summary.md`
+  - `/Users/cjarguello/BitPod-App/sector-feeds/artifacts/runs/experimental_track/jack_mallers_show/20260311T065224Z__summary.md`
 
 These outputs were actually used to decide when the weekly lanes were healthy enough to normalize as complete.
 
@@ -89,7 +89,7 @@ Representative chain:
 
 Real outputs used by the workflow:
 
-- `/Users/cjarguello/bitpod-app/sector-feeds/docs/runbooks/weekly_run_track_audit_v1.md`
+- `/Users/cjarguello/BitPod-App/sector-feeds/docs/runbooks/weekly_run_track_audit_v1.md`
 
 That audit incorporated external/GPT-supported consumer reasoning to answer:
 
@@ -113,9 +113,9 @@ The routing model is real enough to trace:
 
 Supporting control-plane references:
 
-- `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/taylor_orchestrator_contract_v1.md`
-- `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/agent_handoff_templates_v1.md`
-- `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/taylor_orchestrator_operational_proof_v1.md`
+- `/Users/cjarguello/BitPod-App/bitpod-tools/linear/docs/process/taylor_orchestrator_contract_v1.md`
+- `/Users/cjarguello/BitPod-App/bitpod-tools/linear/docs/process/agent_handoff_templates_v1.md`
+- `/Users/cjarguello/BitPod-App/bitpod-tools/linear/docs/process/taylor_orchestrator_operational_proof_v1.md`
 
 ## Explicit Gaps
 

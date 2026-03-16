@@ -30,7 +30,7 @@ Resource scope:
 ## Verification commands
 
 ```bash
-cd /Users/cjarguello/bitpod-app/bitpod
+cd /Users/cjarguello/BitPod-App/bitpod
 set -a; source .bitpod_runtime.env; set +a
 
 # should succeed
@@ -51,7 +51,7 @@ curl -sS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
 - Once confirmed, rerun:
 
 ```bash
-/Users/cjarguello/bitpod-app/bitpod-tools/linear/scripts/email_auth_probe.sh bitpod.app
+/Users/cjarguello/BitPod-App/bitpod-tools/linear/scripts/email_auth_probe.sh bitpod.app
 ```
 
 and append output to BIT-54 evidence.

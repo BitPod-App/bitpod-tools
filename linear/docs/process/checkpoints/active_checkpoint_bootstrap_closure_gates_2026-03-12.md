@@ -5,9 +5,9 @@
 - active issue:
   - [BIT-95 — Define bootstrap closure gates for Taylor-real, minimum-team-ready, Discord acceptance, and startup-ready](https://linear.app/bitpod-app/issue/BIT-95/define-bootstrap-closure-gates-for-taylor-real-minimum-team-ready)
 - repo/worktree at checkpoint time (retired):
-  - `/Users/cjarguello/bitpod-app/bitpod-tools/.worktrees/bitpod-tools-bit95`
+  - `/Users/cjarguello/BitPod-App/bitpod-tools/.worktrees/bitpod-tools-bit95`
 - current surviving repo path:
-  - `/Users/cjarguello/bitpod-app/bitpod-tools`
+  - `/Users/cjarguello/BitPod-App/bitpod-tools`
 - branch:
   - `codex/bit-95-bootstrap-closure-gates`
 
@@ -33,10 +33,10 @@
 
 ## Durable references
 
-- `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/bootstrap_closure_gates_matrix_v1.md`
-- `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/startup_readiness_status_2026-03-12.md`
-- `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/discord_real_acceptance_status_2026-03-12.md`
-- `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/minimum_phase4_agent_team_readiness_v1.md`
+- `/Users/cjarguello/BitPod-App/bitpod-tools/linear/docs/process/bootstrap_closure_gates_matrix_v1.md`
+- `/Users/cjarguello/BitPod-App/bitpod-tools/linear/docs/process/startup_readiness_status_2026-03-12.md`
+- `/Users/cjarguello/BitPod-App/bitpod-tools/linear/docs/process/discord_real_acceptance_status_2026-03-12.md`
+- `/Users/cjarguello/BitPod-App/bitpod-tools/linear/docs/process/minimum_phase4_agent_team_readiness_v1.md`
 
 ## Next actions
 

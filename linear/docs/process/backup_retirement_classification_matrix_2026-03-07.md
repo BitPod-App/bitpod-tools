@@ -2,8 +2,8 @@
 
 Related issue: https://linear.app/bitpod-app/issue/BIT-50/retire-legacy-local-backup-workspace-after-migration-hardening-bitpod
 Inputs:
-- `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/backup_workspace_parity_snapshot_2026-03-07.md`
-- `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/backup_uniqueness_scan_2026-03-07.md`
+- `/Users/cjarguello/BitPod-App/bitpod-tools/linear/docs/process/backup_workspace_parity_snapshot_2026-03-07.md`
+- `/Users/cjarguello/BitPod-App/bitpod-tools/linear/docs/process/backup_uniqueness_scan_2026-03-07.md`
 
 ## Action taxonomy
 
@@ -52,8 +52,8 @@ tar -czf cold-archive/bitpod-backup-artifacts-2026-03-07.tgz \
   bitpod-app-backup-2026-03-02/bitregime-core/artifacts
 
 # sample destructive targets (after approval only)
-rm -rf /Users/cjarguello/bitpod-app-backup-2026-03-02/bitpod/.venv*
-rm -f  /Users/cjarguello/bitpod-app-backup-2026-03-02/tools/gpt_bridge/.env
+rm -rf /Users/cjarguello/BitPod-App-backup-2026-03-02/bitpod/.venv*
+rm -f  /Users/cjarguello/BitPod-App-backup-2026-03-02/tools/gpt_bridge/.env
 ```
 
 ## Gate before full backup removal

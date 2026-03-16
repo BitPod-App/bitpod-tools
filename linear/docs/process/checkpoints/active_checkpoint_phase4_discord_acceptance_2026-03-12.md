@@ -7,8 +7,8 @@
   - [BIT-37 — Migrate team session chat commands from Zulip to chosen platform](https://linear.app/bitpod-app/issue/BIT-37/migrate-team-session-chat-commands-from-zulip-to-chosen-platform)
   - [BIT-39 — Bridge command surface cleanup (keep useful, remove obsolete, clarify behavior)](https://linear.app/bitpod-app/issue/BIT-39/bridge-command-surface-cleanup-keep-useful-remove-obsolete-clarify)
   - [BIT-94 — Preserve Vera QA runtime behaviors from Zulip-era implementation for dedicated agent path](https://linear.app/bitpod-app/issue/BIT-94/preserve-vera-qa-runtime-behaviors-from-zulip-era-implementation-for)
-- repo/worktree at checkpoint time (retired): `/Users/cjarguello/bitpod-app/bitpod-tools/.worktrees/bitpod-tools-bit86-live`
-- current surviving repo path: `/Users/cjarguello/bitpod-app/bitpod-tools`
+- repo/worktree at checkpoint time (retired): `/Users/cjarguello/BitPod-App/bitpod-tools/.worktrees/bitpod-tools-bit86-live`
+- current surviving repo path: `/Users/cjarguello/BitPod-App/bitpod-tools`
 - branch: `codex/bit-86-discord-real-acceptance`
 
 ## Current state
@@ -27,10 +27,10 @@
 
 ## Durable references
 
-- `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/discord_real_acceptance_checklist_v1.md`
-- `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/discord_real_acceptance_status_2026-03-12.md`
-- `/Users/cjarguello/bitpod-app/local-workspace/local-working-files/discord_phase2_evidence_pack_live.md`
-- `/Users/cjarguello/bitpod-app/local-workspace/local-working-files/discord_phase2_evidence_pack_live_matrix.md`
+- `/Users/cjarguello/BitPod-App/bitpod-tools/linear/docs/process/discord_real_acceptance_checklist_v1.md`
+- `/Users/cjarguello/BitPod-App/bitpod-tools/linear/docs/process/discord_real_acceptance_status_2026-03-12.md`
+- `/Users/cjarguello/BitPod-App/local-workspace/local-working-files/discord_phase2_evidence_pack_live.md`
+- `/Users/cjarguello/BitPod-App/local-workspace/local-working-files/discord_phase2_evidence_pack_live_matrix.md`
 
 ## Next actions
 

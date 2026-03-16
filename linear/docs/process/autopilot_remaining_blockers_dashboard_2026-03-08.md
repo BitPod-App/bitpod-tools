@@ -16,9 +16,9 @@ Action needed:
 
 Post-action verify:
 ```bash
-cd /Users/cjarguello/bitpod-app/bitpod
+cd /Users/cjarguello/BitPod-App/bitpod
 set -a; source .bitpod_runtime.env; set +a
-/Users/cjarguello/bitpod-app/bitpod-tools/linear/scripts/post_ui_blockers_verify.sh /tmp/post_ui_blockers_verify_after_cf_scope.md
+/Users/cjarguello/BitPod-App/bitpod-tools/linear/scripts/post_ui_blockers_verify.sh /tmp/post_ui_blockers_verify_after_cf_scope.md
 ```
 
 ## Blocker 2 — BIT-55 (Org profile UI pin/avatar)
@@ -40,7 +40,7 @@ Action needed:
 
 Post-action verify:
 ```bash
-/Users/cjarguello/bitpod-app/bitpod-tools/linear/scripts/post_ui_blockers_verify.sh /tmp/post_ui_blockers_verify_after_pins.md
+/Users/cjarguello/BitPod-App/bitpod-tools/linear/scripts/post_ui_blockers_verify.sh /tmp/post_ui_blockers_verify_after_pins.md
 ```
 
 ## Blocker 3 — BIT-50 (Final destructive approval)
@@ -55,10 +55,10 @@ Current state:
 Action needed:
 - Explicit approval before executing:
 ```bash
-rm -rf /Users/cjarguello/bitpod-app-backup-2026-03-02
+rm -rf /Users/cjarguello/BitPod-App-backup-2026-03-02
 ```
 
 Post-action verify:
 ```bash
-test -d /Users/cjarguello/bitpod-app-backup-2026-03-02 && echo STILL_EXISTS || echo REMOVED
+test -d /Users/cjarguello/BitPod-App-backup-2026-03-02 && echo STILL_EXISTS || echo REMOVED
 ```

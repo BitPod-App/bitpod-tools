@@ -55,10 +55,10 @@ This chain is strong enough because it contains:
 
 Durable implementation artifacts:
 
-- `/Users/cjarguello/bitpod-app/sector-feeds/artifacts/runs/legacy_tuesday_track/jack_mallers_show/20260311T065208Z__status.json`
-- `/Users/cjarguello/bitpod-app/sector-feeds/artifacts/runs/legacy_tuesday_track/jack_mallers_show/20260311T065208Z__summary.md`
-- `/Users/cjarguello/bitpod-app/sector-feeds/artifacts/runs/experimental_track/jack_mallers_show/20260311T065224Z__status.json`
-- `/Users/cjarguello/bitpod-app/sector-feeds/artifacts/runs/experimental_track/jack_mallers_show/20260311T065224Z__summary.md`
+- `/Users/cjarguello/BitPod-App/sector-feeds/artifacts/runs/legacy_tuesday_track/jack_mallers_show/20260311T065208Z__status.json`
+- `/Users/cjarguello/BitPod-App/sector-feeds/artifacts/runs/legacy_tuesday_track/jack_mallers_show/20260311T065208Z__summary.md`
+- `/Users/cjarguello/BitPod-App/sector-feeds/artifacts/runs/experimental_track/jack_mallers_show/20260311T065224Z__status.json`
+- `/Users/cjarguello/BitPod-App/sector-feeds/artifacts/runs/experimental_track/jack_mallers_show/20260311T065224Z__summary.md`
 
 ### Validation evidence in that chain
 

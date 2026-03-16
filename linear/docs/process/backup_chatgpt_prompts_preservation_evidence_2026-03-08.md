@@ -6,16 +6,16 @@ Related issue: https://linear.app/bitpod-app/issue/BIT-50/retire-legacy-local-ba
 
 Preserved backup prompt assets non-destructively into active namespaced archive.
 
-- Source: `/Users/cjarguello/bitpod-app-backup-2026-03-02/tools/chatgpt-prompts`
-- Destination: `/Users/cjarguello/bitpod-app/docs/archive/backup-2026-03-02/chatgpt-prompts`
+- Source: `/Users/cjarguello/BitPod-App-backup-2026-03-02/tools/chatgpt-prompts`
+- Destination: `/Users/cjarguello/BitPod-App/docs/archive/backup-2026-03-02/chatgpt-prompts`
 
 ## Method
 
 ```bash
-mkdir -p /Users/cjarguello/bitpod-app/docs/archive/backup-2026-03-02/chatgpt-prompts
+mkdir -p /Users/cjarguello/BitPod-App/docs/archive/backup-2026-03-02/chatgpt-prompts
 rsync -av --ignore-existing \
-  /Users/cjarguello/bitpod-app-backup-2026-03-02/tools/chatgpt-prompts/ \
-  /Users/cjarguello/bitpod-app/docs/archive/backup-2026-03-02/chatgpt-prompts/
+  /Users/cjarguello/BitPod-App-backup-2026-03-02/tools/chatgpt-prompts/ \
+  /Users/cjarguello/BitPod-App/docs/archive/backup-2026-03-02/chatgpt-prompts/
 ```
 
 ## Result
