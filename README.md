@@ -27,7 +27,7 @@ and reusable operator support surfaces.
 
 ## Entry Points
 
-- `linear/README.md`
+- `linear/protocol/configs/linear-operating-guide-v3.md`
 - `gpt_bridge/README.md`
 - `docs/README.md`
 - `SECURITY.md`

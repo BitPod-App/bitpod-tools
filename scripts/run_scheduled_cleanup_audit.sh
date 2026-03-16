@@ -7,6 +7,8 @@ STATE_DIR="$ROOT/local-workspace/local-working-files/local-cleanup-audit"
 STATE_FILE="$STATE_DIR/scheduled_cleanup_state.env"
 LATEST_REPORT="$STATE_DIR/latest_scheduled_cleanup.md"
 LINEAR_PAYLOAD="$STATE_DIR/latest_linear_escalation.md"
+TEMPORAL_REPORT="$STATE_DIR/latest_temporal_lifecycle_audit.md"
+TEMPORAL_AUDIT="$ROOT/bitpod-tools/scripts/linear_temporal_lifecycle_audit.py"
 TIMESTAMP="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
 mkdir -p "$STATE_DIR"
@@ -33,6 +35,17 @@ else
   run_exit=$?
 fi
 
+temporal_report=""
+temporal_exit=0
+if temporal_report="$(
+  BITPOD_APP_ROOT="$ROOT" \
+  python3 "$TEMPORAL_AUDIT" --export-purge --purge-export-only --execute
+)"; then
+  temporal_exit=0
+else
+  temporal_exit=$?
+fi
+
 {
   echo "# Scheduled Cleanup Audit"
   echo
@@ -42,7 +55,16 @@ fi
   echo "- exit_code: $run_exit"
   echo
   printf '%s\n' "$report"
+  echo
+  echo "## Temporal Lifecycle Audit"
+  echo
+  echo "- command: python3 $TEMPORAL_AUDIT --export-purge --purge-export-only --execute"
+  echo "- exit_code: $temporal_exit"
+  echo
+  printf '%s\n' "$temporal_report"
 } > "$LATEST_REPORT"
+
+printf '%s\n' "$temporal_report" > "$TEMPORAL_REPORT"
 
 if printf '%s\n' "$report" | grep -q -- "result=PORCELAIN"; then
   last_result="PORCELAIN"
@@ -76,6 +98,7 @@ if [[ "$last_result" == "FRACTURED" ]]; then
     echo "- issue_priority: $issue_priority"
     echo "- consecutive_failures: $consecutive_failures"
     echo "- latest_report: $LATEST_REPORT"
+    echo "- temporal_report: $TEMPORAL_REPORT"
     echo
     echo "This payload is generated fail-closed."
     echo
@@ -90,6 +113,7 @@ else
     echo "- timestamp: $TIMESTAMP"
     echo "- state: reset"
     echo "- latest_report: $LATEST_REPORT"
+    echo "- temporal_report: $TEMPORAL_REPORT"
     echo
     echo "The latest scheduled cleanup passed. Reset any rolling failure issue"
     echo "state instead of escalating it."

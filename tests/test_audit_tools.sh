@@ -102,9 +102,20 @@ setup_workspace() {
   mkdir -p "$WORKSPACE_ROOT/local-workspace/local-trash-delete"
   mkdir -p "$WORKSPACE_ROOT/local-workspace/local-handoffs"
   mkdir -p "$WORKSPACE_ROOT/local-workspace/local-cj-pm-only"
+  mkdir -p "$WORKSPACE_ROOT/bitpod-tools/linear/temporal/purge/ticket__BIT-999"
+  cat > "$WORKSPACE_ROOT/bitpod-tools/linear/temporal/purge/ticket__BIT-999/.temporal_meta.json" <<'EOF'
+{
+  "anchor": "BIT-999",
+  "bucket_name": "ticket__BIT-999",
+  "cleanup_status": "purge",
+  "is_temporal": true,
+  "kind": "ticket"
+}
+EOF
 
   ln -s "$AUDIT_CTL" "$WORKSPACE_ROOT/bitpod-tools/audit_ctl.sh"
   ln -s "$PROJECT_ROOT/scripts/parity_pulse_emit.sh" "$WORKSPACE_ROOT/bitpod-tools/scripts/parity_pulse_emit.sh"
+  ln -s "$PROJECT_ROOT/scripts/linear_temporal_lifecycle_audit.py" "$WORKSPACE_ROOT/bitpod-tools/scripts/linear_temporal_lifecycle_audit.py"
 
   cat > "$ZONE_POLICY_FILE" <<'EOF'
 # zone|mode|rel_path|notes
@@ -244,6 +255,7 @@ test_scheduled_cleanup_helper() {
   scheduled_output="$(run_scheduled_capture "$PERFECT_REGISTRY_FILE")"
   assert_contains "$scheduled_output" "- result=PORCELAIN"
   assert_file_exists "$WORKSPACE_ROOT/local-workspace/local-working-files/local-cleanup-audit/latest_scheduled_cleanup.md"
+  assert_file_exists "$WORKSPACE_ROOT/local-workspace/local-working-files/local-cleanup-audit/latest_temporal_lifecycle_audit.md"
   assert_file_exists "$WORKSPACE_ROOT/local-workspace/local-working-files/local-cleanup-audit/scheduled_cleanup_state.env"
 
   local state_contents
@@ -262,6 +274,7 @@ test_scheduled_cleanup_helper() {
   payload_contents="$(cat "$WORKSPACE_ROOT/local-workspace/local-working-files/local-cleanup-audit/latest_linear_escalation.md")"
   assert_contains "$payload_contents" "- issue_kind: Chore"
   assert_contains "$payload_contents" "- issue_priority: low"
+  assert_contains "$payload_contents" "- temporal_report: $WORKSPACE_ROOT/local-workspace/local-working-files/local-cleanup-audit/latest_temporal_lifecycle_audit.md"
 }
 
 setup_workspace

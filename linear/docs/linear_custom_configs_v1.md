@@ -5,7 +5,7 @@ Status: historical implementation draft with active reference value, not the fin
 Current live governance still depends on:
 
 - [BIT-79 — Establish interim AI technical QA + CJ acceptance policy](https://linear.app/bitpod-app/issue/BIT-79/establish-interim-ai-technical-qa-cj-acceptance-policy)
-- `/Users/cjarguello/BitPod-App/bitpod-tools/linear/docs/process/interim_ai_technical_qa_cj_acceptance_policy_v1.md`
+- `/Users/cjarguello/BitPod-App/bitpod-tools/linear/protocol/configs/interim-ai-technical-qa-cj-acceptance-policy-v1.md`
 
 Use this file as implementation reference, not as a claim that the richer acceptance-state workflow is already live.
 

@@ -3,10 +3,10 @@
   "created_at": "2026-03-10T13:15:00Z",
   "memory_layer": "project",
   "source_artifacts": [
-    "linear/docs/process/stage4_5_agent_stack_execution_plan_v1.md",
-    "linear/docs/process/taylor_orchestrator_contract_v1.md"
+    "linear/temporal/active/project__bootstrap__0727b3f56ccd/stage4-5-agent-stack-execution-plan-v1.md",
+    "linear/protocol/agent-references/taylor-orchestrator-contract-v1.md"
   ],
-  "target_path": "linear/docs/process/memory_stewardship_service_contract_v1.md",
+  "target_path": "linear/protocol/agent-references/memory-stewardship-service-contract-v1.md",
   "summary": "Preserve the rule that the memory steward proposes durable writes while Taylor remains the approval gate.",
   "rationale": "This keeps durable knowledge reviewable and prevents silent memory drift across future agent surfaces.",
   "confidence": 0.95,

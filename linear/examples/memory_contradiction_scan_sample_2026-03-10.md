@@ -4,8 +4,8 @@
 
 Scanned:
 
-- `linear/docs/process/stage4_5_agent_stack_execution_plan_v1.md`
-- `linear/docs/process/taylor_orchestrator_contract_v1.md`
+- `linear/temporal/active/project__bootstrap__0727b3f56ccd/stage4-5-agent-stack-execution-plan-v1.md`
+- `linear/protocol/agent-references/taylor-orchestrator-contract-v1.md`
 - `linear/docs/process/capability_state_truth_label_incident_protocol_v1.md`
 
 ## Findings

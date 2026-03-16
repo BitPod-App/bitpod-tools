@@ -8,7 +8,7 @@
     "approval_state": "not_required",
     "decision": "allowed",
     "evidence_links": [
-      "linear/docs/process/governance_policy_engine_v1.md",
+      "linear/protocol/configs/governance-policy-engine-v1.md",
       "linear/contracts/governance_policy_matrix_v1.json"
     ]
   },

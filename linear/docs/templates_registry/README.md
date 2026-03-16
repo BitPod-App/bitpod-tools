@@ -50,7 +50,7 @@ This registry is the single source of truth for templates across BitPod repos.
   - Use: preserved bootstrap reference only; not active canon
 
 - **Active**: Linear change proposal
-  - Path: `/Users/cjarguello/BitPod-App/bitpod-tools/linear/docs/process/linear_change_proposal_template_v1.md`
+  - Path: `/Users/cjarguello/BitPod-App/bitpod-tools/linear/protocol/templates/linear-change-proposal-template-v1.md`
   - Use: workflow/status/automation change proposals
 
 ## 4) Retrospective Templates (Max 2)

@@ -1,0 +1,12 @@
+{
+  "ticket:BIT-127": {
+    "state": "closed",
+    "transition_at": "2026-02-20T00:00:00Z",
+    "source_url": "https://linear.app/bitpod-app/issue/BIT-127/rebuild-codex-environment-model-clean-local-org-workspace-and-execute"
+  },
+  "project:0727b3f56ccd": {
+    "state": "active",
+    "transition_at": "2026-03-10T00:00:00Z",
+    "source_url": "https://linear.app/bitpod-app/project/bootstrap"
+  }
+}

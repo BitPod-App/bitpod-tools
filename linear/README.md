@@ -7,7 +7,9 @@ This folder contains the Linear tool surface plus the process canon that governs
 - `/bitpod-tools/linear/docs/`
   - SOP and implementation references.
 - `/bitpod-tools/linear/docs/process/`
-  - Process runbooks and operator notes.
+  - Transitional process docs, proofs, plans, and operator notes pending protocol/temporal normalization.
+- `/bitpod-tools/linear/protocol/`
+  - Canonical process docs, templates, configs, and agent references.
 - `/bitpod-tools/linear/src/`
   - Rule engine, webhook service, and simulator.
 - `/bitpod-tools/linear/contracts/`
@@ -21,66 +23,66 @@ This folder contains the Linear tool surface plus the process canon that governs
 
 ## Active canon
 
-- `./docs/process/linear_operating_guide_v3.md`
-- `./docs/process/startup_operating_model_v2.md`
-- `./docs/process/taylor_orchestrator_contract_v1.md`
-- `./docs/process/qa_authority_model_v1.md`
-- `./docs/process/interim_ai_technical_qa_cj_acceptance_policy_v1.md`
-- `./docs/process/linear_admin_change_control_v1.md`
-- `./docs/process/linear_change_proposal_template_v1.md`
-- `./docs/process/linear_operating_guide_changelog.md`
+- `./protocol/configs/linear-operating-guide-v3.md`
+- `./protocol/configs/startup-operating-model-v2.md`
+- `./protocol/agent-references/taylor-orchestrator-contract-v1.md`
+- `./protocol/agent-references/qa-authority-model-v1.md`
+- `./protocol/configs/interim-ai-technical-qa-cj-acceptance-policy-v1.md`
+- `./protocol/configs/linear-admin-change-control-v1.md`
+- `./protocol/templates/linear-change-proposal-template-v1.md`
+- `./protocol/configs/linear-operating-guide-changelog.md`
 
 ## Supporting SOP and references
 
 - `./docs/linear_custom_configs_v1.md`
-- `./docs/process/linear_bot_v1_runbook.md`
-- `./docs/process/live_cutover_auth_batch.md`
-- `./docs/process/linear_operating_guide_v1.md`
-- `./docs/process/linear_operating_guide_v2.md`
-- `./docs/process/linear_issue_workflow_reconfig_spec_v1.md`
-- `./docs/process/startup_operating_model_v1.md`
-- `./docs/process/ai_team_topology_raci_v1.md`
-- `./docs/process/taylor_orchestrator_contract_v1.md`
-- `./docs/process/agent_handoff_templates_v1.md`
-- `./docs/process/delegated_execution_sample_run_v1.md`
-- `./docs/process/taylor_orchestrator_operational_proof_v1.md`
-- `./docs/process/specialist_agent_registry_v1.md`
-- `./docs/process/specialist_operating_lanes_proof_v1.md`
-- `./docs/process/qa_authority_model_v1.md`
-- `./docs/process/minimum_phase4_agent_team_contract_v1.md`
-- `./docs/process/interim_ai_technical_qa_cj_acceptance_policy_v1.md`
-- `./docs/process/agent_runtime_portability_plan_v1.md`
-- `./docs/process/capability_state_truth_label_incident_protocol_v1.md`
-- `./docs/process/linear_link_reference_policy_v1.md`
-- `./docs/process/linear_operating_guide_changelog.md`
-- `./docs/process/post_bootstrap_hardening_runbook_v1.md`
-- `./docs/process/legacy_identity_sweep_remediation_2026-03-09.md`
-- `./docs/process/memory_stewardship_service_contract_v1.md`
-- `./docs/process/governance_policy_engine_v1.md`
-- `./docs/process/github_team_purpose_reviewer_routing_v1.md`
-- `./docs/process/eval_regression_gate_framework_v1.md`
-- `./docs/process/team_session_platform_migration_contract_v1.md`
+- `./protocol/configs/linear-bot-runbook-v1.md`
+- `./docs/process/live-cutover-auth-batch.md`
+- `./protocol/configs/linear-operating-guide-v1.md`
+- `./protocol/configs/linear-operating-guide-v2.md`
+- `./protocol/configs/linear-issue-workflow-reconfig-spec-v1.md`
+- `./protocol/configs/startup-operating-model-v1.md`
+- `./protocol/agent-references/ai-team-topology-raci-v1.md`
+- `./protocol/agent-references/taylor-orchestrator-contract-v1.md`
+- `./protocol/templates/agent-handoff-templates-v1.md`
+- `./temporal/active/ticket__BIT-61/delegated-execution-sample-run-v1.md`
+- `./temporal/active/ticket__BIT-84/taylor-orchestrator-operational-proof-v1.md`
+- `./protocol/agent-references/specialist-agent-registry-v1.md`
+- `./temporal/active/ticket__BIT-85/specialist-operating-lanes-proof-v1.md`
+- `./protocol/agent-references/qa-authority-model-v1.md`
+- `./protocol/agent-references/minimum-phase4-agent-team-contract-v1.md`
+- `./protocol/configs/interim-ai-technical-qa-cj-acceptance-policy-v1.md`
+- `./protocol/configs/agent-runtime-portability-plan-v1.md`
+- `./protocol/configs/capability-state-truth-label-incident-protocol-v1.md`
+- `./protocol/configs/linear-link-reference-policy-v1.md`
+- `./protocol/configs/linear-operating-guide-changelog.md`
+- `./temporal/active/ticket__BIT-32/post-bootstrap-hardening-runbook-v1.md`
+- `./docs/process/legacy-identity-sweep-remediation-2026-03-09.md`
+- `./protocol/agent-references/memory-stewardship-service-contract-v1.md`
+- `./protocol/configs/governance-policy-engine-v1.md`
+- `./protocol/configs/github-team-purpose-reviewer-routing-v1.md`
+- `./protocol/configs/eval-regression-gate-framework-v1.md`
+- `./protocol/agent-references/team-session-platform-migration-contract-v1.md`
 
-Legacy bootstrap docs that still live in other repos should be treated as reference material only until they are either re-homed or archived. The active Linear process canon belongs under `./docs/process/`.
+Legacy bootstrap docs that still live in other repos should be treated as reference material only until they are either re-homed or archived. The active Linear process canon is being normalized into `./protocol/`. The remaining `./docs/process/` surface is intentionally minimal and should only hold explicitly deferred residual material.
 
 ## Phase 2 planning seeds
 
-- `./docs/process/discord_migration_architecture_v1.md`
-- `./docs/process/discord_command_parity_matrix_v1.md`
-- `./docs/process/discord_webhook_parity_checks_v1.md`
-- `./docs/process/discord_phase2_prereq_execution_runbook_v1.md`
-- `./docs/process/discord_phase2_cj_ui_quickstart_v1.md`
-- `./docs/process/stage4_5_agent_stack_execution_plan_v1.md`
-- `./docs/process/communication_surface_portability_v1.md`
-- `./docs/process/taylor_runtime_core_contract_v1.md`
-- `./docs/process/global_artifact_naming_policy_v1.md`
-- `./docs/process/long_thread_checkpoint_protocol_v1.md`
-- `./docs/process/durable_artifact_memory_flow_proof_v1.md`
-- `./docs/process/checkpoints/checkpoint_protocol_adoption_note_2026-03-11.md`
-- `./docs/process/checkpoints/thread_checkpoint_template_v1.md`
-- `./docs/process/checkpoints/active_checkpoint_sector_feeds_bit77_2026-03-11.md`
-- `./docs/process/checkpoints/active_checkpoint_phase4_operating_model_2026-03-11.md`
-- `./docs/process/workspace_local_state_location_policy_v1.md`
+- `./temporal/active/ticket__BIT-28/discord-migration-architecture-v1.md`
+- `./temporal/active/ticket__BIT-29/discord-command-parity-matrix-v1.md`
+- `./temporal/active/ticket__BIT-30/discord-webhook-parity-checks-v1.md`
+- `./temporal/active/ticket__BIT-59/discord-phase2-prereq-execution-runbook-v1.md`
+- `./temporal/active/ticket__BIT-59/discord-phase2-cj-ui-quickstart-v1.md`
+- `./temporal/active/project__bootstrap__0727b3f56ccd/stage4-5-agent-stack-execution-plan-v1.md`
+- `./protocol/configs/communication-surface-portability-v1.md`
+- `./protocol/agent-references/taylor-runtime-core-contract-v1.md`
+- `../bitpod-docs/process/global-artifact-naming-policy-v1.md`
+- `./protocol/configs/long-thread-checkpoint-protocol-v1.md`
+- `./temporal/active/ticket__BIT-87/durable-artifact-memory-flow-proof-v1.md`
+- `./temporal/active/ticket__BIT-88/checkpoint-protocol-adoption-note-2026-03-11.md`
+- `./protocol/templates/thread-checkpoint-template-v1.md`
+- `./temporal/active/ticket__BIT-77/checkpoint-sector-feeds-bit77-2026-03-11.md`
+- `./temporal/active/ticket__BIT-83/checkpoint-phase4-operating-model-2026-03-11.md`
+- `./protocol/configs/workspace-local-state-location-policy-v1.md`
 
 ## Current implementation coverage (v1)
 
@@ -129,7 +131,7 @@ Current BIT workspace still uses mixed/non-emoji statuses (`Backlog`, `Todo`, `I
 This implementation includes fallback handling for current statuses where safe, but full parity requires final Linear status normalization.
 
 Canonical target for the Product Development team workflow reconfiguration:
-- `./docs/process/linear_issue_workflow_reconfig_spec_v1.md`
+- `./protocol/configs/linear-issue-workflow-reconfig-spec-v1.md`
 
 ## How to run
 
@@ -228,14 +230,14 @@ PR checks run automatically for `linear/**` via:
 
 ## Memory stewardship artifacts
 
-- contract: `./docs/process/memory_stewardship_service_contract_v1.md`
+- contract: `./protocol/agent-references/memory-stewardship-service-contract-v1.md`
 - schema: `./contracts/memory_write_proposal_schema_v1.json`
 - example proposal: `./examples/memory_write_proposal_example_v1.json`
 - validator: `./scripts/validate_memory_proposal.py`
 
 ## Eval regression artifacts
 
-- contract: `./docs/process/eval_regression_gate_framework_v1.md`
+- contract: `./protocol/configs/eval-regression-gate-framework-v1.md`
 - registry: `./contracts/eval_registry_v1.json`
 - runner: `./scripts/run_eval_regression_bundle.sh`
 - sample report: `./examples/eval_regression_report_sample_2026-03-10.md`
@@ -247,7 +249,7 @@ PR checks run automatically for `linear/**` via:
 
 ## Governance policy artifacts
 
-- contract: `./docs/process/governance_policy_engine_v1.md`
+- contract: `./protocol/configs/governance-policy-engine-v1.md`
 - policy matrix: `./contracts/governance_policy_matrix_v1.json`
 - audit sample: `./examples/governance_audit_trail_sample_2026-03-10.json`
 - validator: `./scripts/validate_governance_policy.py`

@@ -1,0 +1,9 @@
+{
+  "anchor": "0727b3f56ccd",
+  "bucket_name": "project__bootstrap__0727b3f56ccd",
+  "cleanup_status": "hold",
+  "is_temporal": true,
+  "kind": "project",
+  "meta_reason": "stage metadata normalization",
+  "slug": "bootstrap"
+}

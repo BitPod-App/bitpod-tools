@@ -2,6 +2,7 @@
 
 Status: Working baseline  
 Primary issue: [BIT-74 — Execute post-bootstrap local scope hardening window after migration closeout](https://linear.app/bitpod-app/issue/BIT-74/execute-post-bootstrap-local-scope-hardening-window-after-migration)
+Superseding control ticket: [BIT-117 — Personal-machine Codex scope lockdown to BitPod-App + Git/GitHub/SSH](https://linear.app/bitpod-app/issue/BIT-117/personal-machine-codex-scope-lockdown-to-bitpod-app-gitgithub-ssh)
 
 ## Objective
 
@@ -38,7 +39,7 @@ Reasons:
 1. it is not an active verified protection system
 2. it depends on quarantined legacy `bitpod` paths
 3. reviving it as-is would reintroduce obsolete local queue/enforcement mechanics
-4. OpenClaw or future operator surfaces should rely on explicit runtime contracts and hardening boundaries, not this dormant legacy scaffold
+4. the approved replacement path is the enforced personal-machine default-scope model in [BIT-117 — Personal-machine Codex scope lockdown to BitPod-App + Git/GitHub/SSH](https://linear.app/bitpod-app/issue/BIT-117/personal-machine-codex-scope-lockdown-to-bitpod-app-gitgithub-ssh), not a legacy skill-driven soft safety feature
 
 ## Preserve the intent, not the feature
 
@@ -63,7 +64,8 @@ They should not continue as a separate legacy queue/enforcement product inside l
 
 Use:
 
-- [post_bootstrap_hardening_runbook_v1.md](./post_bootstrap_hardening_runbook_v1.md)
+- [post_bootstrap_hardening_runbook_v1.md](../temporal/active/ticket__BIT-32/post-bootstrap-hardening-runbook-v1.md)
+- [BIT-117 — Personal-machine Codex scope lockdown to BitPod-App + Git/GitHub/SSH](https://linear.app/bitpod-app/issue/BIT-117/personal-machine-codex-scope-lockdown-to-bitpod-app-gitgithub-ssh)
 
 ### Approval thresholds and destructive-action controls
 
@@ -83,7 +85,8 @@ Use:
 If OpenClaw or another operator surface later needs stronger isolation:
 
 - do not resurrect Isolation Mode v1 directly
-- define the exact control needed
+- treat [BIT-117 — Personal-machine Codex scope lockdown to BitPod-App + Git/GitHub/SSH](https://linear.app/bitpod-app/issue/BIT-117/personal-machine-codex-scope-lockdown-to-bitpod-app-gitgithub-ssh) as the definitive superseding personal-machine control
+- define any additional control beyond BIT-117 explicitly
 - implement it in an approved active path
 - verify it in the current runtime/host model
 

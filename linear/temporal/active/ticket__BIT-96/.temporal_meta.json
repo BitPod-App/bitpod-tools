@@ -1,0 +1,9 @@
+{
+  "anchor": "BIT-96",
+  "bucket_name": "ticket__BIT-96",
+  "cleanup_status": "hold",
+  "is_temporal": true,
+  "kind": "ticket",
+  "meta_reason": "stage metadata normalization",
+  "slug": ""
+}

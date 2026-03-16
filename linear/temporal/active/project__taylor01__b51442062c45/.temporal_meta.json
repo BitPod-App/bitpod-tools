@@ -1,0 +1,9 @@
+{
+  "anchor": "b51442062c45",
+  "bucket_name": "project__taylor01__b51442062c45",
+  "cleanup_status": "hold",
+  "is_temporal": true,
+  "kind": "project",
+  "meta_reason": "stage metadata normalization",
+  "slug": "taylor01"
+}
