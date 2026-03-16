@@ -114,7 +114,7 @@ EOF
   create_tracked_repo "alpha"
   create_tracked_repo "beta"
   create_tracked_repo "delta"
-  create_tracked_repo "demo-repository"
+  create_tracked_repo "sample-repo"
 
   git init -b main "$WORKSPACE_ROOT/gamma" >/dev/null
   echo "gamma" > "$WORKSPACE_ROOT/gamma/README.md"
@@ -128,14 +128,14 @@ EOF
 alpha|alpha|1|1|1|1|verified
 beta|beta|1|1|1|1|verified
 delta|delta|1|1|1|1|verified
-demo-repository|demo-repository|1|1|1|1|verified
+sample-repo|sample-repo|1|1|1|1|verified
 gamma|gamma|1|1|1|1|verified
 EOF
 
   cat > "$PERFECT_REGISTRY_FILE" <<'EOF'
 # repo|relative_path|pulse_enabled|cleanup_enabled|thread_visible|verified|notes
 alpha|alpha|1|1|1|1|verified
-demo-repository|demo-repository|1|1|1|1|verified
+sample-repo|sample-repo|1|1|1|1|verified
 EOF
 
   cat > "$HOOK_REGISTRY_FILE" <<'EOF'
@@ -152,11 +152,11 @@ test_refresh_repo_registry() {
   local refresh_registry="$refresh_config/repo_registry.tsv"
 
   mkdir -p "$refresh_config"
-  git init -b main "$refresh_root/demo-repository" >/dev/null
+  git init -b main "$refresh_root/sample-repo" >/dev/null
   mkdir -p "$refresh_root/docs-candidate/.github"
   cat > "$refresh_registry" <<'EOF'
 # repo|relative_path|pulse_enabled|cleanup_enabled|thread_visible|verified|notes
-demo-repository|demo-repository|1|1|1|1|verified repo
+sample-repo|sample-repo|1|1|1|1|verified repo
 EOF
 
   BITPOD_APP_ROOT="$refresh_root" \
@@ -165,7 +165,7 @@ EOF
 
   local registry_contents
   registry_contents="$(cat "$refresh_registry")"
-  assert_contains "$registry_contents" "demo-repository|demo-repository|1|1|1|1|verified repo"
+  assert_contains "$registry_contents" "sample-repo|sample-repo|1|1|1|1|verified repo"
   assert_contains "$registry_contents" "docs-candidate|docs-candidate|0|0|0|0|candidate discovered via .github only; verify manually before enabling"
 }
 
