@@ -212,7 +212,7 @@ test_cleanup_contracts() {
 
 test_parity_pulse_contracts() {
   local pulse_output
-  pulse_output="$(run_audit_capture "$REGISTRY_FILE" "__parity_pulse__ event=post-commit fresh workspace")"
+  pulse_output="$(run_audit_capture "$REGISTRY_FILE" "__parity_pulse__ event=post-commit fresh")"
   assert_contains "$pulse_output" "Parity Pulse"
   assert_contains "$pulse_output" "- event=post-commit"
   assert_contains "$pulse_output" "- result=REPORT ONLY"
@@ -220,7 +220,7 @@ test_parity_pulse_contracts() {
   assert_contains "$pulse_output" "LOCAL DIVERGED"
   assert_contains "$pulse_output" "REMOTE MISMATCH"
   assert_contains "$pulse_output" "UNLINKED"
-  assert_contains "$pulse_output" "Local workspace"
+  assert_not_contains "$pulse_output" "Local workspace"
   assert_not_contains "$pulse_output" "alpha@main"
 
   local perfect_pulse

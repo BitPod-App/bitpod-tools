@@ -798,9 +798,8 @@ emit_cleanup_report() {
 }
 
 emit_pulse_report() {
-  local include_local_workspace="$1"
-  local require_fresh="$2"
-  local event_name="$3"
+  local require_fresh="$1"
+  local event_name="$2"
   local overall_verification="VERIFIED"
   local verification_detail="Fresh parity verification completed for all scanned repos."
   local pulse_result="REPORT ONLY"
@@ -826,15 +825,6 @@ emit_pulse_report() {
   echo "- detail=$verification_detail"
   emit_parity_summary_section "pulse" "T1" "REPORT ONLY" "$overall_verification" "$require_fresh"
   emit_pulse_repo_details
-  if [[ "$include_local_workspace" -eq 1 ]]; then
-    print_section "Local workspace"
-    echo "- included=YES"
-    echo "- working_files=$working_files"
-    echo "- trash_files=$trash_files"
-    echo "- likely_duplicate_filename_count=$likely_duplicate_filename_count"
-    echo "- active_legacy_bucket_hits=$active_legacy_bucket_hits"
-    echo "- unexpected_local_workspace_children=$unexpected_local_workspace_children"
-  fi
   if [[ "$registry_problem_count" -gt 0 ]]; then
     print_section "Registry"
     emit_registry_problems
@@ -914,18 +904,15 @@ run_cleanup_auto() {
 
 run_parity_pulse() {
   local require_fresh="$1"
-  local include_local_workspace="$2"
-  local event_name="$3"
+  local event_name="$2"
 
   reset_repo_summary
-  reset_workspace_metrics
 
   assert_registry_ready
   build_repo_rows "pulse" "$require_fresh"
   collect_registry_problems
   summarize_repo_rows
-  prepare_workspace_metrics "$include_local_workspace" "T1"
-  emit_pulse_report "$include_local_workspace" "$require_fresh" "$event_name"
+  emit_pulse_report "$require_fresh" "$event_name"
 }
 
 main() {
@@ -935,18 +922,14 @@ main() {
 
   if has_phrase "$q" "__parity_pulse__" || has_phrase "$q" "parity-pulse" || has_phrase "$q" "parity pulse"; then
     local pulse_fresh=0
-    local pulse_include_local_workspace=0
     local pulse_event="manual"
     if has_phrase "$q" "fresh" || has_phrase "$q" "pre-push" || has_phrase "$q" "post-push"; then
       pulse_fresh=1
     fi
-    if has_phrase "$q" "workspace" || has_phrase "$q" "local workspace"; then
-      pulse_include_local_workspace=1
-    fi
     local maybe_event
     maybe_event="$(printf '%s\n' "$raw" | sed -n 's/.*event=\([^ ]*\).*/\1/p')"
     [[ -n "$maybe_event" ]] && pulse_event="$maybe_event"
-    run_parity_pulse "$pulse_fresh" "$pulse_include_local_workspace" "$pulse_event"
+    run_parity_pulse "$pulse_fresh" "$pulse_event"
     exit 0
   fi
 
