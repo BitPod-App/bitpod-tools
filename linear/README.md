@@ -1,6 +1,6 @@
-# Linear Bot (v1) Bootstrap
+# Linear Tooling + Process
 
-This folder contains the initial scaffold for Linear + GitHub workflow-enforcement automation.
+This folder contains the Linear tool surface plus the process canon that governs how BitPod work is tracked, evidenced, and reviewed.
 
 ## Structure
 
@@ -19,12 +19,24 @@ This folder contains the initial scaffold for Linear + GitHub workflow-enforceme
 - `/bitpod-tools/linear/tests/`
   - Unit tests for gate and transition behavior.
 
-## Primary SOP
+## Active canon
+
+- `./docs/process/linear_operating_guide_v3.md`
+- `./docs/process/startup_operating_model_v2.md`
+- `./docs/process/taylor_orchestrator_contract_v1.md`
+- `./docs/process/qa_authority_model_v1.md`
+- `./docs/process/interim_ai_technical_qa_cj_acceptance_policy_v1.md`
+- `./docs/process/linear_admin_change_control_v1.md`
+- `./docs/process/linear_change_proposal_template_v1.md`
+- `./docs/process/linear_operating_guide_changelog.md`
+
+## Supporting SOP and references
 
 - `./docs/linear_custom_configs_v1.md`
 - `./docs/process/linear_bot_v1_runbook.md`
 - `./docs/process/live_cutover_auth_batch.md`
 - `./docs/process/linear_operating_guide_v1.md`
+- `./docs/process/linear_operating_guide_v2.md`
 - `./docs/process/linear_issue_workflow_reconfig_spec_v1.md`
 - `./docs/process/startup_operating_model_v1.md`
 - `./docs/process/ai_team_topology_raci_v1.md`
@@ -49,6 +61,8 @@ This folder contains the initial scaffold for Linear + GitHub workflow-enforceme
 - `./docs/process/eval_regression_gate_framework_v1.md`
 - `./docs/process/team_session_platform_migration_contract_v1.md`
 
+Legacy bootstrap docs that still live in other repos should be treated as reference material only until they are either re-homed or archived. The active Linear process canon belongs under `./docs/process/`.
+
 ## Phase 2 planning seeds
 
 - `./docs/process/discord_migration_architecture_v1.md`
@@ -70,6 +84,13 @@ This folder contains the initial scaffold for Linear + GitHub workflow-enforceme
 
 ## Current implementation coverage (v1)
 
+Important truth note:
+
+- this section describes the currently checked-in engine/service behavior
+- it does not fully represent the preferred future Linear acceptance workflow
+- current real governance still relies on the temporary [BIT-79 — Establish interim AI technical QA + CJ acceptance policy](https://linear.app/bitpod-app/issue/BIT-79/establish-interim-ai-technical-qa-cj-acceptance-policy)
+- where the engine behavior and the CJ-approved operating model differ, treat the engine as transitional
+
 Implemented in engine/service:
 - GitHub events:
   - `pull_request.opened`
@@ -82,10 +103,23 @@ Implemented in engine/service:
   - daily aging scan payload handler
 - Gating behavior:
   - Ready gate (required Type + required headings)
-  - QA/PM label defaults in review flow
+  - QA/PM label defaults in review flow (older transitional behavior)
   - merge gate requires QA Passed + PM Approved
   - fail-closed comments when gates are not met
 - Dry-run default and simulation runner
+
+## Preferred workflow note
+
+The preferred operating model is:
+
+- engineering moves work into `In Review`
+- QA runs in `In Review`
+- `QA: Passed` should move work to `In Acceptance`
+- PM labels should belong to `In Acceptance`
+- `PM: Approved` should establish merge readiness
+- `PM: Rejected` should send work back to `In Progress`
+
+That model is not yet fully represented in the checked-in engine and simulation files, so treat it as the target workflow rather than the current implementation truth.
 
 ## Status model note (important)
 

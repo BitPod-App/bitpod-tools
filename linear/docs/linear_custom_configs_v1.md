@@ -1,5 +1,14 @@
 # Linear Bot Rules Spec v1 — Codex-ready (label-safe formatting)
 
+Status: historical implementation draft with active reference value, not the final current operating truth
+
+Current live governance still depends on:
+
+- [BIT-79 — Establish interim AI technical QA + CJ acceptance policy](https://linear.app/bitpod-app/issue/BIT-79/establish-interim-ai-technical-qa-cj-acceptance-policy)
+- `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/interim_ai_technical_qa_cj_acceptance_policy_v1.md`
+
+Use this file as implementation reference, not as a claim that the richer acceptance-state workflow is already live.
+
 > **Purpose:** implement a Linear+GitHub automation bot that enforces CJ’s minimal workflow.  
 > **Style:** fail-closed; if uncertain, do nothing and comment.
 
@@ -54,7 +63,7 @@
 - `🔷 QA: Passed`
 - `♦️ QA: Failed`
 
-`🔑 PM` (required after `🔷 QA: Passed`)
+`🔑 PM` (future intended acceptance-stage group; older draft below still mixes it earlier than intended)
 - `✴️ PM: Waiting`
 - `❇️ PM: Approved`
 - `❌ PM: Rejected`
@@ -137,6 +146,13 @@ If no link is found, bot MUST do nothing except comment on PR:
 ---
 
 ### 5.3 On GitHub PR enters review (linked issue exists)
+
+Current truth note:
+
+- engineering moves work into `In Review`
+- PM labels should not be treated as belonging to `In Review` in the preferred operating model
+- the `PM: Waiting` default below is retained as older draft behavior only
+
 → move linked Linear issue → `🧪 In Review`  
 → set `🧪 QA = 🔶 QA: Not Done` (overwrite any QA value)  
 → if `🔑 PM` empty: set `🔑 PM = ✴️ PM: Waiting`  
@@ -161,6 +177,14 @@ Bot also parses `PR_URL=` if present; otherwise use the linked PR.
 → STOP
 
 #### If `QA_RESULT=PASSED`
+
+Future intended workflow note:
+
+- preferred model is:
+  - `QA: Passed` moves `In Review` -> `In Acceptance`
+  - `PM: Waiting` / `PM: Approved` / `PM: Rejected` apply there
+- the actions below are the older simpler draft, kept as implementation reference only
+
 → set `🧪 QA = 🔷 QA: Passed`  
 → set `🔑 PM = ✴️ PM: Waiting` (overwrite unless PM already Approved/Rejected)  
 → comment on PR (as bot):  
@@ -172,6 +196,13 @@ Bot also parses `PR_URL=` if present; otherwise use the linked PR.
 ---
 
 ### 5.5 On PM label change (Linear webhook)
+
+Future intended workflow note:
+
+- PM labels belong to `In Acceptance`, not `In Review`
+- `PM: Rejected` should send work back to `In Progress`
+- `PM: Approved` should establish merge readiness
+- the concrete actions below remain older draft behavior
 
 #### If `🔑 PM = ❌ PM: Rejected`
 → move issue → `🏗️ In Progress`  
@@ -187,6 +218,12 @@ Bot also parses `PR_URL=` if present; otherwise use the linked PR.
 ---
 
 ### 5.6 On GitHub PR merged (linked issue exists)
+
+Current governance note:
+
+- under the temporary BIT-79 path, labels are the authoritative merge gate
+- status names like `Accepted` or `In Acceptance` are workflow visibility, not sufficient by themselves for merge authorization
+- if the richer acceptance-state model is later implemented, this section should be updated explicitly
 
 **IF** `🧪 QA = 🔷 QA: Passed` AND `🔑 PM = ❇️ PM: Approved`  
 → move issue → `✅ Done`  

@@ -88,3 +88,13 @@ If dedicated-user mode was enabled for hardening, rollback means returning to th
 
 ## Risk note
 If restrictions are applied too early, migration automation and cross-repo operations may fail. Keep this in Phase 3 unless explicitly accelerated.
+
+## Isolation Mode note
+
+Do not treat legacy BitPod Isolation Mode v1 as the hardening implementation path for this runbook.
+
+That legacy feature is now retired as an active protection system and should only be referenced as historical scaffolding:
+
+- [isolation_mode_retirement_and_hardening_mapping_v1.md](./isolation_mode_retirement_and_hardening_mapping_v1.md)
+
+If stronger isolation is needed later, implement it through the approved hardening/runtime path instead of reviving the old local queue/enforcement system.

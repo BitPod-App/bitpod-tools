@@ -8,6 +8,7 @@ import os
 import sys
 from typing import Any
 from urllib.error import HTTPError, URLError
+from urllib.parse import urlparse
 from urllib.request import Request, urlopen
 
 SERVER_NAME = "gpt-bridge-mcp"
@@ -68,6 +69,7 @@ def _call_bridge(arguments: dict[str, Any]) -> dict[str, Any]:
     }
 
     bridge_url = os.getenv("GPT_BRIDGE_URL", DEFAULT_BRIDGE_URL)
+    _enforce_allowed_bridge_url(bridge_url)
     timeout_raw = os.getenv("GPT_BRIDGE_TIMEOUT_SECONDS", str(DEFAULT_BRIDGE_TIMEOUT_SECONDS)).strip()
     try:
         bridge_timeout = float(timeout_raw)
@@ -95,6 +97,19 @@ def _call_bridge(arguments: dict[str, Any]) -> dict[str, Any]:
         ) from exc
     except json.JSONDecodeError as exc:
         raise RuntimeError(f"Bridge returned invalid JSON: {exc}") from exc
+
+
+def _enforce_allowed_bridge_url(url: str) -> None:
+    allow_raw = os.getenv("GPT_BRIDGE_ALLOWED_HOSTS", "").strip()
+    if not allow_raw:
+        return
+    allowed = {h.strip().lower() for h in allow_raw.split(",") if h.strip()}
+    parsed = urlparse(url)
+    host = (parsed.hostname or "").strip().lower()
+    if not host or host not in allowed:
+        raise RuntimeError(
+            f"Bridge host '{host or 'unknown'}' blocked by GPT_BRIDGE_ALLOWED_HOSTS policy"
+        )
 
 
 def _make_tools_result() -> dict[str, Any]:

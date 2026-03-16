@@ -32,7 +32,8 @@ That gap was documented in:
 
 The stronger QA behavior now lives in Vera's dedicated QA contract and is currently implemented through the local skill surface:
 
-- `/Users/cjarguello/.agents/skills/qa-specialist/SKILL.md`
+- canonical local surface:
+  - `/Users/cjarguello/bitpod-app/local-workspace/local-codex/skills/qa-specialist/SKILL.md`
 
 Taylor's current skill now explicitly delegates final QA verification execution to `qa-specialist`, which is why BIT-90 should anchor to Vera's artifact contract rather than Taylor-style review behavior.
 
@@ -53,11 +54,11 @@ That does not mean Vera should remain only a skill long-term. The skill is an ac
 ### Durable artifacts produced in this execution
 
 - contract:
-  - `/Users/cjarguello/bitpod-app/bitpod-tools/.worktrees/bitpod-tools-bit92/linear/docs/process/vera_qa_lane_contract_v1.md`
+  - `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/vera_qa_lane_contract_v1.md`
 - verification artifact:
-  - `/Users/cjarguello/bitpod-app/bitpod-tools/.worktrees/bitpod-tools-bit92/linear/examples/verification_report_bit90_minimum_team_2026-03-12.md`
+  - `/Users/cjarguello/bitpod-app/bitpod-tools/linear/examples/verification_report_bit90_minimum_team_2026-03-12.md`
 - lane checkpoint:
-  - `/Users/cjarguello/bitpod-app/bitpod-tools/.worktrees/bitpod-tools-bit92/linear/docs/process/checkpoints/active_checkpoint_phase4_minimum_team_2026-03-12.md`
+  - `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/checkpoints/active_checkpoint_phase4_minimum_team_2026-03-12.md`
 - validation command:
   - `bash linear/scripts/local_smoke.sh` -> `local smoke PASS`
 

@@ -1,5 +1,11 @@
 # Linear Bot v1 Runbook
 
+Current truth note:
+
+- this runbook is for the bot/runtime draft surface
+- it does not replace the temporary live governance path in [BIT-79 — Establish interim AI technical QA + CJ acceptance policy](https://linear.app/bitpod-app/issue/BIT-79/establish-interim-ai-technical-qa-cj-acceptance-policy)
+- until the richer acceptance workflow is actually implemented and verified, operators should rely on the interim policy first and treat this bot path as supporting automation
+
 This runbook is the operator path for local dry-run, CI validation, and first live wiring.
 
 ## 1) Local dry-run startup

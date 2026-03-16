@@ -53,7 +53,7 @@ Observed verified baseline:
 
 The minimum-team prerequisite is now satisfied:
 
-- `/Users/cjarguello/bitpod-app/bitpod-tools/.worktrees/bitpod-tools-bit92-ready/linear/docs/process/minimum_phase4_agent_team_readiness_v1.md`
+- `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/minimum_phase4_agent_team_readiness_v1.md`
 - merged repo-side verdict: `MINIMUM_TEAM_READY=true`
 
 This means Discord acceptance is now a meaningful closure gate rather than a premature plumbing test.

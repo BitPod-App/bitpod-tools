@@ -7,7 +7,7 @@ Linked issue: [BIT-88 — Operationalize long-thread checkpoint protocol across 
 Active checkpoint instances now present in repo:
 
 1. `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/checkpoints/active_checkpoint_sector_feeds_bit77_2026-03-11.md`
-2. `/Users/cjarguello/bitpod-app/bitpod-tools/.worktrees/bitpod-tools-bit88/linear/docs/process/checkpoints/active_checkpoint_phase4_operating_model_2026-03-11.md`
+2. `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/checkpoints/active_checkpoint_phase4_operating_model_2026-03-11.md`
 
 ## What this proves
 

@@ -7,7 +7,8 @@
   - [BIT-84 — Prove Taylor orchestrator in a real multi-agent execution loop](https://linear.app/bitpod-app/issue/BIT-84/prove-taylor-orchestrator-in-a-real-multi-agent-execution-loop)
   - [BIT-85 — Stand up specialist operating lanes for engineering, QA, and research/design](https://linear.app/bitpod-app/issue/BIT-85/stand-up-specialist-operating-lanes-for-engineering-qa-and)
   - [BIT-87 — Prove durable decision, memory, and artifact flow in live AI-team operations](https://linear.app/bitpod-app/issue/BIT-87/prove-durable-decision-memory-and-artifact-flow-in-live-ai-team)
-- repo/worktree: `/Users/cjarguello/bitpod-app/bitpod-tools/.worktrees/bitpod-tools-bit88`
+- repo/worktree at checkpoint time (retired): `/Users/cjarguello/bitpod-app/bitpod-tools/.worktrees/bitpod-tools-bit88`
+- current surviving repo path: `/Users/cjarguello/bitpod-app/bitpod-tools`
 - branch: `codex/bit-88-checkpoint-operationalization`
 
 ## Current state

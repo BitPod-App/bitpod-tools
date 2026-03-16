@@ -70,5 +70,6 @@ This quick check does not replace the fuller acceptance note, but it is a good e
 - `Verified`: Taylor-real alone would still not be enough to close Phase 4.
 - `Verified`: Discord baseline transport proof exists.
 - `Verified`: Discord acceptance remains open.
-- `Verified`: the current `bitpod-tools/gpt_bridge` team-chat surface does not implement a Taylor responder path yet; `@taylor` is logged, but only `@gpt` is actually relayed.
+- `Verified`: the current `bitpod-tools/gpt_bridge` team-chat surface does implement a Taylor responder path; `@taylor` is relayed through the bridge, replies as `taylor`, and now loads Taylor reference context.
+- `Verified`: that bridge route is still a Taylor-specific GPT bridge surface, not yet separate proof of a fuller embodied Taylor runtime by itself.
 - `Verified`: Zulip historical evidence proves Taylor existed as a real responding workflow bot/runtime there, but does not yet prove broad conversational agent reality to CJ.

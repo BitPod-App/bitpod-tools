@@ -22,6 +22,22 @@ DEFAULT_SESSION_STATE = SCRIPT_DIR / "logs" / "session_state.json"
 DEFAULT_VIEW_STATE = SCRIPT_DIR / "logs" / "view_state.json"
 DEFAULT_MEMORY_POINTER = "memory://bitpod-app/memory_store.jsonl"
 IMPORTANT_MEMORY_SUFFIX = "Important BitPod App data: Update your memory"
+TAYLOR_SYSTEM_PROMPT = (
+    "You are Taylor, CJ's senior product architect, lead PM analyst, and dispatch coordinator. "
+    "Operate as a real conversational AI teammate for BitPod. Main goal: build BitPod App using "
+    "Taylor01 Team. Secondary goal: improve Taylor01 portability over time without derailing BitPod. "
+    "Be direct, concrete, and honest. Keep replies short but useful. Ask at most one clarifying "
+    "question only when it prevents an error."
+)
+LOCAL_CODEX_SKILLS_ROOT = Path("/Users/cjarguello/bitpod-app/local-workspace/local-codex/skills")
+TAYLOR_SKILL_REFERENCES_ROOT = LOCAL_CODEX_SKILLS_ROOT / "taylor" / "references"
+DEFAULT_TAYLOR_REFERENCE_FILES = (
+    TAYLOR_SKILL_REFERENCES_ROOT / "taylor-agent-contract.md",
+    TAYLOR_SKILL_REFERENCES_ROOT / "personal-preferences-interactions.md",
+    TAYLOR_SKILL_REFERENCES_ROOT / "app-mission-vision.md",
+    TAYLOR_SKILL_REFERENCES_ROOT / "key-memories-and-examples.md",
+)
+MAX_REFERENCE_CHARS = 6000
 
 
 def utc_now_iso() -> str:
@@ -118,11 +134,18 @@ def _extract_mentions(text: str) -> list[str]:
     return ordered
 
 
-def _strip_gpt_mentions(text: str) -> str:
-    stripped = re.sub(r"@gpt\\b[:,]?\\s*", "", text, flags=re.IGNORECASE).strip()
+def _strip_actor_mentions(text: str, actor: str) -> str:
+    stripped = re.sub(rf"@{re.escape(actor)}\b[:,]?\s*", "", text, flags=re.IGNORECASE).strip()
     if stripped:
         return stripped
     return text.strip()
+
+
+def _relay_actor_for_mentions(mentions: list[str]) -> str | None:
+    for mention in mentions:
+        if mention in {"taylor", "gpt"}:
+            return mention
+    return None
 
 
 def _slugify_session_label(text: str) -> str:
@@ -520,6 +543,10 @@ def extract_gpt_text(response: dict[str, Any]) -> str:
             return raw_output.strip()
         if isinstance(answer_json.get("reply"), str):
             return answer_json["reply"]
+        if isinstance(answer_json.get("reply_text"), str):
+            return answer_json["reply_text"]
+        if isinstance(answer_json.get("message"), str):
+            return answer_json["message"]
         if isinstance(answer_json.get("summary"), str):
             return answer_json["summary"]
         return json.dumps(answer_json, ensure_ascii=True)
@@ -601,6 +628,25 @@ def _load_memory_context(memory_store: Path, limit: int) -> str:
         return ""
     snippets.reverse()
     return "Persistent memory for BitPod decisions:\n" + "\n".join(snippets)
+
+
+def _load_reference_context(paths: tuple[Path, ...], max_chars: int) -> str:
+    chunks: list[str] = []
+    used = 0
+    for path in paths:
+        try:
+            text = path.read_text(encoding="utf-8").strip()
+        except OSError:
+            continue
+        if not text:
+            continue
+        remaining = max_chars - used
+        if remaining <= 0:
+            break
+        snippet = text[:remaining]
+        chunks.append(f"[Reference: {path.name}]\n{snippet}")
+        used += len(snippet)
+    return "\n\n".join(chunks)
 
 
 def call_bridge_via_ask_once(
@@ -1013,6 +1059,8 @@ def _send_to_gpt(
     show_raw: bool,
     log_user_message: bool,
     preface_status: str | None = None,
+    reply_actor: str = "gpt",
+    meta_overrides: dict[str, Any] | None = None,
 ) -> int:
     if log_user_message:
         started = utc_now_iso()
@@ -1031,6 +1079,12 @@ def _send_to_gpt(
     memory_context = ""
     if use_memory:
         memory_context = _load_memory_context(memory_store, memory_items)
+    reference_context = ""
+    if reply_actor == "taylor":
+        reference_context = _load_reference_context(DEFAULT_TAYLOR_REFERENCE_FILES, MAX_REFERENCE_CHARS)
+    context_text = "\n\n".join(
+        chunk for chunk in [memory_context, reference_context] if chunk
+    ) or None
 
     status_steps = [
         "Bridge GPT | Checking config...",
@@ -1041,6 +1095,8 @@ def _send_to_gpt(
         status_steps.append(preface_status)
     if memory_context:
         status_steps.append("Bridge GPT | Loading memory...")
+    if reference_context:
+        status_steps.append("Bridge GPT | Loading Taylor references...")
     status_steps.append("Bridge GPT | Sending prompt...")
     for status_text in status_steps:
         status_ts = utc_now_iso()
@@ -1057,14 +1113,17 @@ def _send_to_gpt(
         print_timeline_line(status_ts, "system", status_text)
 
     try:
+        meta = {"session": session, "workflow": "bridge_chat_send"}
+        if meta_overrides:
+            meta.update(meta_overrides)
         response = _run_ask_once(
             message=message,
             task_type=task_type,
             max_tokens=max_tokens,
             json_only=True,
-            meta={"session": session, "workflow": "bridge_chat_send"},
+            meta=meta,
             model=model,
-            context_text=memory_context if memory_context else None,
+            context_text=context_text,
         )
     except RuntimeError as exc:
         err_ts = utc_now_iso()
@@ -1088,7 +1147,7 @@ def _send_to_gpt(
         {
             "ts": reply_ts,
             "session": session,
-            "actor": "gpt",
+            "actor": reply_actor,
             "kind": "message",
             "text": gpt_text,
             "raw": response,
@@ -1106,7 +1165,7 @@ def _send_to_gpt(
         },
     )
     print_timeline_line(active_ts, "system", "GPT Bridge | Active")
-    print_timeline_line(reply_ts, "GPT", gpt_text)
+    print_timeline_line(reply_ts, reply_actor, gpt_text)
     if show_raw:
         print(json.dumps(response, ensure_ascii=True))
     return 0
@@ -1246,10 +1305,20 @@ def run_team(args: argparse.Namespace) -> int:
         )
         print_timeline_line(codex_ts, "codex", codex_text)
 
-    if "gpt" not in mentions:
+    relay_actor = _relay_actor_for_mentions(mentions)
+    if relay_actor is None:
         return 0
 
-    relay_text = _strip_gpt_mentions(args.text)
+    relay_text = _strip_actor_mentions(args.text, relay_actor)
+    preface_status = (
+        "Bridge GPT | @taylor mention detected, routing to Taylor..."
+        if relay_actor == "taylor"
+        else "Bridge GPT | @gpt mention detected, relaying..."
+    )
+    meta_overrides = {"route_actor": relay_actor}
+    if relay_actor == "taylor":
+        meta_overrides["system_prompt"] = TAYLOR_SYSTEM_PROMPT
+
     return _send_to_gpt(
         log_file=log_file,
         memory_store=Path(args.memory_store),
@@ -1263,7 +1332,9 @@ def run_team(args: argparse.Namespace) -> int:
         memory_items=args.memory_items,
         show_raw=bool(args.show_raw),
         log_user_message=False,
-        preface_status="Bridge GPT | @gpt mention detected, relaying...",
+        preface_status=preface_status,
+        reply_actor=relay_actor,
+        meta_overrides=meta_overrides,
     )
 
 
