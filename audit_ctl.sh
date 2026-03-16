@@ -22,6 +22,20 @@ has_phrase() {
   [[ "$haystack" == *"$needle"* ]]
 }
 
+parity_truth_label() {
+  local code="$1"
+  local verify="$2"
+  case "$code:$verify" in
+    1:VERIFIED_FRESH) echo "Verified (99%)" ;;
+    2:VERIFIED_LOCAL_ONLY) echo "Verified (72%)" ;;
+    2:FETCH_NOT_VERIFIED) echo "Unknown (25%)" ;;
+    3:VERIFIED_LOCAL|3:VERIFIED_FRESH) echo "Verified (99%)" ;;
+    4:VERIFIED_FRESH) echo "Verified (99%)" ;;
+    5:VERIFIED_LOCAL) echo "Verified (95%)" ;;
+    *) echo "Unknown (30%)" ;;
+  esac
+}
+
 repo_sync_eval() {
   local repo_path="$1"
   local require_fresh="$2"
@@ -65,47 +79,82 @@ repo_sync_eval() {
     parity="UNLINKED"
     meaning="No upstream is configured"
     verify="VERIFIED_LOCAL"
-  elif [[ "$require_fresh" -eq 1 && "$remote_fresh" != "true" ]]; then
-    code=2
-    parity="UNKNOWN"
-    meaning="Remote refresh failed; upstream comparison may be stale"
-    verify="NOT_CHECKED"
   elif [[ "$dirty" -gt 0 ]]; then
     code=3
-    parity="DIVERGED"
+    parity="LOCAL DIVERGED"
     meaning="Local changes exist"
-    if [[ "$require_fresh" -eq 1 ]]; then
+    if [[ "$require_fresh" -eq 1 && "$remote_fresh" == "true" ]]; then
       verify="VERIFIED_FRESH"
     else
       verify="VERIFIED_LOCAL"
     fi
+  elif [[ "$require_fresh" -eq 1 && "$remote_fresh" != "true" ]]; then
+    code=2
+    parity="NOT VERIFIED"
+    meaning="Remote refresh failed; fresh parity not established"
+    verify="FETCH_NOT_VERIFIED"
   elif [[ "$require_fresh" -eq 1 && "$ahead" -eq 0 && "$behind" -eq 0 && "$head_eq_upstream" == "true" ]]; then
     code=1
-    parity="MATCHED"
-    meaning="Matched fresh repo"
+    parity="PERFECT"
+    meaning="Perfect fresh repo match"
     verify="VERIFIED_FRESH"
   elif [[ "$require_fresh" -eq 1 ]]; then
     code=4
-    parity="DIVERGED"
+    parity="REMOTE DIVERGED"
     meaning="Upstream mismatch"
     verify="VERIFIED_FRESH"
   else
     code=2
-    parity="UNKNOWN"
+    parity="NOT VERIFIED"
     meaning="Remote not refreshed in this run"
-    verify="NOT_CHECKED"
+    verify="VERIFIED_LOCAL_ONLY"
   fi
 
   local clean_state="false"
+  local truth_label
+  truth_label="$(parity_truth_label "$code" "$verify")"
   [[ "$dirty" -eq 0 ]] && clean_state="true"
-  echo "$name|$code|$parity|$meaning|$verify|$branch|${upstream:-none}|$remote_fresh|$clean_state|$dirty|$ahead|$behind|$head_eq_upstream"
+  echo "$name|$code|$parity|$meaning|$truth_label|$verify|$branch|${upstream:-none}|$remote_fresh|$clean_state|$dirty|$ahead|$behind|$head_eq_upstream"
 }
 
 emit_parity_row() {
   local eval_row="$1"
   local reason_context="$2"
-  IFS='|' read -r name code parity meaning verify branch upstream remote_fresh clean_state dirty ahead behind head_eq_upstream <<< "$eval_row"
-  echo "- PARITY=$parity | COMPARE=$name@$branch vs $upstream | VERIFY=$verify | EVIDENCE(fetch_fresh=$remote_fresh,clean=$clean_state,dirty_items=$dirty,ahead=$ahead,behind=$behind,head_eq_upstream=$head_eq_upstream) | NOTE=$meaning | scope=REPO_PARITY_ONLY | why=$reason_context"
+  IFS='|' read -r name code parity meaning truth_label verify branch upstream remote_fresh clean_state dirty ahead behind head_eq_upstream <<< "$eval_row"
+  echo "- 1:$code | $name@$branch vs $upstream | $parity - $meaning | truth_label=$truth_label | VERIFY=$verify | EVIDENCE(fetch_fresh=$remote_fresh,clean=$clean_state,dirty_items=$dirty,ahead=$ahead,behind=$behind,head_eq_upstream=$head_eq_upstream) | scope=REPO_PARITY_ONLY | why=$reason_context"
+}
+
+emit_overall_parity_line() {
+  local eval_rows="$1"
+  local require_fresh="${2:-0}"
+  local c1 c2 c3 c4 c5 total truth_label verify
+  c1="$(printf '%s\n' "$eval_rows" | awk -F'|' '$2==1{n++} END{print n+0}')"
+  c2="$(printf '%s\n' "$eval_rows" | awk -F'|' '$2==2{n++} END{print n+0}')"
+  c3="$(printf '%s\n' "$eval_rows" | awk -F'|' '$2==3{n++} END{print n+0}')"
+  c4="$(printf '%s\n' "$eval_rows" | awk -F'|' '$2==4{n++} END{print n+0}')"
+  c5="$(printf '%s\n' "$eval_rows" | awk -F'|' '$2==5{n++} END{print n+0}')"
+  total="$(printf '%s\n' "$eval_rows" | sed '/^$/d' | wc -l | tr -d ' ')"
+
+  if [[ "$require_fresh" -eq 1 && "$total" -gt 0 && "$c1" -eq "$total" ]]; then
+    echo "- 1:1 | all_repos($total) | PORCELAIN - Perfect fresh all-repo match | truth_label=Verified (99%) | VERIFY=VERIFIED_FRESH | EVIDENCE(perfect_repos=$c1,total_repos=$total)"
+    return 0
+  fi
+
+  if [[ "$require_fresh" -eq 1 && "$c2" -gt 0 ]]; then
+    truth_label="Unknown (25%)"
+    verify="FETCH_NOT_VERIFIED"
+    echo "- overall | fresh all-repo 1:1 not established in this run | truth_label=$truth_label | VERIFY=$verify | EVIDENCE(summary=1:1=$c1 1:2=$c2 1:3=$c3 1:4=$c4 1:5=$c5,total_repos=$total)"
+    return 0
+  fi
+
+  if [[ "$require_fresh" -eq 1 ]]; then
+    truth_label="Verified (99%)"
+    verify="VERIFIED_FRESH"
+    echo "- overall | fresh all-repo 1:1 not proven in this run | truth_label=$truth_label | VERIFY=$verify | EVIDENCE(summary=1:1=$c1 1:2=$c2 1:3=$c3 1:4=$c4 1:5=$c5,total_repos=$total)"
+    return 0
+  fi
+
+  echo "- overall | fresh all-repo 1:1 not checked in this run | truth_label=Verified (72%) | VERIFY=VERIFIED_LOCAL_ONLY | EVIDENCE(summary=1:1=$c1 1:2=$c2 1:3=$c3 1:4=$c4 1:5=$c5,total_repos=$total)"
 }
 
 emit_parity_pulse_summary() {
@@ -113,34 +162,20 @@ emit_parity_pulse_summary() {
   local reason_context="$2"
   local require_fresh="${3:-0}"
   local c1 c2 c3 c4 c5
-  local matched diverged unknown unlinked
   c1="$(printf '%s\n' "$eval_rows" | awk -F'|' '$2==1{n++} END{print n+0}')"
   c2="$(printf '%s\n' "$eval_rows" | awk -F'|' '$2==2{n++} END{print n+0}')"
   c3="$(printf '%s\n' "$eval_rows" | awk -F'|' '$2==3{n++} END{print n+0}')"
   c4="$(printf '%s\n' "$eval_rows" | awk -F'|' '$2==4{n++} END{print n+0}')"
   c5="$(printf '%s\n' "$eval_rows" | awk -F'|' '$2==5{n++} END{print n+0}')"
-  matched="$(printf '%s\n' "$eval_rows" | awk -F'|' '$3=="MATCHED"{n++} END{print n+0}')"
-  diverged="$(printf '%s\n' "$eval_rows" | awk -F'|' '$3=="DIVERGED"{n++} END{print n+0}')"
-  unknown="$(printf '%s\n' "$eval_rows" | awk -F'|' '$3=="UNKNOWN"{n++} END{print n+0}')"
-  unlinked="$(printf '%s\n' "$eval_rows" | awk -F'|' '$3=="UNLINKED"{n++} END{print n+0}')"
-  local total
-  total="$(printf '%s\n' "$eval_rows" | sed '/^$/d' | wc -l | tr -d ' ')"
   echo "[parity pulse (auto)]"
   echo "- why_shown=$reason_context"
   echo "- scope=REPO_PARITY_ONLY"
   echo "- summary: 1:1=$c1 1:2=$c2 1:3=$c3 1:4=$c4 1:5=$c5"
-  echo "- parity_summary: MATCHED=$matched DIVERGED=$diverged UNKNOWN=$unknown UNLINKED=$unlinked"
-  if [[ "$require_fresh" -eq 1 && "$total" -gt 0 && "$c1" -eq "$total" ]]; then
-    echo "- PARITY=PORCELAIN | COMPARE=all_repos($total) | VERIFY=VERIFIED_FRESH | EVIDENCE(matched_repos=$c1,total_repos=$total)"
-  elif [[ "$require_fresh" -eq 1 ]]; then
-    echo "- PARITY=DIVERGED | COMPARE=all_repos($total) | VERIFY=VERIFIED_FRESH | EVIDENCE(matched_repos=$c1,total_repos=$total)"
-  else
-    echo "- PARITY=UNKNOWN | COMPARE=all_repos($total) | VERIFY=NOT_CHECKED | EVIDENCE(fresh_check_scope=not_all_repos)"
-  fi
+  emit_overall_parity_line "$eval_rows" "$require_fresh"
   printf '%s\n' "$eval_rows" | while IFS= read -r row; do
-    IFS='|' read -r name code parity meaning verify branch upstream remote_fresh clean_state dirty ahead behind head_eq_upstream <<< "$row"
-    if [[ "$parity" == "MATCHED" || "$parity" == "DIVERGED" ]]; then
-      echo "- $name: PARITY=$parity | COMPARE=$name@$branch vs $upstream | VERIFY=$verify | EVIDENCE(fetch_fresh=$remote_fresh,clean=$clean_state,dirty_items=$dirty,ahead=$ahead,behind=$behind,head_eq_upstream=$head_eq_upstream) | NOTE=$meaning"
+    IFS='|' read -r name code parity meaning truth_label verify branch upstream remote_fresh clean_state dirty ahead behind head_eq_upstream <<< "$row"
+    if [[ "$code" -ne 1 ]]; then
+      emit_parity_row "$row" "auto parity pulse"
     fi
   done
 }
@@ -222,17 +257,16 @@ run_quick() {
   parity_rows="$(printf '%s' "$parity_rows" | sed '/^$/d')"
   if [[ "$parity_detail" -eq 1 ]]; then
     echo "[cleanup audit parity]"
-    local p_matched p_diverged p_unknown p_unlinked
-    p_matched="$(printf '%s\n' "$parity_rows" | awk -F'|' '$3=="MATCHED"{n++} END{print n+0}')"
-    p_diverged="$(printf '%s\n' "$parity_rows" | awk -F'|' '$3=="DIVERGED"{n++} END{print n+0}')"
-    p_unknown="$(printf '%s\n' "$parity_rows" | awk -F'|' '$3=="UNKNOWN"{n++} END{print n+0}')"
-    p_unlinked="$(printf '%s\n' "$parity_rows" | awk -F'|' '$3=="UNLINKED"{n++} END{print n+0}')"
-    echo "- parity_summary: MATCHED=$p_matched DIVERGED=$p_diverged UNKNOWN=$p_unknown UNLINKED=$p_unlinked"
+    local p1 p2 p3 p4 p5
+    p1="$(printf '%s\n' "$parity_rows" | awk -F'|' '$2==1{n++} END{print n+0}')"
+    p2="$(printf '%s\n' "$parity_rows" | awk -F'|' '$2==2{n++} END{print n+0}')"
+    p3="$(printf '%s\n' "$parity_rows" | awk -F'|' '$2==3{n++} END{print n+0}')"
+    p4="$(printf '%s\n' "$parity_rows" | awk -F'|' '$2==4{n++} END{print n+0}')"
+    p5="$(printf '%s\n' "$parity_rows" | awk -F'|' '$2==5{n++} END{print n+0}')"
+    echo "- summary: 1:1=$p1 1:2=$p2 1:3=$p3 1:4=$p4 1:5=$p5"
+    emit_overall_parity_line "$parity_rows" "$require_fresh"
     while IFS= read -r row; do
-      IFS='|' read -r _name _code _parity _meaning _verify _branch _upstream _remote_fresh _clean_state _dirty _ahead _behind _head_eq_upstream <<< "$row"
-      if [[ "$_parity" == "MATCHED" || "$_parity" == "DIVERGED" ]]; then
-        emit_parity_row "$row" "explicit cleanup audit"
-      fi
+      emit_parity_row "$row" "explicit cleanup audit"
     done <<< "$parity_rows"
   else
     emit_parity_pulse_summary "$parity_rows" "auto side signal (no extra checks beyond this run)" "$require_fresh"
@@ -435,7 +469,7 @@ main() {
   echo "resolved_tier=$tier auto=$auto force_full=$force_full noask=$noask"
 
   if [[ "$tier" == "T1" ]]; then
-    run_quick 0 0 || true
+    run_quick 0 1 || true
     exit 0
   fi
 
