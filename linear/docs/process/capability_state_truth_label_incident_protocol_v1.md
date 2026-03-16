@@ -38,6 +38,63 @@ Rule: if evidence is mixed, pick the worse state until re-verified.
 
 Rule: no unlabelled certainty claims for auth, integrations, task execution health, or incident root cause.
 
+## Certainty Percentage Rule
+
+Percentages are required with truth labels, but they must be bounded by an
+explicit evidence basis.
+
+Rule: never choose a percentage just because it "feels about right." The number
+must be tied to one of these bases:
+
+- direct current-turn verification
+- bounded subset coverage
+- repeated reproducible tests on the same path
+- explicit uncertainty caused by missing or contradictory evidence
+
+### Required Evidence Basis
+
+When using `Verified (X%)`, `Inferred (X%)`, or `Unknown (X%)`, be prepared to
+state the basis in plain language, for example:
+
+- checked directly in this turn
+- checked only for one repo/path, not the whole environment
+- inferred from app state, not from live execution
+- mixed evidence across two conflicting sources
+
+### Percentage Bands
+
+Use these bands to reduce fake precision:
+
+- `95-100%`
+  - direct current-turn verification with clear observable evidence
+  - use only for the thing actually checked, not for a broader umbrella claim
+- `80-94%`
+  - strong but still partial evidence
+  - narrow inference with only small unresolved uncertainty
+- `50-79%`
+  - mixed evidence or incomplete coverage
+  - plausible interpretation, but not solid enough to present as near-certain
+- `20-49%`
+  - weak support
+  - use when the claim is mostly hypothesis or unstable inference
+- `0-19%`
+  - almost no basis
+  - use only when explicitly calling out that confidence is extremely low
+
+### Specific Guardrails
+
+- Do not assign `95%+` to any claim that was not directly checked in the
+  current turn.
+- Do not assign `95%+` to broad environment-health claims if only one subsystem
+  was verified.
+- If a claim extends beyond the exact thing directly checked, reduce the label
+  from `Verified` to `Inferred`.
+- For filesystem and Git facts, prefer near-binary handling:
+  - directly checked now -> `Verified (95-100%)`
+  - not directly checked now -> `Inferred` or `Unknown`, never high confidence
+- If the operator challenges the number as inflated or arbitrary, lower it and
+  restate the evidence basis explicitly.
+
 ## Incident Response Protocol
 
 1. Declare state immediately before continuing work.
