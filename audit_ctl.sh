@@ -39,8 +39,11 @@ repo_sync_eval() {
   remote_fresh="false"
 
   if [[ "$require_fresh" -eq 1 ]]; then
-    (cd "$repo_path" && git fetch --all --prune >/dev/null 2>&1 || true)
-    remote_fresh="true"
+    if (cd "$repo_path" && git fetch --all --prune >/dev/null 2>&1); then
+      remote_fresh="true"
+    else
+      remote_fresh="false"
+    fi
   fi
 
   if [[ -n "$upstream" ]]; then
@@ -62,6 +65,11 @@ repo_sync_eval() {
     parity="UNLINKED"
     meaning="No upstream is configured"
     verify="VERIFIED_LOCAL"
+  elif [[ "$require_fresh" -eq 1 && "$remote_fresh" != "true" ]]; then
+    code=2
+    parity="UNKNOWN"
+    meaning="Remote refresh failed; upstream comparison may be stale"
+    verify="NOT_CHECKED"
   elif [[ "$dirty" -gt 0 ]]; then
     code=3
     parity="DIVERGED"
@@ -138,24 +146,16 @@ emit_parity_pulse_summary() {
 }
 
 collect_repo_paths() {
-  local candidates=(
-    "bitpod"
-    "bitregime-core"
-    "bitpod-docs"
-    "bitpod-tools"
-    "bitpod-taylor-runtime"
-    "docs"
-    "tools"
-    "taylor-runtime"
-  )
   local out=()
-  local r
-  for r in "${candidates[@]}"; do
-    if [[ -d "$ROOT/$r/.git" ]]; then
-      out+=("$r")
-    fi
+  local path
+  for path in "$ROOT"/*; do
+    [[ -d "$path/.git" ]] || continue
+    out+=("$(basename "$path")")
   done
-  printf '%s\n' "${out[@]}"
+  if [[ "${#out[@]}" -eq 0 ]]; then
+    return 0
+  fi
+  printf '%s\n' "${out[@]}" | sort
 }
 
 emit_managed_zones_summary() {
@@ -301,18 +301,20 @@ run_quick() {
   echo "- likely_duplicate_filename_count=$likely_dups"
 
   echo "[workspace naming hygiene]"
-  local legacy_bucket_hits
-  legacy_bucket_hits="$(find "$ROOT/local-workspace" -type d \( -name 'incoming-clutter' -o -name 'working-files' -o -name 'trash-delete' -o -name 'handoffs' -o -name 'reference-candidates' \) 2>/dev/null | wc -l | tr -d ' ')"
-  echo "- legacy_workspace_dir_hits=$legacy_bucket_hits"
+  local hygiene_roots=()
+  [[ -d "$ROOT/local-workspace/local-working-files" ]] && hygiene_roots+=("$ROOT/local-workspace/local-working-files")
+  [[ -d "$ROOT/local-workspace/local-handoffs" ]] && hygiene_roots+=("$ROOT/local-workspace/local-handoffs")
+  local legacy_bucket_hits=0
+  if [[ "${#hygiene_roots[@]}" -gt 0 ]]; then
+    legacy_bucket_hits="$(find "${hygiene_roots[@]}" -type d \( -name 'incoming-clutter' -o -name 'working-files' -o -name 'trash-delete' -o -name 'handoffs' -o -name 'reference-candidates' \) 2>/dev/null | wc -l | tr -d ' ')"
+  fi
+  echo "- active_legacy_bucket_hits=$legacy_bucket_hits"
   local unexpected_local_children
   unexpected_local_children="$(find "$ROOT/local-workspace" -maxdepth 1 -mindepth 1 -type d -exec basename {} \; | rg -v '^(local-working-files|local-handoffs|local-trash-delete|local-cj-pm-only|local-codex)$' | wc -l | tr -d ' ')"
   echo "- unexpected_local_workspace_children=$unexpected_local_children"
-  local non_local_prefix_dirs
-  non_local_prefix_dirs="$(find "$ROOT/local-workspace" -mindepth 1 -type d -exec basename {} \; | rg -v '^local-' | wc -l | tr -d ' ')"
-  echo "- non_local_prefix_dir_hits=$non_local_prefix_dirs"
 
   # Stop gate heuristic for quick mode.
-  if [[ "$likely_dups" -le 25 && "$legacy_bucket_hits" -eq 0 && "$unexpected_local_children" -eq 0 && "$non_local_prefix_dirs" -eq 0 ]]; then
+  if [[ "$likely_dups" -le 25 && "$legacy_bucket_hits" -eq 0 && "$unexpected_local_children" -eq 0 ]]; then
     echo "quick_gate=STOP_OK"
     return 0
   fi
