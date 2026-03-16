@@ -3,7 +3,6 @@
 # - REPORT_ONLY: cleanup audit only reports metrics (counts/dup names/large files), no action pressure.
 # - STRICT_CANONICAL: canonical zone, expected to stay organized and auditable.
 
-coordination_docs|REPORT_ONLY|bitpod/docs/coordination|legacy coordination drop zone pending relocation; report metrics only
 cj_pm_dropbox|REPORT_ONLY|local-workspace/local-cj-pm-only|explicit user-managed keep zone; no cleanup pressure
 codex_state_home|REPORT_ONLY|local-workspace/local-codex|codex state home; preserve architecture, but do not blindly mirror machine auth/secrets
 local_handoffs|REPORT_ONLY|local-workspace/local-handoffs|temporary handoff exception lane; keep only active handoff files and short-lived dated notes

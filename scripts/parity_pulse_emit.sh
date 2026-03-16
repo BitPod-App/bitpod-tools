@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT="/Users/cjarguello/bitpod-app"
+ROOT="${BITPOD_APP_ROOT:-/Users/cjarguello/bitpod-app}"
 AUDIT_CTL="$ROOT/bitpod-tools/audit_ctl.sh"
 PULSE_ROOT="$ROOT/local-workspace/local-working-files/local-parity-pulse"
+REGISTRY_FILE="${BITPOD_REPO_REGISTRY_FILE:-$ROOT/bitpod-tools/config/repo_registry.tsv}"
 
 event_name="${1:-unknown}"
 repo_path="${2:-$(pwd)}"
@@ -29,7 +30,11 @@ case "$event_name" in
     ;;
 esac
 
-pulse_output="$("$AUDIT_CTL" "__parity_pulse__ event=$event_name$fresh_flag")"
+pulse_output="$(
+  BITPOD_APP_ROOT="$ROOT" \
+  BITPOD_REPO_REGISTRY_FILE="$REGISTRY_FILE" \
+  "$AUDIT_CTL" "__parity_pulse__ event=$event_name$fresh_flag"
+)"
 
 latest_file="$PULSE_ROOT/$repo_name/latest.md"
 history_file="$PULSE_ROOT/$repo_name/history.log"

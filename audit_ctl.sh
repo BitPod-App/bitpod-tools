@@ -1,16 +1,58 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT="/Users/cjarguello/bitpod-app"
-ZONE_POLICY_FILE="$ROOT/bitpod-tools/config/cleanup_zones_policy.tsv"
-# Guardrail: this runner is read-only. It never renames/moves/deletes files.
-# Rename cleanup is a separate manual workflow (quarantine first, then decide).
+ROOT="${BITPOD_APP_ROOT:-/Users/cjarguello/bitpod-app}"
+REGISTRY_FILE="${BITPOD_REPO_REGISTRY_FILE:-$ROOT/bitpod-tools/config/repo_registry.tsv}"
+ZONE_POLICY_FILE="${BITPOD_CLEANUP_ZONE_POLICY_FILE:-$ROOT/bitpod-tools/config/cleanup_zones_policy.tsv}"
 NOW="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+TMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/audit_ctl.XXXXXX")"
+trap 'rm -rf "$TMP_DIR"' EXIT
 
-print_header() {
-  echo "Audit Control | $1"
-  echo "Timestamp: $NOW"
-}
+REGISTRY_PROBLEMS_FILE="$TMP_DIR/registry_problems.txt"
+ZONE_ROWS_FILE="$TMP_DIR/zone_rows.txt"
+TMP_CANON_NAMES="$TMP_DIR/canon_names.txt"
+TMP_LOCAL_NAMES="$TMP_DIR/local_names.txt"
+TMP_IN_SHA="$TMP_DIR/in_sha.txt"
+TMP_CANON_SHA="$TMP_DIR/canon_sha.txt"
+
+repo_rows=""
+repo_total=0
+code1=0
+code2=0
+code3=0
+code4=0
+code5=0
+pulse_matched=0
+pulse_local_diverged=0
+pulse_remote_mismatch=0
+pulse_unlinked=0
+cleanup_likely_match=0
+cleanup_local_diverged=0
+cleanup_remote_mismatch=0
+cleanup_unlinked=0
+repo_fetch_failed=0
+repo_verified_count=0
+repo_not_verified_count=0
+registry_problem_count=0
+registry_problem_lines=""
+working_files=0
+trash_files=0
+handoff_files=0
+pm_only_files=0
+codex_state_files=0
+trash_soft_purge_pending_files=0
+trash_soft_purge_threshold_days=14
+likely_duplicate_filename_count=0
+active_legacy_bucket_hits=0
+unexpected_local_workspace_children=0
+non_local_prefix_direct_children=0
+scanned_reference_md=0
+exact_duplicate_md=0
+dir_count_depth2=0
+file_count_depth2=0
+strict_canonical_zone_issues=0
+report_only_zone_count=0
+strict_zone_count=0
 
 normalize() {
   tr '[:upper:]' '[:lower:]'
@@ -22,26 +64,78 @@ has_phrase() {
   [[ "$haystack" == *"$needle"* ]]
 }
 
-parity_truth_label() {
-  local code="$1"
-  local verify="$2"
-  case "$code:$verify" in
-    1:VERIFIED_FRESH) echo "Verified (99%)" ;;
-    2:VERIFIED_LOCAL_ONLY) echo "Verified (72%)" ;;
-    2:FETCH_NOT_VERIFIED) echo "Unknown (25%)" ;;
-    3:VERIFIED_LOCAL|3:VERIFIED_FRESH) echo "Verified (99%)" ;;
-    4:VERIFIED_FRESH) echo "Verified (99%)" ;;
-    5:VERIFIED_LOCAL) echo "Verified (95%)" ;;
-    *) echo "Unknown (30%)" ;;
-  esac
+print_header() {
+  echo "Audit Control | $1"
+  echo "Timestamp: $NOW"
+}
+
+print_section() {
+  echo
+  echo "$1"
+}
+
+render_bool() {
+  if [[ "$1" -eq 1 ]]; then
+    echo "YES"
+  else
+    echo "NO"
+  fi
+}
+
+assert_registry_ready() {
+  if [[ ! -f "$REGISTRY_FILE" ]]; then
+    echo "[audit_ctl] repo registry missing: $REGISTRY_FILE" >&2
+    return 1
+  fi
+  return 0
+}
+
+collect_repo_paths() {
+  local feature="$1"
+  local rows=0
+  : > "$REGISTRY_PROBLEMS_FILE"
+
+  while IFS='|' read -r repo rel_path pulse_enabled cleanup_enabled thread_visible verified notes; do
+    [[ -z "${repo// }" ]] && continue
+    [[ "$repo" =~ ^# ]] && continue
+    rows=$((rows + 1))
+
+    local feature_flag=0
+    if [[ "$feature" == "pulse" ]]; then
+      feature_flag="${pulse_enabled:-0}"
+    else
+      feature_flag="${cleanup_enabled:-0}"
+    fi
+    [[ "$feature_flag" == "1" ]] || continue
+
+    if [[ "${verified:-0}" != "1" ]]; then
+      echo "$repo|UNVERIFIED_REGISTRY|${notes:-verification pending}" >> "$REGISTRY_PROBLEMS_FILE"
+      continue
+    fi
+
+    local abs_path="$ROOT/$rel_path"
+    if [[ ! -d "$abs_path" ]]; then
+      echo "$repo|MISSING_PATH|$rel_path" >> "$REGISTRY_PROBLEMS_FILE"
+      continue
+    fi
+    if [[ ! -d "$abs_path/.git" ]]; then
+      echo "$repo|NOT_GIT_REPO|$rel_path" >> "$REGISTRY_PROBLEMS_FILE"
+      continue
+    fi
+
+    printf '%s\n' "$abs_path"
+  done < "$REGISTRY_FILE"
+
+  if [[ "$rows" -eq 0 ]]; then
+    echo "__EMPTY_REGISTRY__"
+  fi
 }
 
 repo_sync_eval() {
   local repo_path="$1"
   local require_fresh="$2"
-  local name
+  local name branch upstream dirty ahead behind head_sha upstream_sha head_eq_upstream remote_fresh
   name="$(basename "$repo_path")"
-  local branch upstream dirty ahead behind head_sha upstream_sha head_eq_upstream remote_fresh
   branch="$(cd "$repo_path" && git rev-parse --abbrev-ref HEAD)"
   upstream="$(cd "$repo_path" && git rev-parse --abbrev-ref --symbolic-full-name @{u} 2>/dev/null || true)"
   dirty="$(cd "$repo_path" && git status --porcelain | wc -l | tr -d ' ')"
@@ -55,8 +149,6 @@ repo_sync_eval() {
   if [[ "$require_fresh" -eq 1 ]]; then
     if (cd "$repo_path" && git fetch --all --prune >/dev/null 2>&1); then
       remote_fresh="true"
-    else
-      remote_fresh="false"
     fi
   fi
 
@@ -73,366 +165,767 @@ repo_sync_eval() {
     fi
   fi
 
-  local code parity meaning verify
+  local code status_key verification verification_detail meaning
   if [[ -z "$upstream" ]]; then
     code=5
-    parity="UNLINKED"
+    status_key="UNLINKED"
+    verification="VERIFIED"
+    verification_detail="Verified locally: no upstream configured."
     meaning="No upstream is configured"
-    verify="VERIFIED_LOCAL"
   elif [[ "$dirty" -gt 0 ]]; then
     code=3
-    parity="LOCAL DIVERGED"
+    status_key="LOCAL_DIVERGED"
+    verification="VERIFIED"
+    verification_detail="Verified locally: uncommitted or untracked changes exist."
     meaning="Local changes exist"
-    if [[ "$require_fresh" -eq 1 && "$remote_fresh" == "true" ]]; then
-      verify="VERIFIED_FRESH"
-    else
-      verify="VERIFIED_LOCAL"
-    fi
   elif [[ "$require_fresh" -eq 1 && "$remote_fresh" != "true" ]]; then
     code=2
-    parity="NOT VERIFIED"
+    status_key="LIKELY_MATCH"
+    verification="NOT VERIFIED"
+    verification_detail="Fresh remote verification failed; local state suggests a likely match, not guaranteed."
     meaning="Remote refresh failed; fresh parity not established"
-    verify="FETCH_NOT_VERIFIED"
   elif [[ "$require_fresh" -eq 1 && "$ahead" -eq 0 && "$behind" -eq 0 && "$head_eq_upstream" == "true" ]]; then
     code=1
-    parity="PERFECT"
+    status_key="MATCHED"
+    verification="VERIFIED"
+    verification_detail="Fresh remote verification succeeded."
     meaning="Perfect fresh repo match"
-    verify="VERIFIED_FRESH"
   elif [[ "$require_fresh" -eq 1 ]]; then
     code=4
-    parity="REMOTE DIVERGED"
+    status_key="REMOTE_MISMATCH"
+    verification="VERIFIED"
+    verification_detail="Fresh remote verification succeeded."
     meaning="Upstream mismatch"
-    verify="VERIFIED_FRESH"
   else
     code=2
-    parity="NOT VERIFIED"
+    status_key="LIKELY_MATCH"
+    verification="NOT VERIFIED"
+    verification_detail="Fresh remote verification was not run; local state suggests a likely match, not guaranteed."
     meaning="Remote not refreshed in this run"
-    verify="VERIFIED_LOCAL_ONLY"
   fi
 
-  local clean_state="false"
-  local truth_label
-  truth_label="$(parity_truth_label "$code" "$verify")"
-  [[ "$dirty" -eq 0 ]] && clean_state="true"
-  echo "$name|$code|$parity|$meaning|$truth_label|$verify|$branch|${upstream:-none}|$remote_fresh|$clean_state|$dirty|$ahead|$behind|$head_eq_upstream"
+  echo "$name|$code|$status_key|$verification|$verification_detail|$meaning|$branch|${upstream:-none}|$remote_fresh|$dirty|$ahead|$behind|$head_eq_upstream"
 }
 
-emit_parity_row() {
-  local eval_row="$1"
-  local reason_context="$2"
-  IFS='|' read -r name code parity meaning truth_label verify branch upstream remote_fresh clean_state dirty ahead behind head_eq_upstream <<< "$eval_row"
-  echo "- 1:$code | $name@$branch vs $upstream | $parity - $meaning | truth_label=$truth_label | VERIFY=$verify | EVIDENCE(fetch_fresh=$remote_fresh,clean=$clean_state,dirty_items=$dirty,ahead=$ahead,behind=$behind,head_eq_upstream=$head_eq_upstream) | scope=REPO_PARITY_ONLY | why=$reason_context"
+build_repo_rows() {
+  local feature="$1"
+  local require_fresh="$2"
+  local paths_output
+  paths_output="$(collect_repo_paths "$feature")"
+
+  if [[ "$paths_output" == "__EMPTY_REGISTRY__" ]]; then
+    echo "[audit_ctl] repo registry has no active rows: $REGISTRY_FILE" >&2
+    return 1
+  fi
+
+  repo_rows=""
+  while IFS= read -r repo_path; do
+    [[ -z "$repo_path" ]] && continue
+    local row
+    row="$(repo_sync_eval "$repo_path" "$require_fresh")"
+    repo_rows+="$row"$'\n'
+  done <<< "$paths_output"
+  repo_rows="$(printf '%s' "$repo_rows" | sed '/^$/d')"
+  return 0
 }
 
-emit_overall_parity_line() {
-  local eval_rows="$1"
-  local require_fresh="${2:-0}"
-  local c1 c2 c3 c4 c5 total truth_label verify
-  c1="$(printf '%s\n' "$eval_rows" | awk -F'|' '$2==1{n++} END{print n+0}')"
-  c2="$(printf '%s\n' "$eval_rows" | awk -F'|' '$2==2{n++} END{print n+0}')"
-  c3="$(printf '%s\n' "$eval_rows" | awk -F'|' '$2==3{n++} END{print n+0}')"
-  c4="$(printf '%s\n' "$eval_rows" | awk -F'|' '$2==4{n++} END{print n+0}')"
-  c5="$(printf '%s\n' "$eval_rows" | awk -F'|' '$2==5{n++} END{print n+0}')"
-  total="$(printf '%s\n' "$eval_rows" | sed '/^$/d' | wc -l | tr -d ' ')"
-
-  if [[ "$require_fresh" -eq 1 && "$total" -gt 0 && "$c1" -eq "$total" ]]; then
-    echo "- 1:1 | all_repos($total) | PORCELAIN - Perfect fresh all-repo match | truth_label=Verified (99%) | VERIFY=VERIFIED_FRESH | EVIDENCE(perfect_repos=$c1,total_repos=$total)"
-    return 0
-  fi
-
-  if [[ "$require_fresh" -eq 1 && "$c2" -gt 0 ]]; then
-    truth_label="Unknown (25%)"
-    verify="FETCH_NOT_VERIFIED"
-    echo "- overall | fresh all-repo 1:1 not established in this run | truth_label=$truth_label | VERIFY=$verify | EVIDENCE(summary=1:1=$c1 1:2=$c2 1:3=$c3 1:4=$c4 1:5=$c5,total_repos=$total)"
-    return 0
-  fi
-
-  if [[ "$require_fresh" -eq 1 ]]; then
-    truth_label="Verified (99%)"
-    verify="VERIFIED_FRESH"
-    echo "- overall | fresh all-repo 1:1 not proven in this run | truth_label=$truth_label | VERIFY=$verify | EVIDENCE(summary=1:1=$c1 1:2=$c2 1:3=$c3 1:4=$c4 1:5=$c5,total_repos=$total)"
-    return 0
-  fi
-
-  echo "- overall | fresh all-repo 1:1 not checked in this run | truth_label=Verified (72%) | VERIFY=VERIFIED_LOCAL_ONLY | EVIDENCE(summary=1:1=$c1 1:2=$c2 1:3=$c3 1:4=$c4 1:5=$c5,total_repos=$total)"
+count_code() {
+  local rows="$1"
+  local code="$2"
+  printf '%s\n' "$rows" | awk -F'|' -v code="$code" '$2==code{n++} END{print n+0}'
 }
 
-emit_parity_pulse_summary() {
-  local eval_rows="$1"
-  local reason_context="$2"
-  local require_fresh="${3:-0}"
-  local c1 c2 c3 c4 c5
-  c1="$(printf '%s\n' "$eval_rows" | awk -F'|' '$2==1{n++} END{print n+0}')"
-  c2="$(printf '%s\n' "$eval_rows" | awk -F'|' '$2==2{n++} END{print n+0}')"
-  c3="$(printf '%s\n' "$eval_rows" | awk -F'|' '$2==3{n++} END{print n+0}')"
-  c4="$(printf '%s\n' "$eval_rows" | awk -F'|' '$2==4{n++} END{print n+0}')"
-  c5="$(printf '%s\n' "$eval_rows" | awk -F'|' '$2==5{n++} END{print n+0}')"
-  echo "[parity pulse (auto)]"
-  echo "- why_shown=$reason_context"
-  echo "- scope=REPO_PARITY_ONLY"
-  echo "- summary: 1:1=$c1 1:2=$c2 1:3=$c3 1:4=$c4 1:5=$c5"
-  emit_overall_parity_line "$eval_rows" "$require_fresh"
-  printf '%s\n' "$eval_rows" | while IFS= read -r row; do
-    IFS='|' read -r name code parity meaning truth_label verify branch upstream remote_fresh clean_state dirty ahead behind head_eq_upstream <<< "$row"
-    if [[ "$code" -ne 1 ]]; then
-      emit_parity_row "$row" "auto parity pulse"
+count_status() {
+  local rows="$1"
+  local status_key="$2"
+  printf '%s\n' "$rows" | awk -F'|' -v key="$status_key" '$3==key{n++} END{print n+0}'
+}
+
+count_verification() {
+  local rows="$1"
+  local verification="$2"
+  printf '%s\n' "$rows" | awk -F'|' -v key="$verification" '$4==key{n++} END{print n+0}'
+}
+
+summarize_repo_rows() {
+  code1="$(count_code "$repo_rows" 1)"
+  code2="$(count_code "$repo_rows" 2)"
+  code3="$(count_code "$repo_rows" 3)"
+  code4="$(count_code "$repo_rows" 4)"
+  code5="$(count_code "$repo_rows" 5)"
+  repo_total="$(printf '%s\n' "$repo_rows" | sed '/^$/d' | wc -l | tr -d ' ')"
+  repo_verified_count="$(count_verification "$repo_rows" VERIFIED)"
+  repo_not_verified_count="$(count_verification "$repo_rows" "NOT VERIFIED")"
+  repo_fetch_failed="$(printf '%s\n' "$repo_rows" | awk -F'|' '$5 ~ /Fresh remote verification failed/{n++} END{print n+0}')"
+  pulse_matched=$((code1 + code2))
+  pulse_local_diverged="$code3"
+  pulse_remote_mismatch="$code4"
+  pulse_unlinked="$code5"
+  cleanup_likely_match=$((code1 + code2))
+  cleanup_local_diverged="$code3"
+  cleanup_remote_mismatch="$code4"
+  cleanup_unlinked="$code5"
+}
+
+pulse_label_for_code() {
+  case "$1" in
+    1|2) echo "MATCHED" ;;
+    3) echo "LOCAL DIVERGED" ;;
+    4) echo "REMOTE MISMATCH" ;;
+    5) echo "UNLINKED" ;;
+    *) echo "UNKNOWN" ;;
+  esac
+}
+
+cleanup_label_for_code() {
+  case "$1" in
+    1|2) echo "LIKELY MATCH" ;;
+    3) echo "LOCAL DIVERGED" ;;
+    4) echo "REMOTE MISMATCH" ;;
+    5) echo "UNLINKED" ;;
+    *) echo "UNKNOWN" ;;
+  esac
+}
+
+collect_registry_problems() {
+  registry_problem_count=0
+  registry_problem_lines=""
+  if [[ -f "$REGISTRY_PROBLEMS_FILE" ]]; then
+    registry_problem_count="$(wc -l < "$REGISTRY_PROBLEMS_FILE" | tr -d ' ')"
+    registry_problem_lines="$(cat "$REGISTRY_PROBLEMS_FILE")"
+  fi
+}
+
+count_files() {
+  local path="$1"
+  if [[ -d "$path" ]]; then
+    find "$path" -type f 2>/dev/null | wc -l | tr -d ' '
+  else
+    echo "0"
+  fi
+}
+
+collect_queue_health() {
+  working_files="$(count_files "$ROOT/local-workspace/local-working-files")"
+  trash_files="$(count_files "$ROOT/local-workspace/local-trash-delete")"
+  handoff_files="$(count_files "$ROOT/local-workspace/local-handoffs")"
+  pm_only_files="$(count_files "$ROOT/local-workspace/local-cj-pm-only")"
+  codex_state_files="$(count_files "$ROOT/local-workspace/local-codex")"
+}
+
+collect_likely_duplicate_names() {
+  : > "$TMP_CANON_NAMES"
+  : > "$TMP_LOCAL_NAMES"
+
+  local canon_dirs=()
+  while IFS='|' read -r repo rel_path pulse_enabled cleanup_enabled thread_visible verified notes; do
+    [[ -z "${repo// }" ]] && continue
+    [[ "$repo" =~ ^# ]] && continue
+    [[ "${cleanup_enabled:-0}" == "1" ]] || continue
+    [[ "${verified:-0}" == "1" ]] || continue
+    if [[ -d "$ROOT/$rel_path" ]]; then
+      canon_dirs+=("$ROOT/$rel_path")
     fi
-  done
+  done < "$REGISTRY_FILE"
+  [[ -d "$ROOT/local-workspace/local-codex" ]] && canon_dirs+=("$ROOT/local-workspace/local-codex")
+
+  if [[ "${#canon_dirs[@]}" -gt 0 ]]; then
+    find "${canon_dirs[@]}" \
+      \( -path '*/.git' -o -path '*/.git/*' \) -prune -o \
+      -type f ! -name '.DS_Store' -print 2>/dev/null | \
+      xargs -I{} basename "{}" | sort -u > "$TMP_CANON_NAMES" || true
+  fi
+
+  if [[ -d "$ROOT/local-workspace/local-working-files" ]]; then
+    find "$ROOT/local-workspace/local-working-files" \
+      \( -path '*/.git' -o -path '*/.git/*' \) -prune -o \
+      -type f ! -name '.DS_Store' -print 2>/dev/null | \
+      xargs -I{} basename "{}" | sort -u > "$TMP_LOCAL_NAMES" || true
+  fi
+
+  likely_duplicate_filename_count="$(comm -12 "$TMP_CANON_NAMES" "$TMP_LOCAL_NAMES" | wc -l | tr -d ' ')"
 }
 
-collect_repo_paths() {
-  find "$ROOT" -maxdepth 1 -mindepth 1 -type d | while IFS= read -r path; do
-    [[ -d "$path/.git" ]] || continue
-    basename "$path"
-  done | sort
+collect_workspace_hygiene() {
+  collect_likely_duplicate_names
+  if [[ -d "$ROOT/local-workspace/local-working-files" || -d "$ROOT/local-workspace/local-handoffs" ]]; then
+    active_legacy_bucket_hits="$(
+      find \
+        "$ROOT/local-workspace/local-working-files" \
+        "$ROOT/local-workspace/local-handoffs" \
+        -type d \
+        \( -name 'incoming-clutter' -o -name 'working-files' -o -name 'trash-delete' -o -name 'handoffs' -o -name 'reference-candidates' \) \
+        2>/dev/null | wc -l | tr -d ' '
+    )"
+  else
+    active_legacy_bucket_hits=0
+  fi
+
+  if [[ -d "$ROOT/local-workspace" ]]; then
+    unexpected_local_workspace_children="$(
+      find "$ROOT/local-workspace" -maxdepth 1 -mindepth 1 -type d -exec basename {} \; 2>/dev/null | \
+      awk '!/^(local-working-files|local-handoffs|local-trash-delete|local-cj-pm-only|local-codex)$/ {n++} END{print n+0}'
+    )"
+    non_local_prefix_direct_children="$(
+      find "$ROOT/local-workspace" -maxdepth 1 -mindepth 1 -type d -exec basename {} \; 2>/dev/null | \
+      awk '!/^local-/ {n++} END{print n+0}'
+    )"
+    trash_soft_purge_pending_files="$(
+      find "$ROOT/local-workspace/local-trash-delete" -type f -mtime +"$trash_soft_purge_threshold_days" 2>/dev/null | \
+      wc -l | tr -d ' '
+    )"
+  else
+    unexpected_local_workspace_children=0
+    non_local_prefix_direct_children=0
+    trash_soft_purge_pending_files=0
+  fi
 }
 
-emit_managed_zones_summary() {
-  echo "[managed folder zones]"
+collect_medium_checks() {
+  : > "$TMP_IN_SHA"
+  : > "$TMP_CANON_SHA"
+
+  if [[ -d "$ROOT/local-workspace/local-working-files" ]]; then
+    find "$ROOT/local-workspace/local-working-files" -type f -name '*.md' -print0 2>/dev/null | \
+      xargs -0 shasum -a 256 | sort > "$TMP_IN_SHA" || true
+  fi
+
+  local canon_md_dirs=()
+  while IFS='|' read -r repo rel_path pulse_enabled cleanup_enabled thread_visible verified notes; do
+    [[ -z "${repo// }" ]] && continue
+    [[ "$repo" =~ ^# ]] && continue
+    [[ "${cleanup_enabled:-0}" == "1" ]] || continue
+    [[ "${verified:-0}" == "1" ]] || continue
+    [[ -d "$ROOT/$rel_path" ]] && canon_md_dirs+=("$ROOT/$rel_path")
+  done < "$REGISTRY_FILE"
+  [[ -d "$ROOT/local-workspace/local-codex" ]] && canon_md_dirs+=("$ROOT/local-workspace/local-codex")
+
+  if [[ "${#canon_md_dirs[@]}" -gt 0 ]]; then
+    find "${canon_md_dirs[@]}" -type f -name '*.md' -print0 2>/dev/null | \
+      xargs -0 shasum -a 256 | sort > "$TMP_CANON_SHA" || true
+  fi
+
+  scanned_reference_md=0
+  exact_duplicate_md=0
+  [[ -f "$TMP_IN_SHA" ]] && scanned_reference_md="$(wc -l < "$TMP_IN_SHA" | tr -d ' ')"
+  if [[ "$scanned_reference_md" -gt 0 && -s "$TMP_CANON_SHA" ]]; then
+    exact_duplicate_md="$(join -j 1 "$TMP_IN_SHA" "$TMP_CANON_SHA" | wc -l | tr -d ' ')"
+  fi
+}
+
+collect_zone_rows() {
+  : > "$ZONE_ROWS_FILE"
+  strict_canonical_zone_issues=0
+  report_only_zone_count=0
+  strict_zone_count=0
+
   if [[ ! -f "$ZONE_POLICY_FILE" ]]; then
-    echo "- zone_policy_file=MISSING path=$ZONE_POLICY_FILE"
+    echo "ZONE_POLICY|MISSING|$ZONE_POLICY_FILE|0|0|0|missing zone policy" >> "$ZONE_ROWS_FILE"
+    strict_canonical_zone_issues=1
     return 0
   fi
-  local lines=0
+
   while IFS='|' read -r zone mode rel_path notes; do
     [[ -z "${zone// }" ]] && continue
     [[ "$zone" =~ ^# ]] && continue
-    lines=$((lines + 1))
+
     local abs_path="$ROOT/$rel_path"
-    if [[ ! -d "$abs_path" ]]; then
-      echo "- zone=$zone mode=$mode path=$rel_path status=MISSING notes=${notes:-none}"
-      continue
+    local status="OK"
+    local file_count=0
+    local dup_names=0
+    local large_files=0
+
+    if [[ "$mode" == "REPORT_ONLY" ]]; then
+      report_only_zone_count=$((report_only_zone_count + 1))
+    elif [[ "$mode" == "STRICT_CANONICAL" ]]; then
+      strict_zone_count=$((strict_zone_count + 1))
     fi
 
-    local file_count dup_names large_files
-    file_count="$(find "$abs_path" -type f 2>/dev/null | wc -l | tr -d ' ')"
-    dup_names="$(find "$abs_path" -type f -exec basename {} \; 2>/dev/null | sort | uniq -d | wc -l | tr -d ' ')"
-    large_files="$(find "$abs_path" -type f -size +10M 2>/dev/null | wc -l | tr -d ' ')"
-    echo "- zone=$zone mode=$mode path=$rel_path files=$file_count dup_names=$dup_names large_files_gt10mb=$large_files notes=${notes:-none}"
+    if [[ ! -d "$abs_path" ]]; then
+      status="MISSING"
+      if [[ "$mode" == "STRICT_CANONICAL" ]]; then
+        strict_canonical_zone_issues=$((strict_canonical_zone_issues + 1))
+      fi
+    else
+      file_count="$(find "$abs_path" -type f 2>/dev/null | wc -l | tr -d ' ')"
+      dup_names="$(find "$abs_path" -type f -exec basename {} \; 2>/dev/null | sort | uniq -d | wc -l | tr -d ' ')"
+      large_files="$(find "$abs_path" -type f -size +10M 2>/dev/null | wc -l | tr -d ' ')"
+    fi
+
+    echo "$zone|$mode|$rel_path|$status|$file_count|$dup_names|$large_files|${notes:-none}" >> "$ZONE_ROWS_FILE"
   done < "$ZONE_POLICY_FILE"
-  if [[ "$lines" -eq 0 ]]; then
-    echo "- zone_policy_entries=0 (file exists but has no active rows)"
+}
+
+collect_full_checks() {
+  dir_count_depth2="$(find "$ROOT" -maxdepth 2 -type d 2>/dev/null | wc -l | tr -d ' ')"
+  file_count_depth2="$(find "$ROOT" -maxdepth 2 -type f 2>/dev/null | wc -l | tr -d ' ')"
+  collect_zone_rows
+}
+
+quick_gate_status() {
+  if [[ "$active_legacy_bucket_hits" -eq 0 && "$unexpected_local_workspace_children" -eq 0 && "$non_local_prefix_direct_children" -eq 0 ]]; then
+    echo "STOP_OK"
+  else
+    echo "ESCALATE_RECOMMENDED"
   fi
 }
 
-run_quick() {
-  local require_fresh="${1:-0}"
-  local parity_detail="${2:-0}"
-  print_header "T1 Quick"
-  echo "[top-level]"
-  find "$ROOT" -maxdepth 1 -mindepth 1 -type d -exec basename "{}" ";" | sort | sed 's/^/- /'
-  echo "[top-level files]"
-  find "$ROOT" -maxdepth 1 -mindepth 1 -type f -exec basename "{}" ";" | sort | sed 's/^/- /'
-
-  echo "[repo health]"
-  local repos=()
-  while IFS= read -r repo_name; do
-    [[ -n "$repo_name" ]] && repos+=("$repo_name")
-  done < <(collect_repo_paths)
-  if [[ "${#repos[@]}" -eq 0 ]]; then
-    echo "- repo_scan_status=NO_GIT_REPOS_FOUND_UNDER_ROOT"
-  fi
-  local total_dirty=0
-  for r in "${repos[@]}"; do
-    local dirty
-    dirty="$(cd "$ROOT/$r" && git status --short | wc -l | tr -d ' ')"
-    local branch
-    branch="$(cd "$ROOT/$r" && git rev-parse --abbrev-ref HEAD)"
-    total_dirty=$((total_dirty + dirty))
-    echo "- $r: dirty_items=$dirty branch=$branch"
-  done
-
-  local parity_rows=""
-  for r in "${repos[@]}"; do
-    local row
-    row="$(repo_sync_eval "$ROOT/$r" "$require_fresh")"
-    parity_rows+="$row"$'\n'
-  done
-  parity_rows="$(printf '%s' "$parity_rows" | sed '/^$/d')"
-  if [[ "$parity_detail" -eq 1 ]]; then
-    echo "[cleanup audit parity]"
-    local p1 p2 p3 p4 p5
-    p1="$(printf '%s\n' "$parity_rows" | awk -F'|' '$2==1{n++} END{print n+0}')"
-    p2="$(printf '%s\n' "$parity_rows" | awk -F'|' '$2==2{n++} END{print n+0}')"
-    p3="$(printf '%s\n' "$parity_rows" | awk -F'|' '$2==3{n++} END{print n+0}')"
-    p4="$(printf '%s\n' "$parity_rows" | awk -F'|' '$2==4{n++} END{print n+0}')"
-    p5="$(printf '%s\n' "$parity_rows" | awk -F'|' '$2==5{n++} END{print n+0}')"
-    echo "- summary: 1:1=$p1 1:2=$p2 1:3=$p3 1:4=$p4 1:5=$p5"
-    emit_overall_parity_line "$parity_rows" "$require_fresh"
-    while IFS= read -r row; do
-      emit_parity_row "$row" "explicit cleanup audit"
-    done <<< "$parity_rows"
+medium_gate_status() {
+  if [[ "$exact_duplicate_md" -le 10 ]]; then
+    echo "STOP_OK"
   else
-    emit_parity_pulse_summary "$parity_rows" "auto side signal (no extra checks beyond this run)" "$require_fresh"
+    echo "ESCALATE_RECOMMENDED"
+  fi
+}
+
+t3_local_workspace_pass() {
+  if [[ "$active_legacy_bucket_hits" -eq 0 &&
+        "$unexpected_local_workspace_children" -eq 0 &&
+        "$non_local_prefix_direct_children" -eq 0 &&
+        "$exact_duplicate_md" -le 10 &&
+        "$strict_canonical_zone_issues" -eq 0 ]]; then
+    echo "PASS"
+  else
+    echo "FAIL"
+  fi
+}
+
+cleanup_overall_result() {
+  local tier="$1"
+  local include_local_workspace="$2"
+
+  if [[ "$tier" != "T3" ]]; then
+    echo "NOT VERIFIED"
+    return 0
   fi
 
-  echo "[local-workspace queue health]"
-  local working=0
-  local trash=0
-  local pm=0
-  local codex=0
-  local handoff_files=0
-  [[ -d "$ROOT/local-workspace/local-working-files" ]] && working="$(find "$ROOT/local-workspace/local-working-files" -type f | wc -l | tr -d ' ')"
-  [[ -d "$ROOT/local-workspace/local-trash-delete" ]] && trash="$(find "$ROOT/local-workspace/local-trash-delete" -type f | wc -l | tr -d ' ')"
-  [[ -d "$ROOT/local-workspace/local-cj-pm-only" ]] && pm="$(find "$ROOT/local-workspace/local-cj-pm-only" -type f | wc -l | tr -d ' ')"
-  [[ -d "$ROOT/local-workspace/local-codex" ]] && codex="$(find "$ROOT/local-workspace/local-codex" -type f | wc -l | tr -d ' ')"
-  [[ -d "$ROOT/local-workspace/local-handoffs" ]] && handoff_files="$(find "$ROOT/local-workspace/local-handoffs" -type f | wc -l | tr -d ' ')"
-  echo "- working_files=$working"
-  echo "- trash_files=$trash"
+  local local_pass="PASS"
+  [[ "$include_local_workspace" -eq 1 ]] && local_pass="$(t3_local_workspace_pass)"
+  if [[ "$repo_total" -gt 0 && "$code1" -eq "$repo_total" && "$code2" -eq 0 && "$local_pass" == "PASS" && "$registry_problem_count" -eq 0 ]]; then
+    echo "PORCELAIN"
+  else
+    echo "FRACTURED"
+  fi
+}
+
+cleanup_overall_verification() {
+  local tier="$1"
+  if [[ "$tier" == "T3" ]]; then
+    if [[ "$code2" -eq 0 && "$registry_problem_count" -eq 0 ]]; then
+      echo "VERIFIED"
+    else
+      echo "NOT VERIFIED"
+    fi
+  else
+    echo "NOT VERIFIED"
+  fi
+}
+
+cleanup_verification_detail() {
+  local tier="$1"
+  if [[ "$tier" == "T3" ]]; then
+    if [[ "$code2" -gt 0 ]]; then
+      echo "Fresh all-repo parity was attempted, but one or more repos could not be verified cleanly."
+    elif [[ "$registry_problem_count" -gt 0 ]]; then
+      echo "Repo registry problems prevented a fully verified cleanup pass."
+    else
+      echo "Fresh all-repo parity verification completed in this run."
+    fi
+  else
+    echo "Repo parity in $tier is advisory only. Use T3 for authoritative fresh all-repo verification."
+  fi
+}
+
+reset_repo_summary() {
+  repo_rows=""
+  repo_total=0
+  code1=0
+  code2=0
+  code3=0
+  code4=0
+  code5=0
+  pulse_matched=0
+  pulse_local_diverged=0
+  pulse_remote_mismatch=0
+  pulse_unlinked=0
+  cleanup_likely_match=0
+  cleanup_local_diverged=0
+  cleanup_remote_mismatch=0
+  cleanup_unlinked=0
+  repo_fetch_failed=0
+  repo_verified_count=0
+  repo_not_verified_count=0
+  registry_problem_count=0
+  registry_problem_lines=""
+}
+
+reset_workspace_metrics() {
+  working_files=0
+  trash_files=0
+  handoff_files=0
+  pm_only_files=0
+  codex_state_files=0
+  trash_soft_purge_pending_files=0
+  likely_duplicate_filename_count=0
+  active_legacy_bucket_hits=0
+  unexpected_local_workspace_children=0
+  non_local_prefix_direct_children=0
+  scanned_reference_md=0
+  exact_duplicate_md=0
+  dir_count_depth2=0
+  file_count_depth2=0
+  strict_canonical_zone_issues=0
+  report_only_zone_count=0
+  strict_zone_count=0
+  : > "$ZONE_ROWS_FILE"
+}
+
+emit_registry_problems() {
+  if [[ "$registry_problem_count" -eq 0 ]]; then
+    echo "- registry_problems=0"
+    return 0
+  fi
+
+  echo "- registry_problems=$registry_problem_count"
+  while IFS='|' read -r repo problem detail; do
+    [[ -z "$repo" ]] && continue
+    echo "- registry_problem=$repo problem=$problem detail=$detail"
+  done <<< "$registry_problem_lines"
+}
+
+emit_parity_summary_section() {
+  local surface="$1"
+  local tier="$2"
+  local overall_label="$3"
+  local overall_verification="$4"
+  local require_fresh="$5"
+
+  print_section "Parity summary"
+  echo "- repos_scanned=$repo_total"
+  echo "- verification=$overall_verification"
+  echo "- codes: 1:1=$code1 1:2=$code2 1:3=$code3 1:4=$code4 1:5=$code5"
+
+  if [[ "$surface" == "pulse" ]]; then
+    echo "- states: matched=$pulse_matched local_diverged=$pulse_local_diverged remote_mismatch=$pulse_remote_mismatch unlinked=$pulse_unlinked"
+    if [[ "$code1" -eq "$repo_total" && "$repo_total" -gt 0 && "$code2" -eq 0 ]]; then
+      echo "- overall=PERFECT PARITY"
+    else
+      echo "- overall=REPORT ONLY"
+    fi
+  else
+    echo "- states: likely_match=$cleanup_likely_match local_diverged=$cleanup_local_diverged remote_mismatch=$cleanup_remote_mismatch unlinked=$cleanup_unlinked"
+    echo "- overall=$overall_label"
+    if [[ "$tier" == "T3" ]]; then
+      echo "- parity_mode=authoritative"
+    else
+      echo "- parity_mode=advisory"
+    fi
+  fi
+
+  echo "- fresh_verification_requested=$(render_bool "$require_fresh")"
+}
+
+emit_repo_detail_row() {
+  local surface="$1"
+  local tier="$2"
+  local row="$3"
+
+  IFS='|' read -r name code status_key verification verification_detail meaning branch upstream remote_fresh dirty ahead behind head_eq_upstream <<< "$row"
+  local label
+  if [[ "$surface" == "pulse" ]]; then
+    label="$(pulse_label_for_code "$code")"
+  else
+    label="$(cleanup_label_for_code "$code")"
+  fi
+
+  echo "- 1:$code | $name@$branch vs $upstream | $label | verification=$verification | detail=$verification_detail | note=$meaning | EVIDENCE(fetch_fresh=$remote_fresh,dirty_items=$dirty,ahead=$ahead,behind=$behind,head_eq_upstream=$head_eq_upstream)"
+}
+
+emit_cleanup_repo_details() {
+  local tier="$1"
+  local result="$2"
+
+  if [[ "$result" == "PORCELAIN" ]]; then
+    echo "- repo_findings=none"
+    return 0
+  fi
+
+  while IFS= read -r row; do
+    [[ -z "$row" ]] && continue
+    IFS='|' read -r name code status_key verification verification_detail meaning branch upstream remote_fresh dirty ahead behind head_eq_upstream <<< "$row"
+    if [[ "$tier" == "T3" && "$code" -eq 1 ]]; then
+      continue
+    fi
+    emit_repo_detail_row "cleanup" "$tier" "$row"
+  done <<< "$repo_rows"
+}
+
+emit_pulse_repo_details() {
+  if [[ "$code1" -eq "$repo_total" && "$repo_total" -gt 0 && "$code2" -eq 0 ]]; then
+    echo "- repo_findings=none"
+    return 0
+  fi
+
+  while IFS= read -r row; do
+    [[ -z "$row" ]] && continue
+    IFS='|' read -r name code status_key verification verification_detail meaning branch upstream remote_fresh dirty ahead behind head_eq_upstream <<< "$row"
+    if [[ "$code" -eq 1 ]]; then
+      continue
+    fi
+    emit_repo_detail_row "pulse" "T1" "$row"
+  done <<< "$repo_rows"
+}
+
+emit_workspace_hygiene_section() {
+  local include_local_workspace="$1"
+  if [[ "$include_local_workspace" -eq 0 ]]; then
+    print_section "Workspace hygiene"
+    echo "- skipped=YES"
+    echo "- detail=Local workspace checks were suppressed for this run."
+    return 0
+  fi
+
+  print_section "Workspace hygiene"
+  echo "- likely_duplicate_filename_count=$likely_duplicate_filename_count"
+  echo "- active_legacy_bucket_hits=$active_legacy_bucket_hits"
+  echo "- unexpected_local_workspace_children=$unexpected_local_workspace_children"
+  echo "- non_local_prefix_direct_children=$non_local_prefix_direct_children"
+  echo "- trash_soft_purge_pending_files=$trash_soft_purge_pending_files"
+  echo "- trash_soft_purge_threshold_days=$trash_soft_purge_threshold_days"
+}
+
+emit_queue_health_section() {
+  local include_local_workspace="$1"
+  if [[ "$include_local_workspace" -eq 0 ]]; then
+    print_section "Queue health"
+    echo "- skipped=YES"
+    echo "- detail=Local workspace checks were suppressed for this run."
+    return 0
+  fi
+
+  print_section "Queue health"
+  echo "- working_files=$working_files"
+  echo "- trash_files=$trash_files"
   echo "- handoff_files=$handoff_files"
-  echo "- pm_only_files=$pm"
-  echo "- codex_state_files=$codex"
-
-  emit_managed_zones_summary
-
-  echo "[soft purge signals]"
-  local trash_pending=0
-  local trash_pending_days=14
-  [[ -d "$ROOT/local-workspace/local-trash-delete" ]] && trash_pending="$(find "$ROOT/local-workspace/local-trash-delete" -type f -mtime +$trash_pending_days | wc -l | tr -d ' ')"
-  echo "- trash_soft_purge_pending_files=$trash_pending"
-  echo "- trash_soft_purge_threshold_days=$trash_pending_days"
-  echo "- trash_soft_purge_mode=SOFT_ONLY (high-certainty purge-candidate review signal only; no deletion)"
-  echo "- trash_soft_purge_next_action=review_for_promotion_from_quarantine_to_local_purge_or_keep_in_quarantine"
-
-  echo "[likely duplicates estimate]"
-  local tmp_canon="/tmp/audit_ctl_canon_names.txt"
-  local tmp_local="/tmp/audit_ctl_local_names.txt"
-  local canon_scan_dirs=()
-  local maybe_dirs=(
-    "$ROOT/bitpod"
-    "$ROOT/bitregime-core"
-    "$ROOT/bitpod-docs"
-    "$ROOT/bitpod-tools"
-    "$ROOT/bitpod-taylor-runtime"
-    "$ROOT/docs"
-    "$ROOT/tools"
-    "$ROOT/taylor-runtime"
-    "$ROOT/local-workspace/local-codex"
-  )
-  local d
-  for d in "${maybe_dirs[@]}"; do
-    [[ -d "$d" ]] && canon_scan_dirs+=("$d")
-  done
-  if [[ "${#canon_scan_dirs[@]}" -gt 0 ]]; then
-    find "${canon_scan_dirs[@]}" \
-      \( -path '*/.git' -o -path '*/.git/*' \) -prune -o \
-      -type f ! -name '.DS_Store' -print 2>/dev/null | \
-      xargs -I{} basename "{}" | sort -u > "$tmp_canon"
-  else
-    : > "$tmp_canon"
-  fi
-  local local_work_root="$ROOT/local-workspace/local-working-files"
-  if [[ -d "$local_work_root" ]]; then
-    find "$local_work_root" \
-      \( -path '*/.git' -o -path '*/.git/*' \) -prune -o \
-      -type f ! -name '.DS_Store' -print 2>/dev/null | \
-      xargs -I{} basename "{}" | sort -u > "$tmp_local"
-  else
-    : > "$tmp_local"
-  fi
-  local likely_dups
-  likely_dups="$(comm -12 "$tmp_canon" "$tmp_local" | wc -l | tr -d ' ')"
-  echo "- likely_duplicate_filename_count=$likely_dups"
-
-  echo "[workspace naming hygiene]"
-  local hygiene_roots=()
-  [[ -d "$ROOT/local-workspace/local-working-files" ]] && hygiene_roots+=("$ROOT/local-workspace/local-working-files")
-  [[ -d "$ROOT/local-workspace/local-handoffs" ]] && hygiene_roots+=("$ROOT/local-workspace/local-handoffs")
-  local legacy_bucket_hits=0
-  if [[ "${#hygiene_roots[@]}" -gt 0 ]]; then
-    legacy_bucket_hits="$(find "${hygiene_roots[@]}" -type d \( -name 'incoming-clutter' -o -name 'working-files' -o -name 'trash-delete' -o -name 'handoffs' -o -name 'reference-candidates' \) 2>/dev/null | wc -l | tr -d ' ')"
-  fi
-  echo "- active_legacy_bucket_hits=$legacy_bucket_hits"
-  local unexpected_local_children
-  unexpected_local_children="$(find "$ROOT/local-workspace" -maxdepth 1 -mindepth 1 -type d -exec basename {} \; | rg -v '^(local-working-files|local-handoffs|local-trash-delete|local-cj-pm-only|local-codex)$' | wc -l | tr -d ' ')"
-  echo "- unexpected_local_workspace_children=$unexpected_local_children"
-
-  # Stop gate heuristic for quick mode.
-  if [[ "$likely_dups" -le 25 && "$legacy_bucket_hits" -eq 0 && "$unexpected_local_children" -eq 0 ]]; then
-    echo "quick_gate=STOP_OK"
-    return 0
-  fi
-  echo "quick_gate=ESCALATE_RECOMMENDED"
-  return 10
+  echo "- pm_only_files=$pm_only_files"
+  echo "- codex_state_files=$codex_state_files"
 }
 
-run_medium() {
-  print_header "T2 Medium"
-  local working="$ROOT/local-workspace/local-working-files"
-  if [[ ! -d "$working" ]]; then
-    echo "medium_note=no local-working-files folder"
-    echo "medium_gate=STOP_OK"
+emit_tier_specific_section() {
+  local tier="$1"
+  local include_local_workspace="$2"
+
+  print_section "Tier-specific checks"
+  emit_registry_problems
+
+  if [[ "$include_local_workspace" -eq 0 ]]; then
+    echo "- local_workspace_checks=SKIPPED"
     return 0
   fi
 
-  local tmp_in="/tmp/audit_ctl_in_sha.txt"
-  local tmp_canon="/tmp/audit_ctl_canon_sha.txt"
-  find "$working" -type f -name '*.md' -print0 2>/dev/null | xargs -0 shasum -a 256 | sort > "$tmp_in" || true
-  local canon_scan_dirs=()
-  local maybe_dirs=(
-    "$ROOT/bitpod"
-    "$ROOT/bitregime-core"
-    "$ROOT/bitpod-docs"
-    "$ROOT/bitpod-tools"
-    "$ROOT/bitpod-taylor-runtime"
-    "$ROOT/docs"
-    "$ROOT/tools"
-    "$ROOT/taylor-runtime"
-    "$ROOT/local-workspace/local-codex"
-  )
-  local d
-  for d in "${maybe_dirs[@]}"; do
-    [[ -d "$d" ]] && canon_scan_dirs+=("$d")
-  done
-  if [[ "${#canon_scan_dirs[@]}" -gt 0 ]]; then
-    find "${canon_scan_dirs[@]}" -type f -name '*.md' -print0 2>/dev/null | xargs -0 shasum -a 256 | sort > "$tmp_canon" || true
-  else
-    : > "$tmp_canon"
+  echo "- quick_gate=$(quick_gate_status)"
+  if [[ "$tier" == "T2" || "$tier" == "T3" ]]; then
+    echo "- scanned_reference_md=$scanned_reference_md"
+    echo "- exact_duplicate_md=$exact_duplicate_md"
+    echo "- medium_gate=$(medium_gate_status)"
   fi
-
-  local scanned=0
-  local exact=0
-  [[ -f "$tmp_in" ]] && scanned="$(wc -l < "$tmp_in" | tr -d ' ')"
-  if [[ "$scanned" -gt 0 ]]; then
-    exact="$(join -j 1 "$tmp_in" "$tmp_canon" | wc -l | tr -d ' ')"
+  if [[ "$tier" == "T3" ]]; then
+    echo "- dir_count_depth2=$dir_count_depth2"
+    echo "- file_count_depth2=$file_count_depth2"
+    echo "- strict_canonical_zone_issues=$strict_canonical_zone_issues"
+    echo "- strict_zone_count=$strict_zone_count"
+    echo "- report_only_zone_count=$report_only_zone_count"
+    echo "- local_workspace_status=$(t3_local_workspace_pass)"
+    while IFS='|' read -r zone mode rel_path status file_count dup_names large_files notes; do
+      [[ -z "$zone" ]] && continue
+      echo "- zone=$zone mode=$mode path=$rel_path status=$status files=$file_count dup_names=$dup_names large_files_gt10mb=$large_files notes=$notes"
+    done < "$ZONE_ROWS_FILE"
   fi
-
-  echo "- scanned_reference_md=$scanned"
-  echo "- exact_duplicate_md=$exact"
-
-  if [[ "$exact" -le 10 ]]; then
-    echo "medium_gate=STOP_OK"
-    return 0
-  fi
-  echo "medium_gate=ESCALATE_RECOMMENDED"
-  return 20
 }
 
-run_full() {
-  print_header "T3 Full"
-  echo "[full inventory summary]"
-  find "$ROOT" -maxdepth 2 -type d | wc -l | awk '{print "- dir_count_depth2=" $1}'
-  find "$ROOT" -maxdepth 2 -type f | wc -l | awk '{print "- file_count_depth2=" $1}'
-  echo "[local-workspace detailed]"
-  find "$ROOT/local-workspace" -maxdepth 3 -type d | sort | sed 's#^#- #'
-  emit_managed_zones_summary
-  echo "full_complete=TRUE"
-}
+emit_cleanup_next_action() {
+  local tier="$1"
+  local result="$2"
+  local include_local_workspace="$3"
 
-confirm_or_exit() {
-  local message="$1"
-  local noask="$2"
-  if [[ "$noask" -eq 1 ]]; then
-    echo "confirm_skipped=TRUE ($message)"
+  print_section "Next action"
+  if [[ "$tier" == "T1" || "$tier" == "T2" ]]; then
+    echo "- Run T3 cleanup for authoritative repo parity."
+    if [[ "$include_local_workspace" -eq 1 ]]; then
+      echo "- Use 'only repos' or 'no local workspace' if you want to suppress local-workspace checks for the next manual run."
+    fi
     return 0
   fi
-  if [[ -t 0 ]]; then
-    read -r -p "$message [y/N]: " ans
-    [[ "${ans,,}" == "y" || "${ans,,}" == "yes" ]] || exit 0
+
+  if [[ "$result" == "PORCELAIN" ]]; then
+    echo "- No cleanup action required."
   else
-    echo "confirmation_required=$message"
-    exit 3
+    echo "- Cleanup remains fractured; review the failing repo or workspace findings above and remediate until T3 passes."
   fi
+}
+
+emit_cleanup_report() {
+  local tier="$1"
+  local include_local_workspace="$2"
+  local require_fresh="$3"
+
+  local result overall_verification verification_detail
+  result="$(cleanup_overall_result "$tier" "$include_local_workspace")"
+  overall_verification="$(cleanup_overall_verification "$tier")"
+  verification_detail="$(cleanup_verification_detail "$tier")"
+
+  print_header "$tier Cleanup"
+  print_section "Result"
+  echo "- tier=$tier"
+  echo "- scope=cleanup-audit"
+  echo "- result=$result"
+  if [[ "$tier" == "T1" || "$tier" == "T2" ]]; then
+    echo "- note=Repo parity in $tier is advisory only."
+  else
+    echo "- note=$( [[ "$result" == "PORCELAIN" ]] && echo "Full cleanup pass achieved." || echo "Full cleanup pass not achieved." )"
+  fi
+
+  print_section "Verification"
+  echo "- overall=$overall_verification"
+  echo "- detail=$verification_detail"
+
+  emit_parity_summary_section "cleanup" "$tier" "$result" "$overall_verification" "$require_fresh"
+  emit_cleanup_repo_details "$tier" "$result"
+  emit_workspace_hygiene_section "$include_local_workspace"
+  emit_queue_health_section "$include_local_workspace"
+  emit_tier_specific_section "$tier" "$include_local_workspace"
+  emit_cleanup_next_action "$tier" "$result" "$include_local_workspace"
+}
+
+emit_pulse_report() {
+  local include_local_workspace="$1"
+  local require_fresh="$2"
+  local event_name="$3"
+  local overall_verification="VERIFIED"
+  local verification_detail="Fresh parity verification completed for all scanned repos."
+  local pulse_result="REPORT ONLY"
+
+  if [[ "$code2" -gt 0 || "$registry_problem_count" -gt 0 ]]; then
+    overall_verification="NOT VERIFIED"
+    if [[ "$repo_fetch_failed" -gt 0 ]]; then
+      verification_detail="One or more repos could not be fresh-verified; report-only parity is based partly on local state."
+    else
+      verification_detail="This pulse is report-only and includes local-only repo assessments."
+    fi
+  fi
+  if [[ "$code1" -eq "$repo_total" && "$repo_total" -gt 0 && "$code2" -eq 0 ]]; then
+    pulse_result="PERFECT PARITY"
+  fi
+
+  echo "Parity Pulse"
+  echo "Timestamp: $NOW"
+  echo "- event=$event_name"
+  echo "- scope=report-only"
+  echo "- result=$pulse_result"
+  echo "- verification=$overall_verification"
+  echo "- detail=$verification_detail"
+  emit_parity_summary_section "pulse" "T1" "REPORT ONLY" "$overall_verification" "$require_fresh"
+  emit_pulse_repo_details
+  if [[ "$include_local_workspace" -eq 1 ]]; then
+    print_section "Local workspace"
+    echo "- included=YES"
+    echo "- working_files=$working_files"
+    echo "- trash_files=$trash_files"
+    echo "- likely_duplicate_filename_count=$likely_duplicate_filename_count"
+    echo "- active_legacy_bucket_hits=$active_legacy_bucket_hits"
+    echo "- unexpected_local_workspace_children=$unexpected_local_workspace_children"
+  fi
+  if [[ "$registry_problem_count" -gt 0 ]]; then
+    print_section "Registry"
+    emit_registry_problems
+  fi
+}
+
+prepare_workspace_metrics() {
+  local include_local_workspace="$1"
+  local tier="$2"
+  if [[ "$include_local_workspace" -eq 0 ]]; then
+    return 0
+  fi
+
+  collect_queue_health
+  collect_workspace_hygiene
+  if [[ "$tier" == "T2" || "$tier" == "T3" ]]; then
+    collect_medium_checks
+  fi
+  if [[ "$tier" == "T3" ]]; then
+    collect_full_checks
+  fi
+}
+
+run_cleanup_tier() {
+  local tier="$1"
+  local include_local_workspace="$2"
+  local require_fresh=0
+  [[ "$tier" == "T3" ]] && require_fresh=1
+
+  reset_repo_summary
+  reset_workspace_metrics
+
+  assert_registry_ready
+  build_repo_rows "cleanup" "$require_fresh"
+  collect_registry_problems
+  summarize_repo_rows
+  prepare_workspace_metrics "$include_local_workspace" "$tier"
+  emit_cleanup_report "$tier" "$include_local_workspace" "$require_fresh"
+
+  if [[ "$tier" == "T1" ]]; then
+    [[ "$(quick_gate_status)" == "STOP_OK" ]] && return 0 || return 10
+  fi
+  if [[ "$tier" == "T2" ]]; then
+    [[ "$(medium_gate_status)" == "STOP_OK" ]] && return 0 || return 20
+  fi
+  [[ "$(cleanup_overall_result "$tier" "$include_local_workspace")" == "PORCELAIN" ]] && return 0 || return 30
+}
+
+run_cleanup_auto() {
+  local include_local_workspace="$1"
+  local force_full="$2"
+
+  local t1_status=0
+  if run_cleanup_tier "T1" "$include_local_workspace" >/dev/null 2>&1; then
+    t1_status=0
+  else
+    t1_status=$?
+  fi
+  if [[ "$t1_status" -eq 0 && "$force_full" -eq 0 ]]; then
+    run_cleanup_tier "T1" "$include_local_workspace"
+    return 0
+  fi
+
+  local t2_status=0
+  if run_cleanup_tier "T2" "$include_local_workspace" >/dev/null 2>&1; then
+    t2_status=0
+  else
+    t2_status=$?
+  fi
+  if [[ "$t2_status" -eq 0 && "$force_full" -eq 0 ]]; then
+    run_cleanup_tier "T2" "$include_local_workspace"
+    return 0
+  fi
+
+  run_cleanup_tier "T3" "$include_local_workspace"
+}
+
+run_parity_pulse() {
+  local require_fresh="$1"
+  local include_local_workspace="$2"
+  local event_name="$3"
+
+  reset_repo_summary
+  reset_workspace_metrics
+
+  assert_registry_ready
+  build_repo_rows "pulse" "$require_fresh"
+  collect_registry_problems
+  summarize_repo_rows
+  prepare_workspace_metrics "$include_local_workspace" "T1"
+  emit_pulse_report "$include_local_workspace" "$require_fresh" "$event_name"
 }
 
 main() {
@@ -440,24 +933,34 @@ main() {
   local q
   q="$(printf '%s' "$raw" | normalize)"
 
-  if has_phrase "$q" "parity-pulse" || has_phrase "$q" "parity pulse" || has_phrase "$q" "__parity_pulse__"; then
+  if has_phrase "$q" "__parity_pulse__" || has_phrase "$q" "parity-pulse" || has_phrase "$q" "parity pulse"; then
     local pulse_fresh=0
+    local pulse_include_local_workspace=0
+    local pulse_event="manual"
     if has_phrase "$q" "fresh" || has_phrase "$q" "pre-push" || has_phrase "$q" "post-push"; then
       pulse_fresh=1
     fi
-    run_quick "$pulse_fresh" 0 || true
+    if has_phrase "$q" "workspace" || has_phrase "$q" "local workspace"; then
+      pulse_include_local_workspace=1
+    fi
+    local maybe_event
+    maybe_event="$(printf '%s\n' "$raw" | sed -n 's/.*event=\([^ ]*\).*/\1/p')"
+    [[ -n "$maybe_event" ]] && pulse_event="$maybe_event"
+    run_parity_pulse "$pulse_fresh" "$pulse_include_local_workspace" "$pulse_event"
     exit 0
   fi
 
-  local noask=0
+  local include_local_workspace=1
+  if has_phrase "$q" "no local workspace" || has_phrase "$q" "only repos" || has_phrase "$q" "repo only" || has_phrase "$q" "repos only"; then
+    include_local_workspace=0
+  fi
+
   local force_full=0
   local auto=0
-
-  has_phrase "$q" "don't ask me for permission" && noask=1
-  has_phrase "$q" "dont ask me for permission" && noask=1
-  has_phrase "$q" "no ask" && noask=1
   has_phrase "$q" "force full" && force_full=1
-  has_phrase "$q" "auto" && auto=1
+  has_phrase "$q" " auto " && auto=1
+  has_phrase "$q" "auto cleanup" && auto=1
+  has_phrase "$q" "full audit auto" && auto=1
 
   local tier="T1"
   if has_phrase "$q" "t3" || has_phrase "$q" "tier 3" || has_phrase "$q" "v3" || has_phrase "$q" "full"; then
@@ -468,50 +971,12 @@ main() {
     tier="T1"
   fi
 
-  echo "request=\"$raw\""
-  echo "resolved_tier=$tier auto=$auto force_full=$force_full noask=$noask"
-
-  if [[ "$tier" == "T1" ]]; then
-    run_quick 0 1 || true
+  if [[ "$auto" -eq 1 ]]; then
+    run_cleanup_auto "$include_local_workspace" "$force_full"
     exit 0
   fi
 
-  # T2 or T3 always start with quick.
-  local quick_fresh=0
-  local quick_parity_detail=1
-  [[ "$tier" == "T3" ]] && quick_fresh=1
-  if run_quick "$quick_fresh" "$quick_parity_detail"; then
-    if [[ "$tier" == "T2" ]]; then
-      echo "t2_note=quick_stop_gate_met; medium_skipped"
-      exit 0
-    fi
-    if [[ "$tier" == "T3" && "$force_full" -eq 0 ]]; then
-      if [[ "$auto" -eq 1 ]]; then
-        echo "t3_note=auto_stop_after_quick"
-        echo "t3_scope_notice=repo parity verified; medium/full tiers not executed"
-        exit 0
-      fi
-      confirm_or_exit "Quick audit indicates deeper tiers may not be worth it. Continue anyway?" "$noask"
-    fi
-  fi
-
-  if run_medium; then
-    if [[ "$tier" == "T2" ]]; then
-      exit 0
-    fi
-    if [[ "$tier" == "T3" && "$force_full" -eq 0 ]]; then
-      if [[ "$auto" -eq 1 ]]; then
-        echo "t3_note=auto_stop_after_medium"
-        echo "t3_scope_notice=repo parity + medium checks executed; full tier not executed"
-        exit 0
-      fi
-      confirm_or_exit "Medium audit indicates full audit may not be worth it. Continue to full?" "$noask"
-    fi
-  fi
-
-  if [[ "$tier" == "T3" ]]; then
-    run_full
-  fi
+  run_cleanup_tier "$tier" "$include_local_workspace"
 }
 
 main "$@"
