@@ -102,7 +102,6 @@ setup_workspace() {
   mkdir -p "$WORKSPACE_ROOT/local-workspace/local-trash-delete"
   mkdir -p "$WORKSPACE_ROOT/local-workspace/local-handoffs"
   mkdir -p "$WORKSPACE_ROOT/local-workspace/local-cj-pm-only"
-  mkdir -p "$WORKSPACE_ROOT/local-workspace/local-codex"
 
   ln -s "$AUDIT_CTL" "$WORKSPACE_ROOT/bitpod-tools/audit_ctl.sh"
   ln -s "$PROJECT_ROOT/scripts/parity_pulse_emit.sh" "$WORKSPACE_ROOT/bitpod-tools/scripts/parity_pulse_emit.sh"
@@ -110,7 +109,6 @@ setup_workspace() {
   cat > "$ZONE_POLICY_FILE" <<'EOF'
 # zone|mode|rel_path|notes
 working|STRICT_CANONICAL|local-workspace/local-working-files|active working files
-codex|REPORT_ONLY|local-workspace/local-codex|local codex runtime
 EOF
 
   create_tracked_repo "alpha"

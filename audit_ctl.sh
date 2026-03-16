@@ -39,7 +39,6 @@ working_files=0
 trash_files=0
 handoff_files=0
 pm_only_files=0
-codex_state_files=0
 trash_soft_purge_pending_files=0
 trash_soft_purge_threshold_days=14
 likely_duplicate_filename_count=0
@@ -310,7 +309,6 @@ collect_queue_health() {
   trash_files="$(count_files "$ROOT/local-workspace/local-trash-delete")"
   handoff_files="$(count_files "$ROOT/local-workspace/local-handoffs")"
   pm_only_files="$(count_files "$ROOT/local-workspace/local-cj-pm-only")"
-  codex_state_files="$(count_files "$ROOT/local-workspace/local-codex")"
 }
 
 collect_likely_duplicate_names() {
@@ -327,7 +325,6 @@ collect_likely_duplicate_names() {
       canon_dirs+=("$ROOT/$rel_path")
     fi
   done < "$REGISTRY_FILE"
-  [[ -d "$ROOT/local-workspace/local-codex" ]] && canon_dirs+=("$ROOT/local-workspace/local-codex")
 
   if [[ "${#canon_dirs[@]}" -gt 0 ]]; then
     find "${canon_dirs[@]}" \
@@ -364,7 +361,7 @@ collect_workspace_hygiene() {
   if [[ -d "$ROOT/local-workspace" ]]; then
     unexpected_local_workspace_children="$(
       find "$ROOT/local-workspace" -maxdepth 1 -mindepth 1 -type d -exec basename {} \; 2>/dev/null | \
-      awk '!/^(local-working-files|local-handoffs|local-trash-delete|local-cj-pm-only|local-codex)$/ {n++} END{print n+0}'
+      awk '!/^(local-working-files|local-handoffs|local-trash-delete|local-cj-pm-only)$/ {n++} END{print n+0}'
     )"
     non_local_prefix_direct_children="$(
       find "$ROOT/local-workspace" -maxdepth 1 -mindepth 1 -type d -exec basename {} \; 2>/dev/null | \
@@ -398,7 +395,6 @@ collect_medium_checks() {
     [[ "${verified:-0}" == "1" ]] || continue
     [[ -d "$ROOT/$rel_path" ]] && canon_md_dirs+=("$ROOT/$rel_path")
   done < "$REGISTRY_FILE"
-  [[ -d "$ROOT/local-workspace/local-codex" ]] && canon_md_dirs+=("$ROOT/local-workspace/local-codex")
 
   if [[ "${#canon_md_dirs[@]}" -gt 0 ]]; then
     find "${canon_md_dirs[@]}" -type f -name '*.md' -print0 2>/dev/null | \
@@ -564,7 +560,6 @@ reset_workspace_metrics() {
   trash_files=0
   handoff_files=0
   pm_only_files=0
-  codex_state_files=0
   trash_soft_purge_pending_files=0
   likely_duplicate_filename_count=0
   active_legacy_bucket_hits=0
@@ -708,7 +703,6 @@ emit_queue_health_section() {
   echo "- trash_files=$trash_files"
   echo "- handoff_files=$handoff_files"
   echo "- pm_only_files=$pm_only_files"
-  echo "- codex_state_files=$codex_state_files"
 }
 
 emit_tier_specific_section() {

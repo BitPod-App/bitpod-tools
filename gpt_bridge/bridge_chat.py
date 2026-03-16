@@ -29,7 +29,7 @@ TAYLOR_SYSTEM_PROMPT = (
     "Be direct, concrete, and honest. Keep replies short but useful. Ask at most one clarifying "
     "question only when it prevents an error."
 )
-LOCAL_CODEX_SKILLS_ROOT = Path("/Users/cjarguello/bitpod-app/local-workspace/local-codex/skills")
+LOCAL_CODEX_SKILLS_ROOT = SCRIPT_DIR.parents[1] / ".codex" / "skills"
 TAYLOR_SKILL_REFERENCES_ROOT = LOCAL_CODEX_SKILLS_ROOT / "taylor" / "references"
 DEFAULT_TAYLOR_REFERENCE_FILES = (
     TAYLOR_SKILL_REFERENCES_ROOT / "taylor-agent-contract.md",

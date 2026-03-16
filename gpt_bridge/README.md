@@ -299,7 +299,7 @@ Team-first routing:
 ```
 
 `@gpt` causes the default GPT relay in the same active session.
-`@taylor` routes through the same bridge with a Taylor-specific persona prompt, loads Taylor reference context from `local-codex`, and replies as `taylor`.
+`@taylor` routes through the same bridge with a Taylor-specific persona prompt, loads Taylor reference context from the root `.codex/skills` layer, and replies as `taylor`.
 `@codex` triggers explicit Codex acknowledgment in timeline.  
 Other mentions are team-visible intent tags.
 

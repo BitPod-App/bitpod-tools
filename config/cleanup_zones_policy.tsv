@@ -4,7 +4,6 @@
 # - STRICT_CANONICAL: canonical zone, expected to stay organized and auditable.
 
 cj_pm_dropbox|REPORT_ONLY|local-workspace/local-cj-pm-only|explicit user-managed keep zone; no cleanup pressure
-codex_state_home|REPORT_ONLY|local-workspace/local-codex|codex state home; preserve architecture, but do not blindly mirror machine auth/secrets
 local_handoffs|REPORT_ONLY|local-workspace/local-handoffs|temporary handoff exception lane; keep only active handoff files and short-lived dated notes
 local_trash_delete|REPORT_ONLY|local-workspace/local-trash-delete|disposal quarantine; do not replicate; review only for purge
 local_working_files|REPORT_ONLY|local-workspace/local-working-files|default explicit keep path for local files that are still active or under review
