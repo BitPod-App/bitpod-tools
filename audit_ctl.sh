@@ -181,16 +181,10 @@ emit_parity_pulse_summary() {
 }
 
 collect_repo_paths() {
-  local out=()
-  local path
-  for path in "$ROOT"/*; do
+  find "$ROOT" -maxdepth 1 -mindepth 1 -type d | while IFS= read -r path; do
     [[ -d "$path/.git" ]] || continue
-    out+=("$(basename "$path")")
-  done
-  if [[ "${#out[@]}" -eq 0 ]]; then
-    return 0
-  fi
-  printf '%s\n' "${out[@]}" | sort
+    basename "$path"
+  done | sort
 }
 
 emit_managed_zones_summary() {
@@ -445,6 +439,15 @@ main() {
   local raw="${*:-run audit}"
   local q
   q="$(printf '%s' "$raw" | normalize)"
+
+  if has_phrase "$q" "parity-pulse" || has_phrase "$q" "parity pulse" || has_phrase "$q" "__parity_pulse__"; then
+    local pulse_fresh=0
+    if has_phrase "$q" "fresh" || has_phrase "$q" "pre-push" || has_phrase "$q" "post-push"; then
+      pulse_fresh=1
+    fi
+    run_quick "$pulse_fresh" 0 || true
+    exit 0
+  fi
 
   local noask=0
   local force_full=0
