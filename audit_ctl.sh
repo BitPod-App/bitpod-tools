@@ -286,13 +286,19 @@ run_quick() {
     [[ -d "$d" ]] && canon_scan_dirs+=("$d")
   done
   if [[ "${#canon_scan_dirs[@]}" -gt 0 ]]; then
-    find "${canon_scan_dirs[@]}" -type f 2>/dev/null | xargs -I{} basename "{}" | sort -u > "$tmp_canon"
+    find "${canon_scan_dirs[@]}" \
+      \( -path '*/.git' -o -path '*/.git/*' \) -prune -o \
+      -type f ! -name '.DS_Store' -print 2>/dev/null | \
+      xargs -I{} basename "{}" | sort -u > "$tmp_canon"
   else
     : > "$tmp_canon"
   fi
   local local_work_root="$ROOT/local-workspace/local-working-files"
   if [[ -d "$local_work_root" ]]; then
-    find "$local_work_root" -type f 2>/dev/null | xargs -I{} basename "{}" | sort -u > "$tmp_local"
+    find "$local_work_root" \
+      \( -path '*/.git' -o -path '*/.git/*' \) -prune -o \
+      -type f ! -name '.DS_Store' -print 2>/dev/null | \
+      xargs -I{} basename "{}" | sort -u > "$tmp_local"
   else
     : > "$tmp_local"
   fi
