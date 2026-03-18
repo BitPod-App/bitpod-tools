@@ -6,6 +6,7 @@ AUDIT_CTL="$PROJECT_ROOT/audit_ctl.sh"
 REFRESH_REGISTRY="$PROJECT_ROOT/scripts/refresh_repo_registry.sh"
 INSTALL_HOOKS="$PROJECT_ROOT/scripts/install_parity_pulse_hooks.sh"
 SCHEDULED_CLEANUP="$PROJECT_ROOT/scripts/run_scheduled_cleanup_audit.sh"
+PARITY_PULSE_EMIT="$PROJECT_ROOT/scripts/parity_pulse_emit.sh"
 
 TEST_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/audit_tools_test.XXXXXX")"
 trap 'rm -rf "$TEST_ROOT"' EXIT
@@ -43,6 +44,12 @@ assert_file_exists() {
 assert_file_missing() {
   local path="$1"
   [[ ! -e "$path" ]] || fail "expected path to be absent: $path"
+}
+
+assert_equals() {
+  local expected="$1"
+  local actual="$2"
+  [[ "$expected" == "$actual" ]] || fail "expected '$expected' but got '$actual'"
 }
 
 git_commit_all() {
@@ -92,6 +99,18 @@ run_scheduled_capture() {
   BITPOD_REPO_REGISTRY_FILE="$registry_file" \
   BITPOD_CLEANUP_ZONE_POLICY_FILE="$ZONE_POLICY_FILE" \
   "$SCHEDULED_CLEANUP"
+}
+
+run_pulse_emit() {
+  local registry_file="$1"
+  local event_name="$2"
+  local repo_path="$3"
+  shift 3
+  BITPOD_APP_ROOT="$WORKSPACE_ROOT" \
+  BITPOD_REPO_REGISTRY_FILE="$registry_file" \
+  BITPOD_CLEANUP_ZONE_POLICY_FILE="$ZONE_POLICY_FILE" \
+  "$@" \
+  "$PARITY_PULSE_EMIT" "$event_name" "$repo_path" 2>&1
 }
 
 setup_workspace() {
@@ -201,13 +220,43 @@ test_cleanup_contracts() {
   assert_contains "$t3_output" "- result=FRACTURED"
   assert_contains "$t3_output" "- overall=VERIFIED"
   assert_contains "$t3_output" "REMOTE MISMATCH"
+  assert_contains "$t3_output" "- stale_local_codex_branches=0"
+  assert_contains "$t3_output" "- stale_remote_codex_branches=0"
+  assert_contains "$t3_output" "- open_pull_requests=0"
   assert_contains "$t3_output" "Cleanup remains fractured"
 
   local porcelain_output
   porcelain_output="$(run_audit_capture "$PERFECT_REGISTRY_FILE" "run T3 audit only repos")"
   assert_contains "$porcelain_output" "- result=PORCELAIN"
   assert_contains "$porcelain_output" "- overall=VERIFIED"
+  assert_contains "$porcelain_output" "- stale_local_codex_branches=0"
+  assert_contains "$porcelain_output" "- stale_remote_codex_branches=0"
+  assert_contains "$porcelain_output" "- open_pull_requests=0"
   assert_contains "$porcelain_output" "- repo_findings=none"
+}
+
+test_stale_branch_contracts() {
+  git -C "$WORKSPACE_ROOT/alpha" checkout -b codex/stale-branch >/dev/null
+  git -C "$WORKSPACE_ROOT/alpha" checkout main >/dev/null
+  git -C "$WORKSPACE_ROOT/alpha" push origin codex/stale-branch >/dev/null
+
+  local stale_output=""
+  local stale_status=0
+  if stale_output="$(run_audit_capture "$PERFECT_REGISTRY_FILE" "run T3 audit only repos")"; then
+    stale_status=0
+  else
+    stale_status=$?
+  fi
+  [[ "$stale_status" -eq 30 ]] || fail "expected stale-branch T3 exit status 30, got $stale_status"
+  assert_contains "$stale_output" "- result=FRACTURED"
+  assert_contains "$stale_output" "- overall=NOT VERIFIED"
+  assert_contains "$stale_output" "- stale_local_codex_branches=1"
+  assert_contains "$stale_output" "- stale_remote_codex_branches=1"
+  assert_contains "$stale_output" "- stale_ref=alpha scope=local ref=codex/stale-branch"
+  assert_contains "$stale_output" "- stale_ref=alpha scope=remote ref=origin/codex/stale-branch"
+
+  git -C "$WORKSPACE_ROOT/alpha" push origin --delete codex/stale-branch >/dev/null
+  git -C "$WORKSPACE_ROOT/alpha" branch -D codex/stale-branch >/dev/null
 }
 
 test_parity_pulse_contracts() {
@@ -225,9 +274,24 @@ test_parity_pulse_contracts() {
 
   local perfect_pulse
   perfect_pulse="$(run_audit_capture "$PERFECT_REGISTRY_FILE" "__parity_pulse__ event=pre-push fresh")"
-  assert_contains "$perfect_pulse" "- result=PERFECT PARITY"
+  assert_contains "$perfect_pulse" "- result=PORCELAIN"
   assert_contains "$perfect_pulse" "- verification=VERIFIED"
   assert_contains "$perfect_pulse" "- repo_findings=none"
+
+  local unverified_perfect_shape
+  unverified_perfect_shape="$(run_audit_capture "$PERFECT_REGISTRY_FILE" "__parity_pulse__ event=post-commit")"
+  assert_contains "$unverified_perfect_shape" "- result=REPORT ONLY"
+  assert_contains "$unverified_perfect_shape" "- verification=NOT VERIFIED"
+  assert_not_contains "$unverified_perfect_shape" "- result=PORCELAIN"
+
+  local dirs_before
+  dirs_before="$(find "$WORKSPACE_ROOT/local-workspace/local-working-files" -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' ')"
+  local emitted_pulse
+  emitted_pulse="$(run_pulse_emit "$PERFECT_REGISTRY_FILE" "pre-push" "$WORKSPACE_ROOT/alpha")"
+  local dirs_after
+  dirs_after="$(find "$WORKSPACE_ROOT/local-workspace/local-working-files" -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' ')"
+  assert_contains "$emitted_pulse" "Parity Pulse"
+  assert_equals "$dirs_before" "$dirs_after"
 }
 
 test_hook_installer() {
@@ -269,6 +333,7 @@ test_scheduled_cleanup_helper() {
 setup_workspace
 test_refresh_repo_registry
 test_cleanup_contracts
+test_stale_branch_contracts
 test_parity_pulse_contracts
 test_hook_installer
 test_scheduled_cleanup_helper

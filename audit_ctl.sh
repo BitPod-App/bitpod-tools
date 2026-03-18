@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT="${BITPOD_APP_ROOT:-/Users/cjarguello/bitpod-app}"
+ROOT="${BITPOD_APP_ROOT:-/Users/cjarguello/BitPod-App}"
 REGISTRY_FILE="${BITPOD_REPO_REGISTRY_FILE:-$ROOT/bitpod-tools/config/repo_registry.tsv}"
 ZONE_POLICY_FILE="${BITPOD_CLEANUP_ZONE_POLICY_FILE:-$ROOT/bitpod-tools/config/cleanup_zones_policy.tsv}"
 NOW="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
@@ -14,6 +14,8 @@ TMP_CANON_NAMES="$TMP_DIR/canon_names.txt"
 TMP_LOCAL_NAMES="$TMP_DIR/local_names.txt"
 TMP_IN_SHA="$TMP_DIR/in_sha.txt"
 TMP_CANON_SHA="$TMP_DIR/canon_sha.txt"
+STALE_BRANCH_ROWS_FILE="$TMP_DIR/stale_branch_rows.txt"
+OPEN_PR_ROWS_FILE="$TMP_DIR/open_pr_rows.txt"
 
 repo_rows=""
 repo_total=0
@@ -53,6 +55,11 @@ file_count_depth2=0
 strict_canonical_zone_issues=0
 report_only_zone_count=0
 strict_zone_count=0
+stale_local_branch_count=0
+stale_remote_branch_count=0
+open_pr_count=0
+stale_branch_rows=""
+open_pr_rows=""
 
 normalize() {
   tr '[:upper:]' '[:lower:]'
@@ -305,6 +312,17 @@ count_files() {
   fi
 }
 
+is_generic_duplicate_name() {
+  case "$1" in
+    README.md|index.html)
+      return 0
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
 collect_queue_health() {
   working_files="$(count_files "$ROOT/local-workspace/local-working-files")"
   trash_files="$(count_files "$ROOT/local-workspace/local-trash-delete")"
@@ -333,14 +351,20 @@ collect_likely_duplicate_names() {
     find "${canon_dirs[@]}" \
       \( -path '*/.git' -o -path '*/.git/*' \) -prune -o \
       -type f ! -name '.DS_Store' -print 2>/dev/null | \
-      xargs -I{} basename "{}" | sort -u > "$TMP_CANON_NAMES" || true
+      xargs -I{} basename "{}" | while IFS= read -r name; do
+        is_generic_duplicate_name "$name" && continue
+        printf '%s\n' "$name"
+      done | sort -u > "$TMP_CANON_NAMES" || true
   fi
 
   if [[ -d "$ROOT/local-workspace/local-working-files" ]]; then
     find "$ROOT/local-workspace/local-working-files" \
       \( -path '*/.git' -o -path '*/.git/*' \) -prune -o \
       -type f ! -name '.DS_Store' -print 2>/dev/null | \
-      xargs -I{} basename "{}" | sort -u > "$TMP_LOCAL_NAMES" || true
+      xargs -I{} basename "{}" | while IFS= read -r name; do
+        is_generic_duplicate_name "$name" && continue
+        printf '%s\n' "$name"
+      done | sort -u > "$TMP_LOCAL_NAMES" || true
   fi
 
   likely_duplicate_filename_count="$(comm -12 "$TMP_CANON_NAMES" "$TMP_LOCAL_NAMES" | wc -l | tr -d ' ')"
@@ -379,6 +403,59 @@ collect_workspace_hygiene() {
     non_local_prefix_direct_children=0
     trash_soft_purge_pending_files=0
   fi
+}
+
+collect_branch_residue() {
+  stale_local_branch_count=0
+  stale_remote_branch_count=0
+  open_pr_count=0
+  stale_branch_rows=""
+  open_pr_rows=""
+  : > "$STALE_BRANCH_ROWS_FILE"
+  : > "$OPEN_PR_ROWS_FILE"
+
+  while IFS='|' read -r repo rel_path pulse_enabled cleanup_enabled thread_visible verified notes; do
+    [[ -z "${repo// }" ]] && continue
+    [[ "$repo" =~ ^# ]] && continue
+    [[ "${cleanup_enabled:-0}" == "1" ]] || continue
+    [[ "${verified:-0}" == "1" ]] || continue
+
+    local abs_path="$ROOT/$rel_path"
+    [[ -d "$abs_path/.git" ]] || continue
+
+    while IFS= read -r branch; do
+      [[ -z "$branch" ]] && continue
+      stale_local_branch_count=$((stale_local_branch_count + 1))
+      echo "$repo|local|$branch" >> "$STALE_BRANCH_ROWS_FILE"
+    done < <(git -C "$abs_path" for-each-ref refs/heads --format='%(refname:short)' | rg '^codex/' || true)
+
+    while IFS= read -r branch; do
+      [[ -z "$branch" ]] && continue
+      stale_remote_branch_count=$((stale_remote_branch_count + 1))
+      echo "$repo|remote|$branch" >> "$STALE_BRANCH_ROWS_FILE"
+    done < <(git -C "$abs_path" for-each-ref refs/remotes/origin/codex --format='%(refname:short)' || true)
+
+    if command -v gh >/dev/null 2>&1; then
+      local pr_json=""
+      pr_json="$(gh pr list -R "BitPod-App/$repo" --state open --limit 100 --json number,headRefName,url 2>/dev/null || true)"
+      if [[ -n "$pr_json" && "$pr_json" != "[]" ]]; then
+        while IFS= read -r row; do
+          [[ -z "$row" ]] && continue
+          open_pr_count=$((open_pr_count + 1))
+          echo "$repo|$row" >> "$OPEN_PR_ROWS_FILE"
+        done < <(printf '%s' "$pr_json" | python3 -c 'import json,sys
+try:
+    data=json.load(sys.stdin)
+except Exception:
+    data=[]
+for item in data:
+    print("{}|{}|{}".format(item.get("number"), item.get("headRefName"), item.get("url")))')
+      fi
+    fi
+  done < "$REGISTRY_FILE"
+
+  [[ -f "$STALE_BRANCH_ROWS_FILE" ]] && stale_branch_rows="$(cat "$STALE_BRANCH_ROWS_FILE")"
+  [[ -f "$OPEN_PR_ROWS_FILE" ]] && open_pr_rows="$(cat "$OPEN_PR_ROWS_FILE")"
 }
 
 collect_medium_checks() {
@@ -471,7 +548,7 @@ quick_gate_status() {
 }
 
 medium_gate_status() {
-  if [[ "$exact_duplicate_md" -le 10 ]]; then
+  if [[ "$exact_duplicate_md" -eq 0 && "$likely_duplicate_filename_count" -eq 0 ]]; then
     echo "STOP_OK"
   else
     echo "ESCALATE_RECOMMENDED"
@@ -482,7 +559,8 @@ t3_local_workspace_pass() {
   if [[ "$active_legacy_bucket_hits" -eq 0 &&
         "$unexpected_local_workspace_children" -eq 0 &&
         "$non_local_prefix_direct_children" -eq 0 &&
-        "$exact_duplicate_md" -le 10 &&
+        "$likely_duplicate_filename_count" -eq 0 &&
+        "$exact_duplicate_md" -eq 0 &&
         "$strict_canonical_zone_issues" -eq 0 ]]; then
     echo "PASS"
   else
@@ -501,7 +579,14 @@ cleanup_overall_result() {
 
   local local_pass="PASS"
   [[ "$include_local_workspace" -eq 1 ]] && local_pass="$(t3_local_workspace_pass)"
-  if [[ "$repo_total" -gt 0 && "$code1" -eq "$repo_total" && "$code2" -eq 0 && "$local_pass" == "PASS" && "$registry_problem_count" -eq 0 ]]; then
+  if [[ "$repo_total" -gt 0 &&
+        "$code1" -eq "$repo_total" &&
+        "$code2" -eq 0 &&
+        "$local_pass" == "PASS" &&
+        "$registry_problem_count" -eq 0 &&
+        "$stale_local_branch_count" -eq 0 &&
+        "$stale_remote_branch_count" -eq 0 &&
+        "$open_pr_count" -eq 0 ]]; then
     echo "PORCELAIN"
   else
     echo "FRACTURED"
@@ -511,7 +596,11 @@ cleanup_overall_result() {
 cleanup_overall_verification() {
   local tier="$1"
   if [[ "$tier" == "T3" ]]; then
-    if [[ "$code2" -eq 0 && "$registry_problem_count" -eq 0 ]]; then
+    if [[ "$code2" -eq 0 &&
+          "$registry_problem_count" -eq 0 &&
+          "$stale_local_branch_count" -eq 0 &&
+          "$stale_remote_branch_count" -eq 0 &&
+          "$open_pr_count" -eq 0 ]]; then
       echo "VERIFIED"
     else
       echo "NOT VERIFIED"
@@ -528,6 +617,8 @@ cleanup_verification_detail() {
       echo "Fresh all-repo parity was attempted, but one or more repos could not be verified cleanly."
     elif [[ "$registry_problem_count" -gt 0 ]]; then
       echo "Repo registry problems prevented a fully verified cleanup pass."
+    elif [[ "$stale_local_branch_count" -gt 0 || "$stale_remote_branch_count" -gt 0 || "$open_pr_count" -gt 0 ]]; then
+      echo "Stale codex branches or open pull requests prevented a fully verified cleanup pass."
     else
       echo "Fresh all-repo parity verification completed in this run."
     fi
@@ -577,6 +668,11 @@ reset_workspace_metrics() {
   strict_canonical_zone_issues=0
   report_only_zone_count=0
   strict_zone_count=0
+  stale_local_branch_count=0
+  stale_remote_branch_count=0
+  open_pr_count=0
+  stale_branch_rows=""
+  open_pr_rows=""
   : > "$ZONE_ROWS_FILE"
 }
 
@@ -607,11 +703,7 @@ emit_parity_summary_section() {
 
   if [[ "$surface" == "pulse" ]]; then
     echo "- states: matched=$pulse_matched local_diverged=$pulse_local_diverged remote_mismatch=$pulse_remote_mismatch unlinked=$pulse_unlinked"
-    if [[ "$code1" -eq "$repo_total" && "$repo_total" -gt 0 && "$code2" -eq 0 ]]; then
-      echo "- overall=PERFECT PARITY"
-    else
-      echo "- overall=REPORT ONLY"
-    fi
+    echo "- overall=$overall_label"
   else
     echo "- states: likely_match=$cleanup_likely_match local_diverged=$cleanup_local_diverged remote_mismatch=$cleanup_remote_mismatch unlinked=$cleanup_unlinked"
     echo "- overall=$overall_label"
@@ -623,6 +715,14 @@ emit_parity_summary_section() {
   fi
 
   echo "- fresh_verification_requested=$(render_bool "$require_fresh")"
+}
+
+pulse_overall_result() {
+  if [[ "$repo_total" -gt 0 && "$code1" -eq "$repo_total" && "$code2" -eq 0 && "$registry_problem_count" -eq 0 && "${1:-}" == "VERIFIED" ]]; then
+    echo "PORCELAIN"
+  else
+    echo "REPORT ONLY"
+  fi
 }
 
 emit_repo_detail_row() {
@@ -717,6 +817,17 @@ emit_tier_specific_section() {
 
   print_section "Tier-specific checks"
   emit_registry_problems
+  echo "- stale_local_codex_branches=$stale_local_branch_count"
+  echo "- stale_remote_codex_branches=$stale_remote_branch_count"
+  echo "- open_pull_requests=$open_pr_count"
+  while IFS='|' read -r repo scope ref; do
+    [[ -z "$repo" ]] && continue
+    echo "- stale_ref=$repo scope=$scope ref=$ref"
+  done <<< "$stale_branch_rows"
+  while IFS='|' read -r repo number head_ref url; do
+    [[ -z "$repo" ]] && continue
+    echo "- open_pr=$repo number=$number head=$head_ref url=$url"
+  done <<< "$open_pr_rows"
 
   if [[ "$include_local_workspace" -eq 0 ]]; then
     echo "- local_workspace_checks=SKIPPED"
@@ -802,7 +913,7 @@ emit_pulse_report() {
   local event_name="$2"
   local overall_verification="VERIFIED"
   local verification_detail="Fresh parity verification completed for all scanned repos."
-  local pulse_result="REPORT ONLY"
+  local pulse_result
 
   if [[ "$code2" -gt 0 || "$registry_problem_count" -gt 0 ]]; then
     overall_verification="NOT VERIFIED"
@@ -812,9 +923,7 @@ emit_pulse_report() {
       verification_detail="This pulse is report-only and includes local-only repo assessments."
     fi
   fi
-  if [[ "$code1" -eq "$repo_total" && "$repo_total" -gt 0 && "$code2" -eq 0 ]]; then
-    pulse_result="PERFECT PARITY"
-  fi
+  pulse_result="$(pulse_overall_result "$overall_verification")"
 
   echo "Parity Pulse"
   echo "Timestamp: $NOW"
@@ -823,7 +932,7 @@ emit_pulse_report() {
   echo "- result=$pulse_result"
   echo "- verification=$overall_verification"
   echo "- detail=$verification_detail"
-  emit_parity_summary_section "pulse" "T1" "REPORT ONLY" "$overall_verification" "$require_fresh"
+  emit_parity_summary_section "pulse" "T1" "$pulse_result" "$overall_verification" "$require_fresh"
   emit_pulse_repo_details
   if [[ "$registry_problem_count" -gt 0 ]]; then
     print_section "Registry"
@@ -834,6 +943,7 @@ emit_pulse_report() {
 prepare_workspace_metrics() {
   local include_local_workspace="$1"
   local tier="$2"
+  collect_branch_residue
   if [[ "$include_local_workspace" -eq 0 ]]; then
     return 0
   fi

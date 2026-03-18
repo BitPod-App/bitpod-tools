@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT="${BITPOD_APP_ROOT:-/Users/cjarguello/bitpod-app}"
+ROOT="${BITPOD_APP_ROOT:-/Users/cjarguello/BitPod-App}"
 REGISTRY_FILE="${BITPOD_REPO_REGISTRY_FILE:-$ROOT/bitpod-tools/config/repo_registry.tsv}"
 TMP_FILE="$(mktemp "${TMPDIR:-/tmp}/repo_registry.XXXXXX")"
 trap 'rm -f "$TMP_FILE"' EXIT

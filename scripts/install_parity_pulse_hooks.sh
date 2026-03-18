@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT="${BITPOD_APP_ROOT:-/Users/cjarguello/bitpod-app}"
+ROOT="${BITPOD_APP_ROOT:-/Users/cjarguello/BitPod-App}"
 REGISTRY_FILE="${BITPOD_REPO_REGISTRY_FILE:-$ROOT/bitpod-tools/config/repo_registry.tsv}"
 EMIT_SCRIPT="$ROOT/bitpod-tools/scripts/parity_pulse_emit.sh"
 
