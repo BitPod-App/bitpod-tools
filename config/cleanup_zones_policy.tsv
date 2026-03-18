@@ -5,9 +5,9 @@
 
 cj_pm_dropbox|REPORT_ONLY|local-workspace/local-cj-pm-only|explicit user-managed keep zone; no cleanup pressure
 local_handoffs|REPORT_ONLY|local-workspace/local-handoffs|temporary handoff exception lane; keep only active handoff files and short-lived dated notes
-local_trash_delete|REPORT_ONLY|local-workspace/local-trash-delete|disposal quarantine; do not replicate; review only for purge
+local_trash_delete|REPORT_ONLY|local-workspace/local-trash-delete|inactive disposal holding lane; do not replicate; review only for purge
 local_working_files|REPORT_ONLY|local-workspace/local-working-files|default explicit keep path for local files that are still active or under review
-local_migration_history|REPORT_ONLY|local-workspace/local-working-files/local-migration-history|small retained migration context packet inside local-working-files; keep tiny and review regularly
+local_migration_history|REPORT_ONLY|local-workspace/local-working-files/local-migration-history|temporary migration-era packet if still present; not part of canonical skeleton; keep tiny and review regularly
 legacy_agent_bootstrap|REPORT_ONLY|bitpod-docs/archive/legacy-context/sector-feeds-agent-bootstrap|archived non-feed bootstrap material moved out of sector-feeds; preserve and monitor only
 templates_registry|STRICT_CANONICAL|bitpod-tools/linear/docs/templates_registry|canonical template index and references
 learnings_ledger|STRICT_CANONICAL|bitpod-docs/archive/learnings|canonical retros/protocol learnings
