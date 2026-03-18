@@ -8,11 +8,14 @@
 
 ## Decision
 
-Local BitPod/Codex operational state that must persist outside repo source trees should live under:
+Primary Codex machine-local state that must persist outside repo source trees should live in a machine-local home outside the umbrella root:
 
-- `/Users/cjarguello/bitpod-app/local-workspace/local-codex/.codex/`
+- default: `~/.codex/`
+- or an explicit machine-local `CODEX_HOME` outside `/Users/cjarguello/BitPod-App`
 
-This is the default workspace-safe destination for:
+The umbrella-root `.codex/` path is reserved only for checked-in workspace compatibility metadata and narrow project-scoped overrides.
+
+Machine-local Codex state includes:
 
 - automation journals
 - retained run notes
@@ -22,24 +25,26 @@ This is the default workspace-safe destination for:
 
 ## Why This Location
 
-- hidden path is appropriate for operator/runtime metadata
-- remains inside the approved BitPod workspace root
-- avoids polluting repository source trees
-- supports later backup, audit, and cleanup as one subtree
+- machine-local app state should stay machine-local rather than project-root-local
+- avoids mixing project canon with mutable app state, auth, and session history
+- supports separate personal-machine and HQ guest Codex homes without shared state
+- keeps checked-in workspace metadata separate from machine-maintained state
 
 ## Policy Boundary
 
-No local operational state should be written outside approved workspace roots.
+No long-lived Codex operational state should be silently shared across machines or pushed into random scratch paths.
 
 Disallowed examples:
 
-- `~/.codex/...`
+- a project-root `.codex/` used as the primary machine-state home
+- one shared Codex home used by both the personal machine and HQ guest
 - arbitrary home-directory scratch locations
 - repo-external temp paths used as long-lived state
 
 Allowed roots:
 
-- `/Users/cjarguello/bitpod-app`
+- machine-local `~/.codex/` or explicit machine-local `CODEX_HOME`
+- `/Users/cjarguello/BitPod-App/.codex/` only for checked-in compatibility metadata and narrow project-scoped overrides
 - migration-era dated backup workspace roots when explicitly preserved
 
 ## Repo vs Local State Split
@@ -55,7 +60,7 @@ Keep in repo only when the output is:
 
 ### Local workspace state
 
-Keep under `local-workspace/local-codex/.codex/` when the output is:
+Keep in machine-local Codex home when the output is:
 
 - operational
 - machine-maintained
@@ -65,10 +70,10 @@ Keep under `local-workspace/local-codex/.codex/` when the output is:
 
 ## Migration Rule
 
-If an existing tool writes outside allowed roots:
+If an existing tool still assumes project-root `.codex/` is the primary state home:
 
 1. treat it as out of policy
-2. migrate or hard-fail the writer
+2. migrate it to machine-local state or narrow checked-in override usage
 3. document any temporary compatibility exceptions explicitly
 
 Do not silently permit legacy out-of-root writes.
@@ -89,4 +94,3 @@ For low-value transient files:
 This policy decides **where** local state may live.
 
 The companion policy `global_artifact_naming_policy_v1.md` decides **how** persisted artifacts should be named when they are intentionally retained.
-
