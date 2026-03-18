@@ -718,10 +718,13 @@ emit_parity_summary_section() {
 }
 
 pulse_overall_result() {
-  if [[ "$repo_total" -gt 0 && "$code1" -eq "$repo_total" && "$code2" -eq 0 && "$registry_problem_count" -eq 0 && "${1:-}" == "VERIFIED" ]]; then
-    echo "PORCELAIN"
+  local overall_verification="${1:-}"
+  if [[ "$repo_total" -gt 0 && "$code1" -eq "$repo_total" && "$code2" -eq 0 && "$registry_problem_count" -eq 0 && "$overall_verification" == "VERIFIED" ]]; then
+    echo "PERFECT PARITY"
+  elif [[ "$overall_verification" != "VERIFIED" ]]; then
+    echo "UNKNOWN"
   else
-    echo "REPORT ONLY"
+    echo "DIVERGED"
   fi
 }
 

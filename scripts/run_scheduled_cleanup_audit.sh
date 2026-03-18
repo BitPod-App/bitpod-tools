@@ -3,9 +3,11 @@ set -euo pipefail
 
 ROOT="${BITPOD_APP_ROOT:-/Users/cjarguello/BitPod-App}"
 AUDIT_CTL="$ROOT/bitpod-tools/audit_ctl.sh"
+TEMPORAL_AUDIT="$ROOT/bitpod-tools/scripts/linear_temporal_lifecycle_audit.py"
 STATE_DIR="$ROOT/local-workspace/local-working-files/local-cleanup-audit"
 STATE_FILE="$STATE_DIR/scheduled_cleanup_state.env"
 LATEST_REPORT="$STATE_DIR/latest_scheduled_cleanup.md"
+LATEST_TEMPORAL_REPORT="$STATE_DIR/latest_temporal_lifecycle_audit.md"
 LINEAR_PAYLOAD="$STATE_DIR/latest_linear_escalation.md"
 TIMESTAMP="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
@@ -33,6 +35,14 @@ else
   run_exit=$?
 fi
 
+temporal_args=(--root "$ROOT" --export-purge)
+if [[ "${BITPOD_TEMPORAL_EXPORT_EXECUTE:-0}" == "1" ]]; then
+  temporal_args+=(--execute)
+fi
+
+temporal_report="$(python3 "$TEMPORAL_AUDIT" "${temporal_args[@]}")"
+printf '%s\n' "$temporal_report" > "$LATEST_TEMPORAL_REPORT"
+
 {
   echo "# Scheduled Cleanup Audit"
   echo
@@ -40,8 +50,12 @@ fi
   echo "- mode: scheduled-report-only"
   echo "- command: run T3 audit"
   echo "- exit_code: $run_exit"
+  echo "- temporal_audit: $LATEST_TEMPORAL_REPORT"
+  echo "- temporal_execute: ${BITPOD_TEMPORAL_EXPORT_EXECUTE:-0}"
   echo
   printf '%s\n' "$report"
+  echo
+  printf '%s\n' "$temporal_report"
 } > "$LATEST_REPORT"
 
 if printf '%s\n' "$report" | grep -q -- "result=PORCELAIN"; then
