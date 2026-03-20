@@ -24,23 +24,36 @@ Historical closeout milestone for identity, secrets, org setup, migration bootst
 
 Transport/runtime parity milestone. Treat as functionally complete only when residual acceptance gates are cleared. Any work still requiring real Discord validation or equivalent live parity proof remains a residual Phase 2 acceptance gate.
 
-### Phase 3 — Retroactive Cleanup + Hardening
+### Phase 3 — Mac Mini Execution HQ Establishment
 
-Cleanup/hardening milestone. Includes personal-account lockdown, local scope hardening, backup/legacy retirement, drift checks, and historical normalization.
+Execution-boundary milestone. Complete only when:
+
+- the MacBook is operating as the control console
+- the Mac Mini is the primary execution node
+- NemoClaw/OpenShell is the runtime layer
+- the Mac Mini workspace was rebuilt cleanly from GitHub after a truthful `T3 PORCELAIN` source baseline
+- a minimal working HQ environment exists with repos, workspace, runtime, and remote-control proof
+
+VM isolation may be introduced later, but it is not the default Phase 3 runtime assumption.
 
 ### Phase 4 — AI Agent Team Orchestration + Specialization
 
-True final bootstrap milestone. Not complete when docs/specs exist. Complete only when the operating AI team exists in practice:
+True final bootstrap milestone. Not complete when docs/specs exist. Complete only when the operating AI team exists in practice inside NemoClaw/OpenShell on the Mac Mini:
 
 - Taylor orchestrator working as the real coordination brain
 - specialist lanes defined and actually used
 - QA path exists as a real operating lane, even if interim
 - session/chat flow works in a real environment
 - durable memory/decision/artifact flow is happening through the operational stack
+- Taylor01 exists as a real minimal team:
+  - Taylor as primary operator
+  - at least one specialist agent
 
 ### Phase 5 — Governance + Memory + Eval Hardening
 
-Post-foundation hardening and polish. Baseline governance/memory/eval artifacts may be complete, but operational hardening is not complete until reviewer routing, QA authority maturity, checkpoint protocol in practice, and production-grade traceability are all working.
+Post-foundation hardening and polish. Baseline governance/memory/eval artifacts may be complete, but operational hardening is not complete until reviewer routing, QA authority maturity, checkpoint protocol in practice, production-grade traceability, and execution reliability are all working.
+
+Optional VM isolation belongs here as a separate hardening track if NemoClaw/OpenShell alone is not strong enough for the desired security posture.
 
 ## Why Prior Progress Was Misleading
 
