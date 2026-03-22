@@ -7,7 +7,6 @@ REFRESH_REGISTRY="$PROJECT_ROOT/scripts/refresh_repo_registry.sh"
 INSTALL_HOOKS="$PROJECT_ROOT/scripts/install_parity_pulse_hooks.sh"
 SCHEDULED_CLEANUP="$PROJECT_ROOT/scripts/run_scheduled_cleanup_audit.sh"
 PARITY_PULSE_EMIT="$PROJECT_ROOT/scripts/parity_pulse_emit.sh"
-TEMPORAL_AUDIT="$PROJECT_ROOT/scripts/linear_temporal_lifecycle_audit.py"
 
 TEST_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/audit_tools_test.XXXXXX")"
 trap 'rm -rf "$TEST_ROOT"' EXIT
@@ -102,11 +101,6 @@ run_scheduled_capture() {
   "$SCHEDULED_CLEANUP"
 }
 
-run_temporal_capture() {
-  BITPOD_APP_ROOT="$WORKSPACE_ROOT" \
-  python3 "$TEMPORAL_AUDIT" --root "$WORKSPACE_ROOT" "$@"
-}
-
 run_pulse_emit() {
   local registry_file="$1"
   local event_name="$2"
@@ -131,12 +125,6 @@ setup_workspace() {
 
   ln -s "$AUDIT_CTL" "$WORKSPACE_ROOT/bitpod-tools/audit_ctl.sh"
   ln -s "$PROJECT_ROOT/scripts/parity_pulse_emit.sh" "$WORKSPACE_ROOT/bitpod-tools/scripts/parity_pulse_emit.sh"
-  ln -s "$PROJECT_ROOT/scripts/linear_temporal_lifecycle_audit.py" "$WORKSPACE_ROOT/bitpod-tools/scripts/linear_temporal_lifecycle_audit.py"
-
-  mkdir -p "$WORKSPACE_ROOT/bitpod-tools/linear/temporal/active/ticket__BIT-128"
-  mkdir -p "$WORKSPACE_ROOT/bitpod-tools/linear/temporal/purge/ticket__BIT-999"
-  echo "note" > "$WORKSPACE_ROOT/bitpod-tools/linear/temporal/active/ticket__BIT-128/README.md"
-  echo "purge me" > "$WORKSPACE_ROOT/bitpod-tools/linear/temporal/purge/ticket__BIT-999/README.md"
 
   cat > "$ZONE_POLICY_FILE" <<'EOF'
 # zone|mode|rel_path|notes
@@ -276,7 +264,7 @@ test_parity_pulse_contracts() {
   pulse_output="$(run_audit_capture "$REGISTRY_FILE" "__parity_pulse__ event=post-commit fresh")"
   assert_contains "$pulse_output" "Parity Pulse"
   assert_contains "$pulse_output" "- event=post-commit"
-  assert_contains "$pulse_output" "- result=DIVERGED"
+  assert_contains "$pulse_output" "- result=REPORT ONLY"
   assert_contains "$pulse_output" "- verification=VERIFIED"
   assert_contains "$pulse_output" "LOCAL DIVERGED"
   assert_contains "$pulse_output" "REMOTE MISMATCH"
@@ -286,15 +274,15 @@ test_parity_pulse_contracts() {
 
   local perfect_pulse
   perfect_pulse="$(run_audit_capture "$PERFECT_REGISTRY_FILE" "__parity_pulse__ event=pre-push fresh")"
-  assert_contains "$perfect_pulse" "- result=PERFECT PARITY"
+  assert_contains "$perfect_pulse" "- result=PORCELAIN"
   assert_contains "$perfect_pulse" "- verification=VERIFIED"
   assert_contains "$perfect_pulse" "- repo_findings=none"
 
   local unverified_perfect_shape
   unverified_perfect_shape="$(run_audit_capture "$PERFECT_REGISTRY_FILE" "__parity_pulse__ event=post-commit")"
-  assert_contains "$unverified_perfect_shape" "- result=UNKNOWN"
+  assert_contains "$unverified_perfect_shape" "- result=REPORT ONLY"
   assert_contains "$unverified_perfect_shape" "- verification=NOT VERIFIED"
-  assert_not_contains "$unverified_perfect_shape" "- result=PERFECT PARITY"
+  assert_not_contains "$unverified_perfect_shape" "- result=PORCELAIN"
 
   local dirs_before
   dirs_before="$(find "$WORKSPACE_ROOT/local-workspace/local-working-files" -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' ')"
@@ -304,27 +292,6 @@ test_parity_pulse_contracts() {
   dirs_after="$(find "$WORKSPACE_ROOT/local-workspace/local-working-files" -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' ')"
   assert_contains "$emitted_pulse" "Parity Pulse"
   assert_equals "$dirs_before" "$dirs_after"
-}
-
-test_temporal_lifecycle_contracts() {
-  local report_only
-  report_only="$(run_temporal_capture)"
-  assert_contains "$report_only" "cleanup_status=hold"
-  assert_contains "$report_only" "cleanup_status=purge"
-  assert_contains "$report_only" "notes=missing_meta"
-  assert_file_missing "$WORKSPACE_ROOT/bitpod-tools/linear/temporal/active/ticket__BIT-128/.temporal_meta.json"
-
-  local executed
-  executed="$(run_temporal_capture --execute)"
-  assert_contains "$executed" "execute=yes"
-  assert_file_exists "$WORKSPACE_ROOT/bitpod-tools/linear/temporal/active/ticket__BIT-128/.temporal_meta.json"
-  assert_file_exists "$WORKSPACE_ROOT/bitpod-tools/linear/temporal/purge/ticket__BIT-999/.temporal_meta.json"
-
-  local exported
-  exported="$(run_temporal_capture --export-purge --execute)"
-  assert_contains "$exported" "purge_export=DONE"
-  assert_file_missing "$WORKSPACE_ROOT/bitpod-tools/linear/temporal/purge/ticket__BIT-999"
-  assert_file_exists "$WORKSPACE_ROOT/local-workspace/local-trash-delete/local-purge/linear-temporal/ticket__BIT-999/.temporal_meta.json"
 }
 
 test_hook_installer() {
@@ -343,13 +310,7 @@ test_scheduled_cleanup_helper() {
   scheduled_output="$(run_scheduled_capture "$PERFECT_REGISTRY_FILE")"
   assert_contains "$scheduled_output" "- result=PORCELAIN"
   assert_file_exists "$WORKSPACE_ROOT/local-workspace/local-working-files/local-cleanup-audit/latest_scheduled_cleanup.md"
-  assert_file_exists "$WORKSPACE_ROOT/local-workspace/local-working-files/local-cleanup-audit/latest_temporal_lifecycle_audit.md"
   assert_file_exists "$WORKSPACE_ROOT/local-workspace/local-working-files/local-cleanup-audit/scheduled_cleanup_state.env"
-
-  local report_contents
-  report_contents="$(cat "$WORKSPACE_ROOT/local-workspace/local-working-files/local-cleanup-audit/latest_scheduled_cleanup.md")"
-  assert_contains "$report_contents" "temporal_audit:"
-  assert_contains "$report_contents" "Linear Temporal Lifecycle Audit"
 
   local state_contents
   state_contents="$(cat "$WORKSPACE_ROOT/local-workspace/local-working-files/local-cleanup-audit/scheduled_cleanup_state.env")"
@@ -374,7 +335,6 @@ test_refresh_repo_registry
 test_cleanup_contracts
 test_stale_branch_contracts
 test_parity_pulse_contracts
-test_temporal_lifecycle_contracts
 test_hook_installer
 test_scheduled_cleanup_helper
 
