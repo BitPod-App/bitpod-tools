@@ -3,8 +3,7 @@
 # - REPORT_ONLY: cleanup audit only reports metrics (counts/dup names/large files), no action pressure.
 # - STRICT_CANONICAL: canonical zone, expected to stay organized and auditable.
 
-cj_pm_dropbox|REPORT_ONLY|local-workspace/local-cj-pm-only|explicit user-managed keep zone; no cleanup pressure
-local_handoffs|REPORT_ONLY|local-workspace/local-handoffs|temporary handoff exception lane; keep only active handoff files and short-lived dated notes
+cj_pm_dropbox|REPORT_ONLY|local-workspace/local-cj-pm-only|explicit user-managed keep zone when enabled by the selected local-workspace profile; no cleanup pressure
 local_trash_delete|REPORT_ONLY|local-workspace/local-trash-delete|inactive disposal holding lane; do not replicate; review only for purge
 local_working_files|REPORT_ONLY|local-workspace/local-working-files|default explicit keep path for local files that are still active or under review
 local_migration_history|REPORT_ONLY|local-workspace/local-working-files/local-migration-history|temporary migration-era packet if still present; not part of canonical skeleton; keep tiny and review regularly

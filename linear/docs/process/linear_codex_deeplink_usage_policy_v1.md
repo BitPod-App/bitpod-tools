@@ -24,6 +24,14 @@ They do not replace:
 - Linear status/label governance
 - CJ scope judgment
 
+## Important distinction: deeplink vs Linear integration task
+
+Assigning an issue to Codex or mentioning `@Codex` in Linear is not the same as using a local Codex deeplink.
+
+Those Linear integration actions create a Codex cloud task. They should be treated as explicit cloud-task delegation, not as part of routine `update Linear` hygiene.
+
+For the current BitPod safety posture, routine issue truth-updating must preserve existing assignee/delegate fields by default and must not trigger Codex cloud work implicitly.
+
 ## Use the deeplink only if all are true
 
 1. The issue has a clear executable task, not just an idea.
@@ -53,6 +61,8 @@ They do not replace:
 3. Codex still verifies repo truth locally before acting.
 4. Codex works in the local workspace, not by trusting Linear alone.
 5. QA, evidence, and Linear state changes still follow existing BitPod rules.
+6. Routine issue hygiene must preserve existing assignee/delegate fields by default.
+7. Routine issue hygiene must not assign/delegate the issue to Codex or mention `@Codex` unless CJ explicitly wants a cloud task.
 
 ## Good immediate use cases
 

@@ -6,6 +6,8 @@ DEFAULT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 ROOT="${BITPOD_APP_ROOT:-${WORKSPACE:-$DEFAULT_ROOT}}"
 REGISTRY_FILE="${BITPOD_REPO_REGISTRY_FILE:-$ROOT/bitpod-tools/config/repo_registry.tsv}"
 ZONE_POLICY_FILE="${BITPOD_CLEANUP_ZONE_POLICY_FILE:-$ROOT/bitpod-tools/config/cleanup_zones_policy.tsv}"
+LOCAL_WORKSPACE_CONTRACT_FILE="${BITPOD_LOCAL_WORKSPACE_CONTRACT_FILE:-$ROOT/bitpod-docs/process/local-workspace-skeleton-contract.toml}"
+LOCAL_WORKSPACE_PROFILE="${BITPOD_LOCAL_WORKSPACE_PROFILE:-personal_full}"
 NOW="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 TMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/audit_ctl.XXXXXX")"
 trap 'rm -rf "$TMP_DIR"' EXIT
@@ -18,6 +20,8 @@ TMP_IN_SHA="$TMP_DIR/in_sha.txt"
 TMP_CANON_SHA="$TMP_DIR/canon_sha.txt"
 STALE_BRANCH_ROWS_FILE="$TMP_DIR/stale_branch_rows.txt"
 OPEN_PR_ROWS_FILE="$TMP_DIR/open_pr_rows.txt"
+
+NETWORK_TIMEOUT_SECONDS="${BITPOD_AUDIT_NETWORK_TIMEOUT_SECONDS:-15}"
 
 repo_rows=""
 repo_total=0
@@ -44,6 +48,7 @@ trash_files=0
 handoff_files=0
 pm_only_files=0
 codex_state_files=0
+shared_dropoff_files=0
 trash_soft_purge_pending_files=0
 trash_soft_purge_threshold_days=14
 likely_duplicate_filename_count=0
@@ -60,8 +65,15 @@ strict_zone_count=0
 stale_local_branch_count=0
 stale_remote_branch_count=0
 open_pr_count=0
+network_probe_fail_count=0
+network_probe_rows=""
 stale_branch_rows=""
 open_pr_rows=""
+contract_required_paths=""
+contract_optional_paths=""
+contract_disabled_paths=""
+contract_allowed_direct_children=""
+contract_profile_loaded=0
 
 normalize() {
   tr '[:upper:]' '[:lower:]'
@@ -89,6 +101,99 @@ render_bool() {
   else
     echo "NO"
   fi
+}
+
+run_with_timeout() {
+  local timeout_seconds="$1"
+  shift
+
+  python3 - "$timeout_seconds" "$@" <<'PY'
+import subprocess
+import sys
+
+timeout = int(sys.argv[1])
+cmd = sys.argv[2:]
+try:
+    completed = subprocess.run(cmd, timeout=timeout, capture_output=True, text=True)
+    sys.stdout.write(completed.stdout)
+    sys.stderr.write(completed.stderr)
+    raise SystemExit(completed.returncode)
+except subprocess.TimeoutExpired as exc:
+    if exc.stdout:
+        sys.stdout.write(exc.stdout)
+    if exc.stderr:
+        sys.stderr.write(exc.stderr)
+    raise SystemExit(124)
+PY
+}
+
+append_network_probe_failure() {
+  local surface="$1"
+  local repo="$2"
+  local operation="$3"
+  local detail="$4"
+  network_probe_fail_count=$((network_probe_fail_count + 1))
+  network_probe_rows+="$surface|$repo|$operation|$detail"$'\n'
+}
+
+load_local_workspace_contract() {
+  [[ "$contract_profile_loaded" -eq 1 ]] && return 0
+
+  local contract_output=""
+  contract_output="$(
+    python3 - "$LOCAL_WORKSPACE_CONTRACT_FILE" "$LOCAL_WORKSPACE_PROFILE" <<'PY'
+import shlex
+import sys
+
+try:
+    import tomllib
+except ModuleNotFoundError:
+    import tomli as tomllib
+
+contract_path = sys.argv[1]
+profile = sys.argv[2]
+
+with open(contract_path, "rb") as fh:
+    data = tomllib.load(fh)
+
+profiles = data.get("profiles", {})
+if profile not in profiles:
+    raise SystemExit(f"profile not found in contract: {profile}")
+
+profile_data = profiles[profile]
+required = profile_data.get("required_paths", [])
+optional = profile_data.get("optional_paths", [])
+disabled = profile_data.get("disabled_paths", [])
+allowed_direct_children = sorted({path.split("/", 1)[0] for path in required + optional})
+
+def emit(name: str, value: str) -> None:
+    print(f"{name}={shlex.quote(value)}")
+
+emit("contract_required_paths", "\n".join(required))
+emit("contract_optional_paths", "\n".join(optional))
+emit("contract_disabled_paths", "\n".join(disabled))
+emit("contract_allowed_direct_children", "\n".join(allowed_direct_children))
+PY
+  )" || {
+    echo "[audit_ctl] failed to load local-workspace contract: $LOCAL_WORKSPACE_CONTRACT_FILE (profile=$LOCAL_WORKSPACE_PROFILE)" >&2
+    return 1
+  }
+
+  eval "$contract_output"
+  contract_profile_loaded=1
+}
+
+path_list_contains() {
+  local list="$1"
+  local needle="$2"
+  local item
+  while IFS= read -r item; do
+    [[ -z "$item" ]] && continue
+    if [[ "$item" == "$needle" ]]; then
+      return 0
+    fi
+  done <<< "$list"
+  return 1
 }
 
 assert_registry_ready() {
@@ -156,8 +261,13 @@ repo_sync_eval() {
   remote_fresh="false"
 
   if [[ "$require_fresh" -eq 1 ]]; then
-    if (cd "$repo_path" && git fetch --all --prune >/dev/null 2>&1); then
+    if (cd "$repo_path" && run_with_timeout "$NETWORK_TIMEOUT_SECONDS" git fetch --all --prune >/dev/null 2>&1); then
       remote_fresh="true"
+    else
+      fetch_status=$?
+      if [[ "$fetch_status" -eq 124 ]]; then
+        append_network_probe_failure "repo_parity" "$name" "git_fetch" "timed out after ${NETWORK_TIMEOUT_SECONDS}s"
+      fi
     fi
   fi
 
@@ -326,11 +436,13 @@ is_generic_duplicate_name() {
 }
 
 collect_queue_health() {
+  load_local_workspace_contract
   working_files="$(count_files "$ROOT/local-workspace/local-working-files")"
   trash_files="$(count_files "$ROOT/local-workspace/local-trash-delete")"
   handoff_files="$(count_files "$ROOT/local-workspace/local-handoffs")"
   pm_only_files="$(count_files "$ROOT/local-workspace/local-cj-pm-only")"
   codex_state_files="$(count_files "$ROOT/local-workspace/local-codex")"
+  shared_dropoff_files="$(count_files "$ROOT/local-workspace/local-shared-dropoff")"
 }
 
 collect_likely_duplicate_names() {
@@ -347,7 +459,6 @@ collect_likely_duplicate_names() {
       canon_dirs+=("$ROOT/$rel_path")
     fi
   done < "$REGISTRY_FILE"
-  [[ -d "$ROOT/local-workspace/local-codex" ]] && canon_dirs+=("$ROOT/local-workspace/local-codex")
 
   if [[ "${#canon_dirs[@]}" -gt 0 ]]; then
     find "${canon_dirs[@]}" \
@@ -375,12 +486,20 @@ collect_likely_duplicate_names() {
 }
 
 collect_workspace_hygiene() {
+  load_local_workspace_contract
   collect_likely_duplicate_names
-  if [[ -d "$ROOT/local-workspace/local-working-files" || -d "$ROOT/local-workspace/local-handoffs" ]]; then
+  local legacy_scan_dirs=()
+  if [[ -d "$ROOT/local-workspace/local-working-files" ]]; then
+    legacy_scan_dirs+=("$ROOT/local-workspace/local-working-files")
+  fi
+  if path_list_contains "$contract_allowed_direct_children" "local-shared-dropoff" && [[ -d "$ROOT/local-workspace/local-shared-dropoff" ]]; then
+    legacy_scan_dirs+=("$ROOT/local-workspace/local-shared-dropoff")
+  fi
+
+  if [[ "${#legacy_scan_dirs[@]}" -gt 0 ]]; then
     active_legacy_bucket_hits="$(
       find \
-        "$ROOT/local-workspace/local-working-files" \
-        "$ROOT/local-workspace/local-handoffs" \
+        "${legacy_scan_dirs[@]}" \
         -type d \
         \( -name 'incoming-clutter' -o -name 'working-files' -o -name 'trash-delete' -o -name 'handoffs' -o -name 'reference-candidates' \) \
         2>/dev/null | wc -l | tr -d ' '
@@ -390,10 +509,14 @@ collect_workspace_hygiene() {
   fi
 
   if [[ -d "$ROOT/local-workspace" ]]; then
-    unexpected_local_workspace_children="$(
-      find "$ROOT/local-workspace" -maxdepth 1 -mindepth 1 -type d -exec basename {} \; 2>/dev/null | \
-      awk '!/^(local-working-files|local-handoffs|local-trash-delete|local-cj-pm-only|local-codex)$/ {n++} END{print n+0}'
-    )"
+    unexpected_local_workspace_children=0
+    local child_name=""
+    while IFS= read -r child_name; do
+      [[ -z "$child_name" ]] && continue
+      if ! path_list_contains "$contract_allowed_direct_children" "$child_name"; then
+        unexpected_local_workspace_children=$((unexpected_local_workspace_children + 1))
+      fi
+    done < <(find "$ROOT/local-workspace" -maxdepth 1 -mindepth 1 -type d -exec basename {} \; 2>/dev/null)
     non_local_prefix_direct_children="$(
       find "$ROOT/local-workspace" -maxdepth 1 -mindepth 1 -type d -exec basename {} \; 2>/dev/null | \
       awk '!/^local-/ {n++} END{print n+0}'
@@ -441,7 +564,15 @@ collect_branch_residue() {
 
     if command -v gh >/dev/null 2>&1; then
       local pr_json=""
-      pr_json="$(gh pr list -R "BitPod-App/$repo" --state open --limit 100 --json number,headRefName,url 2>/dev/null || true)"
+      if pr_json="$(run_with_timeout "$NETWORK_TIMEOUT_SECONDS" gh pr list -R "BitPod-App/$repo" --state open --limit 100 --json number,headRefName,url 2>/dev/null)"; then
+        :
+      else
+        pr_status=$?
+        if [[ "$pr_status" -eq 124 ]]; then
+          append_network_probe_failure "repo_audit" "$repo" "gh_pr_list" "timed out after ${NETWORK_TIMEOUT_SECONDS}s"
+        fi
+        pr_json=""
+      fi
       if [[ -n "$pr_json" && "$pr_json" != "[]" ]]; then
         while IFS= read -r row; do
           [[ -z "$row" ]] && continue
@@ -479,7 +610,6 @@ collect_medium_checks() {
     [[ "${verified:-0}" == "1" ]] || continue
     [[ -d "$ROOT/$rel_path" ]] && canon_md_dirs+=("$ROOT/$rel_path")
   done < "$REGISTRY_FILE"
-  [[ -d "$ROOT/local-workspace/local-codex" ]] && canon_md_dirs+=("$ROOT/local-workspace/local-codex")
 
   if [[ "${#canon_md_dirs[@]}" -gt 0 ]]; then
     find "${canon_md_dirs[@]}" -type f -name '*.md' -print0 2>/dev/null | \
@@ -588,6 +718,7 @@ cleanup_overall_result() {
         "$code2" -eq 0 &&
         "$local_pass" == "PASS" &&
         "$registry_problem_count" -eq 0 &&
+        "$network_probe_fail_count" -eq 0 &&
         "$stale_local_branch_count" -eq 0 &&
         "$stale_remote_branch_count" -eq 0 &&
         "$open_pr_count" -eq 0 ]]; then
@@ -602,6 +733,7 @@ cleanup_overall_verification() {
   if [[ "$tier" == "T3" ]]; then
     if [[ "$code2" -eq 0 &&
           "$registry_problem_count" -eq 0 &&
+          "$network_probe_fail_count" -eq 0 &&
           "$stale_local_branch_count" -eq 0 &&
           "$stale_remote_branch_count" -eq 0 &&
           "$open_pr_count" -eq 0 ]]; then
@@ -621,6 +753,8 @@ cleanup_verification_detail() {
       echo "Fresh all-repo parity was attempted, but one or more repos could not be verified cleanly."
     elif [[ "$registry_problem_count" -gt 0 ]]; then
       echo "Repo registry problems prevented a fully verified cleanup pass."
+    elif [[ "$network_probe_fail_count" -gt 0 ]]; then
+      echo "One or more bounded network probes timed out, so cleanup truth could not be fully verified."
     elif [[ "$stale_local_branch_count" -gt 0 || "$stale_remote_branch_count" -gt 0 || "$open_pr_count" -gt 0 ]]; then
       echo "Stale codex branches or open pull requests prevented a fully verified cleanup pass."
     else
@@ -652,6 +786,8 @@ reset_repo_summary() {
   repo_not_verified_count=0
   registry_problem_count=0
   registry_problem_lines=""
+  network_probe_fail_count=0
+  network_probe_rows=""
 }
 
 reset_workspace_metrics() {
@@ -660,6 +796,7 @@ reset_workspace_metrics() {
   handoff_files=0
   pm_only_files=0
   codex_state_files=0
+  shared_dropoff_files=0
   trash_soft_purge_pending_files=0
   likely_duplicate_filename_count=0
   active_legacy_bucket_hits=0
@@ -675,6 +812,8 @@ reset_workspace_metrics() {
   stale_local_branch_count=0
   stale_remote_branch_count=0
   open_pr_count=0
+  network_probe_fail_count=0
+  network_probe_rows=""
   stale_branch_rows=""
   open_pr_rows=""
   : > "$ZONE_ROWS_FILE"
@@ -813,6 +952,7 @@ emit_queue_health_section() {
   echo "- handoff_files=$handoff_files"
   echo "- pm_only_files=$pm_only_files"
   echo "- codex_state_files=$codex_state_files"
+  echo "- shared_dropoff_files=$shared_dropoff_files"
 }
 
 emit_tier_specific_section() {
@@ -821,6 +961,11 @@ emit_tier_specific_section() {
 
   print_section "Tier-specific checks"
   emit_registry_problems
+  echo "- network_probe_failures=$network_probe_fail_count"
+  while IFS='|' read -r surface repo operation detail; do
+    [[ -z "$surface" ]] && continue
+    echo "- network_probe_failure=surface=$surface repo=$repo operation=$operation detail=$detail"
+  done <<< "$network_probe_rows"
   echo "- stale_local_codex_branches=$stale_local_branch_count"
   echo "- stale_remote_codex_branches=$stale_remote_branch_count"
   echo "- open_pull_requests=$open_pr_count"

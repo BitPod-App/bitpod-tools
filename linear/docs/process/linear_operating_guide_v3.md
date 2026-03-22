@@ -55,12 +55,18 @@ Define the canonical way agents use Linear for execution tracking, evidence logg
 - After meaningful execution or repo-thread closeout, update any clearly stale safe field when evidence is clear:
   - status/state when lifecycle actually changed
   - GitHub PR or merge links when they exist
-  - assignee/delegate when ownership is clear
   - project membership when obviously missing
   - related/blocked links when explicit
 - Add a concise execution/progress comment with what changed, what was verified, and what remains.
 - For partial shipment on a broader issue, do not move it to `Done` unless the scoped acceptance criteria are actually satisfied; still update links, comments, and any field that became more accurate.
 - If a field is clearly stale and safe to update, comment-only is not enough.
+- Temporary identity-safety rule: preserve the existing `assignee` and `delegate` by default.
+- Change `assignee` or `delegate` only when the next responsible owner is explicit, real, and supported by clear evidence in the issue context.
+- If ownership is unclear, leave `assignee` and `delegate` unchanged.
+- Never assign or delegate an issue to Codex as part of routine `update Linear`.
+- Do not use automatic `@Codex` mentions in Linear comments as part of routine `update Linear`.
+- Do not rely on Linear triage rules or other automation that delegates issues to Codex as part of this policy.
+- Treat this assignee/delegate restriction as a temporary safety rule until Codex is decoupled from the user's personal Linear identity.
 - Do not casually change priority, estimate, due date, or milestone when confidence is low.
 - Do not create duplicate retroactive issues when an existing issue already owns the scope.
 

@@ -18,6 +18,7 @@ REGISTRY_FILE="$CONFIG_ROOT/repo_registry.tsv"
 PERFECT_REGISTRY_FILE="$CONFIG_ROOT/repo_registry_perfect.tsv"
 HOOK_REGISTRY_FILE="$CONFIG_ROOT/repo_registry_hooks.tsv"
 ZONE_POLICY_FILE="$CONFIG_ROOT/cleanup_zones_policy.tsv"
+CONTRACT_FILE="$WORKSPACE_ROOT/bitpod-docs/process/local-workspace-skeleton-contract.toml"
 
 fail() {
   echo "FAIL: $1" >&2
@@ -71,6 +72,7 @@ create_tracked_repo() {
   git init --bare "$remote_path" >/dev/null
   git -C "$repo_path" remote add origin "$remote_path"
   git -C "$repo_path" push -u origin main >/dev/null
+  git -C "$remote_path" symbolic-ref HEAD refs/heads/main >/dev/null
 }
 
 advance_remote() {
@@ -90,6 +92,7 @@ run_audit_capture() {
   BITPOD_APP_ROOT="$WORKSPACE_ROOT" \
   BITPOD_REPO_REGISTRY_FILE="$registry_file" \
   BITPOD_CLEANUP_ZONE_POLICY_FILE="$ZONE_POLICY_FILE" \
+  BITPOD_LOCAL_WORKSPACE_CONTRACT_FILE="$CONTRACT_FILE" \
   "$AUDIT_CTL" "$request"
 }
 
@@ -98,6 +101,7 @@ run_scheduled_capture() {
   BITPOD_APP_ROOT="$WORKSPACE_ROOT" \
   BITPOD_REPO_REGISTRY_FILE="$registry_file" \
   BITPOD_CLEANUP_ZONE_POLICY_FILE="$ZONE_POLICY_FILE" \
+  BITPOD_LOCAL_WORKSPACE_CONTRACT_FILE="$CONTRACT_FILE" \
   "$SCHEDULED_CLEANUP"
 }
 
@@ -109,27 +113,61 @@ run_pulse_emit() {
   BITPOD_APP_ROOT="$WORKSPACE_ROOT" \
   BITPOD_REPO_REGISTRY_FILE="$registry_file" \
   BITPOD_CLEANUP_ZONE_POLICY_FILE="$ZONE_POLICY_FILE" \
+  BITPOD_LOCAL_WORKSPACE_CONTRACT_FILE="$CONTRACT_FILE" \
   "$@" \
   "$PARITY_PULSE_EMIT" "$event_name" "$repo_path" 2>&1
 }
 
+run_audit_capture_with_path() {
+  local registry_file="$1"
+  local request="$2"
+  local path_override="$3"
+  BITPOD_APP_ROOT="$WORKSPACE_ROOT" \
+  BITPOD_REPO_REGISTRY_FILE="$registry_file" \
+  BITPOD_CLEANUP_ZONE_POLICY_FILE="$ZONE_POLICY_FILE" \
+  BITPOD_LOCAL_WORKSPACE_CONTRACT_FILE="$CONTRACT_FILE" \
+  BITPOD_AUDIT_NETWORK_TIMEOUT_SECONDS=1 \
+  PATH="$path_override:$PATH" \
+  "$AUDIT_CTL" "$request"
+}
+
 setup_workspace() {
   mkdir -p "$CONFIG_ROOT"
+  mkdir -p "$(dirname "$CONTRACT_FILE")"
   mkdir -p "$WORKSPACE_ROOT/bitpod-tools/scripts"
   mkdir -p "$REMOTE_ROOT"
   mkdir -p "$WORKSPACE_ROOT/local-workspace/local-working-files/local-reference"
   mkdir -p "$WORKSPACE_ROOT/local-workspace/local-trash-delete"
-  mkdir -p "$WORKSPACE_ROOT/local-workspace/local-handoffs"
+  mkdir -p "$WORKSPACE_ROOT/local-workspace/local-trash-delete/local-purge"
   mkdir -p "$WORKSPACE_ROOT/local-workspace/local-cj-pm-only"
-  mkdir -p "$WORKSPACE_ROOT/local-workspace/local-codex"
 
   ln -s "$AUDIT_CTL" "$WORKSPACE_ROOT/bitpod-tools/audit_ctl.sh"
   ln -s "$PROJECT_ROOT/scripts/parity_pulse_emit.sh" "$WORKSPACE_ROOT/bitpod-tools/scripts/parity_pulse_emit.sh"
 
+  cat > "$CONTRACT_FILE" <<'EOF'
+version = 1
+status = "canonical"
+contract_id = "local-workspace-skeleton"
+
+[profiles.personal_full]
+required_paths = [
+  "local-working-files",
+  "local-trash-delete",
+  "local-trash-delete/local-purge",
+  "local-cj-pm-only",
+]
+optional_paths = []
+disabled_paths = [
+  "local-codex",
+  "local-handoffs",
+  "local-shared-dropoff",
+]
+EOF
+
   cat > "$ZONE_POLICY_FILE" <<'EOF'
 # zone|mode|rel_path|notes
 working|STRICT_CANONICAL|local-workspace/local-working-files|active working files
-codex|REPORT_ONLY|local-workspace/local-codex|local codex runtime
+pm_only|REPORT_ONLY|local-workspace/local-cj-pm-only|personal-only lane when enabled by profile
 EOF
 
   create_tracked_repo "alpha"
@@ -330,6 +368,53 @@ test_scheduled_cleanup_helper() {
   assert_contains "$payload_contents" "- issue_priority: low"
 }
 
+test_contract_derived_local_workspace_guardrails() {
+  mkdir -p "$WORKSPACE_ROOT/local-workspace/local-handoffs"
+  echo "handoff residue" > "$WORKSPACE_ROOT/local-workspace/local-handoffs/test.txt"
+
+  local guardrail_output=""
+  local guardrail_status=0
+  if guardrail_output="$(run_audit_capture "$PERFECT_REGISTRY_FILE" "run T3 audit")"; then
+    guardrail_status=0
+  else
+    guardrail_status=$?
+  fi
+
+  [[ "$guardrail_status" -eq 30 ]] || fail "expected local-workspace guardrail T3 exit status 30, got $guardrail_status"
+  assert_contains "$guardrail_output" "- result=FRACTURED"
+  assert_contains "$guardrail_output" "- local_workspace_status=FAIL"
+  assert_contains "$guardrail_output" "- unexpected_local_workspace_children=1"
+  assert_contains "$guardrail_output" "- handoff_files=1"
+
+  rm -rf "$WORKSPACE_ROOT/local-workspace/local-handoffs"
+}
+
+test_bounded_network_probes() {
+  local fake_bin="$TEST_ROOT/fake-bin"
+  mkdir -p "$fake_bin"
+  cat > "$fake_bin/gh" <<'EOF'
+#!/usr/bin/env bash
+sleep 2
+echo '[]'
+EOF
+  chmod +x "$fake_bin/gh"
+
+  local timed_output=""
+  local timed_status=0
+  if timed_output="$(run_audit_capture_with_path "$PERFECT_REGISTRY_FILE" "run T3 audit only repos" "$fake_bin")"; then
+    timed_status=0
+  else
+    timed_status=$?
+  fi
+
+  [[ "$timed_status" -eq 30 ]] || fail "expected timed T3 exit status 30, got $timed_status"
+  assert_contains "$timed_output" "- result=FRACTURED"
+  assert_contains "$timed_output" "- overall=NOT VERIFIED"
+  assert_contains "$timed_output" "- network_probe_failures=2"
+  assert_contains "$timed_output" "network_probe_failure=surface=repo_audit repo=alpha operation=gh_pr_list detail=timed out after 1s"
+  assert_contains "$timed_output" "network_probe_failure=surface=repo_audit repo=demo-repository operation=gh_pr_list detail=timed out after 1s"
+}
+
 setup_workspace
 test_refresh_repo_registry
 test_cleanup_contracts
@@ -337,5 +422,7 @@ test_stale_branch_contracts
 test_parity_pulse_contracts
 test_hook_installer
 test_scheduled_cleanup_helper
+test_contract_derived_local_workspace_guardrails
+test_bounded_network_probes
 
 echo "PASS: test_audit_tools.sh"
