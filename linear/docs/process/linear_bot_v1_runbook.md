@@ -11,7 +11,7 @@ This runbook is the operator path for local dry-run, CI validation, and first li
 ## 1) Local dry-run startup
 
 ```bash
-cd /Users/cjarguello/bitpod-app/bitpod-tools
+cd $WORKSPACE/bitpod-tools
 python3 -m unittest linear/tests/test_engine.py linear/tests/test_runtime.py linear/tests/test_e2e_flow.py
 cd linear/src
 python3 simulate.py --mode gh_opened --event ../events/sample_pr_opened.json
@@ -31,7 +31,7 @@ Expected:
 Copy template:
 
 ```bash
-cp /Users/cjarguello/bitpod-app/bitpod-tools/linear/config.example.env /Users/cjarguello/bitpod-app/bitpod-tools/linear/.env
+cp $WORKSPACE/bitpod-tools/linear/config.example.env $WORKSPACE/bitpod-tools/linear/.env
 ```
 
 Populate only required values for your mode:
@@ -63,7 +63,7 @@ Linear webhook:
 ## 4) Cloudflare gateway (optional)
 
 ```bash
-cd /Users/cjarguello/bitpod-app/bitpod-tools/linear/cloudflare
+cd $WORKSPACE/bitpod-tools/linear/cloudflare
 wrangler deploy
 ```
 

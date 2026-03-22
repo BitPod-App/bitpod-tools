@@ -134,7 +134,7 @@ Canonical target for the Product Development team workflow reconfiguration:
 ## How to run
 
 ```bash
-cd /Users/cjarguello/bitpod-app/bitpod-tools/linear/src
+cd $WORKSPACE/bitpod-tools/linear/src
 python3 service.py --dry-run
 ```
 
@@ -169,7 +169,7 @@ Schedule:
 ## Simulation runner
 
 ```bash
-cd /Users/cjarguello/bitpod-app/bitpod-tools/linear/src
+cd $WORKSPACE/bitpod-tools/linear/src
 python3 simulate.py --mode gh_opened --event ../events/sample_pr_opened.json
 python3 simulate.py --mode linear_comment --event ../events/sample_linear_comment_passed.json
 python3 simulate.py --mode aging_scan --event ../events/sample_aging_scan.json
@@ -186,7 +186,7 @@ python3 simulate.py --mode gh_opened --event ../events/sample_pr_opened.json
 Runtime contract validation:
 
 ```bash
-cd /Users/cjarguello/bitpod-app/bitpod-tools
+cd $WORKSPACE/bitpod-tools
 python3 linear/scripts/validate_runtime_contract_artifacts.py
 ```
 
@@ -202,22 +202,22 @@ python3 linear/scripts/validate_runtime_contract_artifacts.py
 Validate the private Discord config before any live webhook call:
 
 ```bash
-cd /Users/cjarguello/bitpod-app/bitpod-tools
+cd $WORKSPACE/bitpod-tools
 python3 linear/scripts/discord_config_preflight.py \
-  --config /Users/cjarguello/bitpod-app/local-workspace/local-working-files/private.discord.config.json
+  --config $WORKSPACE/local-workspace/local-working-files/private.discord.config.json
 ```
 
 ## Test
 
 ```bash
-cd /Users/cjarguello/bitpod-app/bitpod-tools
+cd $WORKSPACE/bitpod-tools
 python3 -m unittest linear/tests/test_engine.py linear/tests/test_runtime.py linear/tests/test_e2e_flow.py
 ```
 
 One-command local smoke:
 
 ```bash
-cd /Users/cjarguello/bitpod-app/bitpod-tools
+cd $WORKSPACE/bitpod-tools
 bash linear/scripts/local_smoke.sh
 ```
 
@@ -277,7 +277,7 @@ Purpose:
 
 Quick start:
 ```bash
-cd /Users/cjarguello/bitpod-app/bitpod-tools/linear/cloudflare
+cd $WORKSPACE/bitpod-tools/linear/cloudflare
 wrangler deploy
 ```
 
