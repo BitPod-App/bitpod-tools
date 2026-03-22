@@ -11,6 +11,17 @@ LATEST_REPORT="$STATE_DIR/latest_scheduled_cleanup.md"
 LINEAR_PAYLOAD="$STATE_DIR/latest_linear_escalation.md"
 TIMESTAMP="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
+date_plus_14_days() {
+  if date -u -v+14d +%Y-%m-%dT%H:%M:%SZ >/dev/null 2>&1; then
+    date -u -v+14d +%Y-%m-%dT%H:%M:%SZ
+  else
+    python3 - <<'PY'
+from datetime import datetime, timedelta, timezone
+print((datetime.now(timezone.utc) + timedelta(days=14)).strftime("%Y-%m-%dT%H:%M:%SZ"))
+PY
+  fi
+}
+
 mkdir -p "$STATE_DIR"
 
 consecutive_failures=0
@@ -56,7 +67,7 @@ else
 fi
 
 last_run_at="$TIMESTAMP"
-next_due_at="$(date -u -v+14d +%Y-%m-%dT%H:%M:%SZ)"
+next_due_at="$(date_plus_14_days)"
 
 issue_kind="Chore"
 issue_priority="low"
