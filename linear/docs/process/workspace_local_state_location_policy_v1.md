@@ -11,7 +11,7 @@
 Primary Codex machine-local state that must persist outside repo source trees should live in a machine-local home outside the umbrella root:
 
 - default: `~/.codex/`
-- or an explicit machine-local `CODEX_HOME` outside `/Users/cjarguello/BitPod-App`
+- or an explicit machine-local `CODEX_HOME` outside `$WORKSPACE`
 
 The umbrella-root `.codex/` path is reserved only for checked-in workspace compatibility metadata and narrow project-scoped overrides.
 
@@ -44,7 +44,7 @@ Disallowed examples:
 Allowed roots:
 
 - machine-local `~/.codex/` or explicit machine-local `CODEX_HOME`
-- `/Users/cjarguello/BitPod-App/.codex/` only for checked-in compatibility metadata and narrow project-scoped overrides
+- `$WORKSPACE/.codex/` only for checked-in compatibility metadata and narrow project-scoped overrides
 - migration-era dated backup workspace roots when explicitly preserved
 
 ## Repo vs Local State Split

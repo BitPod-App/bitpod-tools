@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import re
 import subprocess
 import sys
@@ -15,6 +16,7 @@ from pathlib import Path
 from typing import Any
 
 SCRIPT_DIR = Path(__file__).resolve().parent
+WORKSPACE_ROOT = Path(os.getenv("WORKSPACE", str(SCRIPT_DIR.parents[1]))).expanduser().resolve()
 ASK_ONCE = SCRIPT_DIR / "ask_once.sh"
 DEFAULT_LOG = SCRIPT_DIR / "logs" / "chat.jsonl"
 DEFAULT_MEMORY_STORE = SCRIPT_DIR / "logs" / "memory_store.jsonl"
@@ -29,7 +31,7 @@ TAYLOR_SYSTEM_PROMPT = (
     "Be direct, concrete, and honest. Keep replies short but useful. Ask at most one clarifying "
     "question only when it prevents an error."
 )
-LOCAL_CODEX_SKILLS_ROOT = Path("/Users/cjarguello/bitpod-app/local-workspace/local-codex/skills")
+LOCAL_CODEX_SKILLS_ROOT = WORKSPACE_ROOT / "local-workspace" / "local-codex" / "skills"
 TAYLOR_SKILL_REFERENCES_ROOT = LOCAL_CODEX_SKILLS_ROOT / "taylor" / "references"
 DEFAULT_TAYLOR_REFERENCE_FILES = (
     TAYLOR_SKILL_REFERENCES_ROOT / "taylor-agent-contract.md",

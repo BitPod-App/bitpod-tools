@@ -25,7 +25,7 @@ This registry is the single source of truth for templates across BitPod repos.
 ## 1) Linear Templates (High Frequency)
 
 - **Active**: Technical project template
-  - Path: `/Users/cjarguello/bitpod-app/bitpod-tools/linear/projects/technical_project_template.md`
+  - Path: `$WORKSPACE/bitpod-tools/linear/projects/technical_project_template.md`
   - Use: project technical briefs and project setup docs
 
 - **Planned (create only if usage confirms need)**:
@@ -36,40 +36,40 @@ This registry is the single source of truth for templates across BitPod repos.
 ## 2) Agent Templates (Legacy Bootstrap References)
 
 - **Historical**: Verification report
-  - Path: `/Users/cjarguello/bitpod-app/bitpod-docs/archive/legacy-context/sector-feeds-agent-bootstrap/agents/proving-run/templates/verification_report_template_v1.md`
+  - Path: `$WORKSPACE/bitpod-docs/archive/legacy-context/sector-feeds-agent-bootstrap/agents/proving-run/templates/verification_report_template_v1.md`
   - Use: preserved bootstrap reference only; not active canon
 
 - **Historical**: Execution notes
-  - Path: `/Users/cjarguello/bitpod-app/bitpod-docs/archive/legacy-context/sector-feeds-agent-bootstrap/agents/proving-run/templates/execution_notes_template_v1.md`
+  - Path: `$WORKSPACE/bitpod-docs/archive/legacy-context/sector-feeds-agent-bootstrap/agents/proving-run/templates/execution_notes_template_v1.md`
   - Use: preserved bootstrap reference only; not active canon
 
 ## 3) Planning and Proposal Templates
 
 - **Historical**: Plan template
-  - Path: `/Users/cjarguello/bitpod-app/bitpod-docs/archive/legacy-context/sector-feeds-agent-bootstrap/agents/proving-run/templates/plan_template_v1.md`
+  - Path: `$WORKSPACE/bitpod-docs/archive/legacy-context/sector-feeds-agent-bootstrap/agents/proving-run/templates/plan_template_v1.md`
   - Use: preserved bootstrap reference only; not active canon
 
 - **Active**: Linear change proposal
-  - Path: `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/linear_change_proposal_template_v1.md`
+  - Path: `$WORKSPACE/bitpod-tools/linear/docs/process/linear_change_proposal_template_v1.md`
   - Use: workflow/status/automation change proposals
 
 ## 4) Retrospective Templates (Max 2)
 
 - **Historical**: Standard retrospective
-  - Path: `/Users/cjarguello/bitpod-app/bitpod-docs/archive/legacy-context/sector-feeds-agent-bootstrap/agents/proving-run/templates/retrospective_template_v1.md`
+  - Path: `$WORKSPACE/bitpod-docs/archive/legacy-context/sector-feeds-agent-bootstrap/agents/proving-run/templates/retrospective_template_v1.md`
   - Use: preserved bootstrap reference only; not active canon
 
 - **Active**: Incident/capability regression retro
-  - Path: `/Users/cjarguello/bitpod-app/bitpod-docs/archive/learnings/retro-2026-03-02-capability-regression-protocol.md`
+  - Path: `$WORKSPACE/bitpod-docs/archive/learnings/retro-2026-03-02-capability-regression-protocol.md`
   - Use: outage/failure analysis and protocol updates
 
 ## 5) Artifact Templates
 
 - **Historical**: Verification report (artifact-oriented)
-  - Path: `/Users/cjarguello/bitpod-app/bitpod-docs/archive/legacy-context/sector-feeds-agent-bootstrap/agents/proving-run/templates/verification_report_template_v1.md`
+  - Path: `$WORKSPACE/bitpod-docs/archive/legacy-context/sector-feeds-agent-bootstrap/agents/proving-run/templates/verification_report_template_v1.md`
 
 - **Historical**: Result template
-  - Path: `/Users/cjarguello/bitpod-app/bitpod-docs/archive/legacy-context/sector-feeds-agent-bootstrap/agents/proving-run/templates/result_template_v1.md`
+  - Path: `$WORKSPACE/bitpod-docs/archive/legacy-context/sector-feeds-agent-bootstrap/agents/proving-run/templates/result_template_v1.md`
 
 ## 6) Handoff Templates
 
@@ -81,14 +81,14 @@ This registry is the single source of truth for templates across BitPod repos.
 
 These are runbooks/SOPs and should not be treated as templates:
 
-- `/Users/cjarguello/bitpod-app/sector-feeds/docs/runbooks/show_onboarding_template.md` (operational onboarding doc)
+- `$WORKSPACE/sector-feeds/docs/runbooks/show_onboarding_template.md` (operational onboarding doc)
 - Migration runbooks, cleanup audits, parity checks, and outage procedures
 
 ## 8) Learnings Ledger
 
 Retrospective takeaways should be appended to one ledger (not separate template sprawl):
 
-- Ledger path: `/Users/cjarguello/bitpod-app/bitpod-docs/archive/learnings/learnings_ledger.md`
+- Ledger path: `$WORKSPACE/bitpod-docs/archive/learnings/learnings_ledger.md`
 - Suggested columns:
   - date
   - source retro/doc

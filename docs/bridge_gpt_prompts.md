@@ -1,11 +1,11 @@
 # Bridge GPT Prompts (Run + Test)
 
 ## Runtime Path
-- `/Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge`
+- `$WORKSPACE/bitpod-tools/gpt_bridge`
 
 ## Start
 ```bash
-cd /Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge
+cd $WORKSPACE/bitpod-tools/gpt_bridge
 set -a; source .env; set +a
 ./bridge_ctl.sh start --session team
 ./bridge_ctl.sh status
@@ -24,7 +24,7 @@ set -a; source .env; set +a
 
 ## Remote Endpoint Smoke Test
 ```bash
-cd /Users/cjarguello/bitpod-app/bitpod-tools/gpt_bridge
+cd $WORKSPACE/bitpod-tools/gpt_bridge
 set -a; source .env; set +a
 curl -sS -o /tmp/bridge_check.json -w "%{http_code}\n" https://gpt-bridge.bitpod.app/ask \
   -H "Authorization: Bearer $GPT_BRIDGE_TOKEN" \

@@ -1,5 +1,5 @@
 # Project: <Project Name>
-Registry: /Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/templates_registry/README.md
+Registry: $WORKSPACE/bitpod-tools/linear/docs/templates_registry/README.md
 ## Technical Program Specification (v1)
 
 ## Objective
