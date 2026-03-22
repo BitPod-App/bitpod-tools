@@ -12,6 +12,7 @@ Define the simple gate that turns T3 cleanup truth into permission to start the 
 This is meant to reduce re-litigation, not add a new architecture lane.
 
 The explicit operating defaults and boundary guardrails that govern this rollout are recorded in `linear/docs/process/execution_hq_architecture_decisions_v1.md`.
+The concrete operator step order for the first bootstrap pass is recorded in `linear/docs/process/execution_hq_operator_pack_v1.md`.
 
 ## Core rule
 
