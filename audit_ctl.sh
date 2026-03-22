@@ -353,7 +353,8 @@ collect_likely_duplicate_names() {
     find "${canon_dirs[@]}" \
       \( -path '*/.git' -o -path '*/.git/*' \) -prune -o \
       -type f ! -name '.DS_Store' -print 2>/dev/null | \
-      xargs -I{} basename "{}" | while IFS= read -r name; do
+      while IFS= read -r path; do
+        name="${path##*/}"
         is_generic_duplicate_name "$name" && continue
         printf '%s\n' "$name"
       done | sort -u > "$TMP_CANON_NAMES" || true
@@ -363,7 +364,8 @@ collect_likely_duplicate_names() {
     find "$ROOT/local-workspace/local-working-files" \
       \( -path '*/.git' -o -path '*/.git/*' \) -prune -o \
       -type f ! -name '.DS_Store' -print 2>/dev/null | \
-      xargs -I{} basename "{}" | while IFS= read -r name; do
+      while IFS= read -r path; do
+        name="${path##*/}"
         is_generic_duplicate_name "$name" && continue
         printf '%s\n' "$name"
       done | sort -u > "$TMP_LOCAL_NAMES" || true
