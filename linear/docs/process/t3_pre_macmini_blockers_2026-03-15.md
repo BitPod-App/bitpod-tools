@@ -2,7 +2,7 @@
 
 Primary issues:
 - [BIT-102 — Complete T3 workspace parity, legacy root retirement, and repo-rename preparation](https://linear.app/bitpod-app/issue/BIT-102/complete-t3-workspace-parity-legacy-root-retirement-and-repo-rename)
-- [BIT-104 — Execute Mac Mini guest-boundary bootstrap for OpenClaw execution node](https://linear.app/bitpod-app/issue/BIT-104/execute-mac-mini-guest-boundary-bootstrap-for-openclaw-execution-node)
+- [BIT-104 — Execute Mac Mini execution-HQ bootstrap for NemoClaw runtime](https://linear.app/bitpod-app/issue/BIT-104/execute-mac-mini-execution-hq-bootstrap-for-nemoclaw-runtime)
 
 ## Purpose
 
@@ -24,7 +24,7 @@ Status note:
 | Stale local Codex app metadata | `PASS` | after the strong reset, the active workspace roots are correct, `thread-workspace-root-hints` is `None`, and the remaining old-path string hits are only in normal `prompt-history` because the verification command itself referenced those paths | treat this blocker as resolved unless new app-managed stale metadata appears again |
 | `local-trash-delete` still physically large | `SOFT_FAIL` | quarantine is no longer active, but still contains large cooling-period residue | treat as hygiene unless user explicitly wants stronger purge posture before T3 |
 | Linear truth for T3 | `PASS_WITH_LIMITS` | [BIT-102 — Complete T3 workspace parity, legacy root retirement, and repo-rename preparation](https://linear.app/bitpod-app/issue/BIT-102/complete-t3-workspace-parity-legacy-root-retirement-and-repo-rename) is now `In Progress`, which matches reality better than backlog; it still needs an honest final closeout call later | keep ticket status/comments aligned with actual cleanup state until final T3 decision |
-| Mac Mini boundary executed | `NOT_YET` | [BIT-104 — Execute Mac Mini guest-boundary bootstrap for OpenClaw execution node](https://linear.app/bitpod-app/issue/BIT-104/execute-mac-mini-guest-boundary-bootstrap-for-openclaw-execution-node) is intentionally blocked pending T3 | start only after T3 is honestly passed |
+| Mac Mini boundary executed | `NOT_YET` | [BIT-104 — Execute Mac Mini execution-HQ bootstrap for NemoClaw runtime](https://linear.app/bitpod-app/issue/BIT-104/execute-mac-mini-execution-hq-bootstrap-for-nemoclaw-runtime) is intentionally blocked pending T3 | start only after T3 is honestly passed |
 | Repo/package naming drift | `DEFERRED_FAIL` | naming normalization is still intentionally deferred | keep out of the T3 pass unless explicitly promoted back into scope |
 
 ## Important nuance
@@ -39,4 +39,4 @@ Status note:
 2. Keep using the explicit pre-rename execution branch map until later normalization replaces it.
 3. If strict T3 cleanliness is required, use the restart-safe app-state reset plan in a fresh session instead of hand-editing live app state.
 4. Keep [BIT-102 — Complete T3 workspace parity, legacy root retirement, and repo-rename preparation](https://linear.app/bitpod-app/issue/BIT-102/complete-t3-workspace-parity-legacy-root-retirement-and-repo-rename) aligned with reality instead of leaving it as stale planning state.
-5. Only then unblock [BIT-104 — Execute Mac Mini guest-boundary bootstrap for OpenClaw execution node](https://linear.app/bitpod-app/issue/BIT-104/execute-mac-mini-guest-boundary-bootstrap-for-openclaw-execution-node).
+5. Only then unblock [BIT-104 — Execute Mac Mini execution-HQ bootstrap for NemoClaw runtime](https://linear.app/bitpod-app/issue/BIT-104/execute-mac-mini-execution-hq-bootstrap-for-nemoclaw-runtime).

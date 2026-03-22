@@ -3,7 +3,7 @@
 Date: 2026-03-15  
 Primary issues:
 - [BIT-102 — Complete T3 workspace parity, legacy root retirement, and repo-rename preparation](https://linear.app/bitpod-app/issue/BIT-102/complete-t3-workspace-parity-legacy-root-retirement-and-repo-rename)
-- [BIT-104 — Execute Mac Mini guest-boundary bootstrap for OpenClaw execution node](https://linear.app/bitpod-app/issue/BIT-104/execute-mac-mini-guest-boundary-bootstrap-for-openclaw-execution-node)
+- [BIT-104 — Execute Mac Mini execution-HQ bootstrap for NemoClaw runtime](https://linear.app/bitpod-app/issue/BIT-104/execute-mac-mini-execution-hq-bootstrap-for-nemoclaw-runtime)
 
 ## Purpose
 
@@ -15,7 +15,7 @@ The explicit operating defaults and boundary guardrails that govern this rollout
 
 ## Core rule
 
-- [BIT-104 — Execute Mac Mini guest-boundary bootstrap for OpenClaw execution node](https://linear.app/bitpod-app/issue/BIT-104/execute-mac-mini-guest-boundary-bootstrap-for-openclaw-execution-node) stays blocked until a full forced `cleanup-audit T3` honestly passes with `result=PORCELAIN`.
+- [BIT-104 — Execute Mac Mini execution-HQ bootstrap for NemoClaw runtime](https://linear.app/bitpod-app/issue/BIT-104/execute-mac-mini-execution-hq-bootstrap-for-nemoclaw-runtime) stays blocked until a full forced `cleanup-audit T3` honestly passes with `result=PORCELAIN`.
 - T3 pass does **not** require `local-trash-delete` to be empty.
 - T3 pass does require `local-trash-delete` to no longer be part of the active operating surface.
 - T3 is the only authoritative cleanup tier in the active runbook.
@@ -57,12 +57,12 @@ Mark `T3_READY_FOR_MAC_MINI=true` only if all are true:
 If the checklist passes:
 
 - [BIT-102 — Complete T3 workspace parity, legacy root retirement, and repo-rename preparation](https://linear.app/bitpod-app/issue/BIT-102/complete-t3-workspace-parity-legacy-root-retirement-and-repo-rename) can be treated as no longer blocking machine transition work.
-- [BIT-104 — Execute Mac Mini guest-boundary bootstrap for OpenClaw execution node](https://linear.app/bitpod-app/issue/BIT-104/execute-mac-mini-guest-boundary-bootstrap-for-openclaw-execution-node) may move forward.
+- [BIT-104 — Execute Mac Mini execution-HQ bootstrap for NemoClaw runtime](https://linear.app/bitpod-app/issue/BIT-104/execute-mac-mini-execution-hq-bootstrap-for-nemoclaw-runtime) may move forward.
 - `local-trash-delete` remains the inactive disposal lane, not a transition blocker.
 
 If the checklist does not pass:
 
-- keep [BIT-104 — Execute Mac Mini guest-boundary bootstrap for OpenClaw execution node](https://linear.app/bitpod-app/issue/BIT-104/execute-mac-mini-guest-boundary-bootstrap-for-openclaw-execution-node) blocked
+- keep [BIT-104 — Execute Mac Mini execution-HQ bootstrap for NemoClaw runtime](https://linear.app/bitpod-app/issue/BIT-104/execute-mac-mini-execution-hq-bootstrap-for-nemoclaw-runtime) blocked
 - record the exact failing criterion instead of speaking vaguely about “more cleanup”
 
 ## Current read on 2026-03-15
