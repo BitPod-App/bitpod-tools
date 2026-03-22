@@ -7,7 +7,7 @@ Date: 2026-03-09
 After migration bootstrap, reduce Codex local filesystem scope to one canonical clone path and validate least-privilege behavior.
 
 ## Security reality check
-- `codex app /Users/cjarguello/bitpod-app` is a valid workspace relaunch command.
+- `codex app "$WORKSPACE"` is the portable workspace relaunch pattern.
 - Opening Codex on one workspace path is a convenience boundary, not a strong local read-isolation boundary by itself.
 - The strong boundary is a dedicated macOS user/profile for Codex, with no personal iCloud mounts or unrelated working directories exposed.
 - Do not execute this runbook until CJ explicitly says: `START HARDENING`.
@@ -18,7 +18,7 @@ After migration bootstrap, reduce Codex local filesystem scope to one canonical 
 
 ## Inputs
 - Canonical clone path (example):
-  - `/Users/cjarguello/bitpod-app`
+  - `$WORKSPACE`
 
 ## Procedure
 
@@ -37,11 +37,11 @@ gh auth status
 Use the verified CLI launcher:
 
 ```bash
-codex app /Users/cjarguello/bitpod-app
+codex app "$WORKSPACE"
 ```
 
 Target state:
-- workspace root = `/Users/cjarguello/bitpod-app`
+- workspace root = `$WORKSPACE`
 - extra allowed directories = none
 - current migration/bootstrap session closed before relaunch
 
@@ -51,15 +51,15 @@ If post-relaunch probes still show outside-path access, move Codex into a dedica
 Minimum dedicated-user requirements:
 - no personal iCloud/Docs/Desktop mounts
 - no non-BitPod repo clones in the home directory
-- Codex launched only against `/Users/cjarguello/bitpod-app`
+- Codex launched only against `$WORKSPACE`
 
 ### 4) Verify restricted scope
 Run the automated probe in the new restricted session:
 
 ```bash
-cd /Users/cjarguello/bitpod-app/bitpod-tools
+cd "$WORKSPACE/bitpod-tools"
 bash linear/scripts/post_bootstrap_scope_probe.sh \
-  /Users/cjarguello/bitpod-app \
+  "$WORKSPACE" \
   /tmp/post_bootstrap_scope_probe.md
 ```
 
@@ -75,7 +75,7 @@ Artifact:
 Relaunch Codex in bootstrap mode against the broader BitPod workspace root:
 
 ```bash
-codex app /Users/cjarguello/bitpod-app
+codex app "$WORKSPACE"
 ```
 
 If dedicated-user mode was enabled for hardening, rollback means returning to the original migration user/profile temporarily.

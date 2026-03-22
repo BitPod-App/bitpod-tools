@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT="${BITPOD_APP_ROOT:-/Users/cjarguello/BitPod-App}"
+SCRIPT_DIR="$(cd -- "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DEFAULT="$(cd -- "$SCRIPT_DIR/../.." && pwd)"
+ROOT="${BITPOD_APP_ROOT:-${WORKSPACE:-$ROOT_DEFAULT}}"
 REGISTRY_FILE="${BITPOD_REPO_REGISTRY_FILE:-$ROOT/bitpod-tools/config/repo_registry.tsv}"
 TMP_FILE="$(mktemp "${TMPDIR:-/tmp}/repo_registry.XXXXXX")"
 trap 'rm -f "$TMP_FILE"' EXIT
