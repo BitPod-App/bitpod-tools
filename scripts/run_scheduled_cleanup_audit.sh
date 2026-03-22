@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT="${BITPOD_APP_ROOT:-/Users/cjarguello/BitPod-App}"
+SCRIPT_DIR="$(cd -- "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DEFAULT="$(cd -- "$SCRIPT_DIR/../.." && pwd)"
+ROOT="${BITPOD_APP_ROOT:-${WORKSPACE:-$ROOT_DEFAULT}}"
 AUDIT_CTL="$ROOT/bitpod-tools/audit_ctl.sh"
 STATE_DIR="$ROOT/local-workspace/local-working-files/local-cleanup-audit"
 STATE_FILE="$STATE_DIR/scheduled_cleanup_state.env"
