@@ -9,6 +9,8 @@ Make the Mac Mini execution-HQ operating assumptions explicit enough that Phase 
 
 This note locks the default account/path strategy, remote-control tooling, secret flow, shared-folder policy, and VM-isolation trigger for the current bootstrap phase.
 
+Use `execution_hq_operator_pack_v1.md` for the step-by-step operating sequence.
+
 ## Decision Record — Account and Path Strategy
 
 ### Decision
