@@ -9,6 +9,9 @@ from pathlib import Path
 
 WARN_EXIT = 10
 FAIL_EXIT = 20
+SCRIPT_ROOT = Path(__file__).resolve().parents[1]
+WORKSPACE_ROOT = Path(os.getenv("BITPOD_APP_ROOT") or os.getenv("WORKSPACE") or SCRIPT_ROOT.parent)
+DEFAULT_METER = WORKSPACE_ROOT / "bitpod-tools" / "artifacts" / "cost-meter" / "cost_events.jsonl"
 
 
 def _load_events(path: Path) -> list[dict]:
@@ -66,7 +69,7 @@ def _flt_env(name: str, default: float) -> float:
 
 def main() -> int:
     parser = argparse.ArgumentParser(prog="cost_ctl")
-    parser.add_argument("--meter", default="/Users/cjarguello/bitpod-app/bitpod-tools/artifacts/cost-meter/cost_events.jsonl")
+    parser.add_argument("--meter", default=str(DEFAULT_METER))
     parser.add_argument("--source", default=None)
     parser.add_argument("--window-hours", type=int, default=24)
 

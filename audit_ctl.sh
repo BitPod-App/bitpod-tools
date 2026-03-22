@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT="${BITPOD_APP_ROOT:-/Users/cjarguello/BitPod-App}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DEFAULT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+ROOT="${BITPOD_APP_ROOT:-${WORKSPACE:-$DEFAULT_ROOT}}"
 REGISTRY_FILE="${BITPOD_REPO_REGISTRY_FILE:-$ROOT/bitpod-tools/config/repo_registry.tsv}"
 ZONE_POLICY_FILE="${BITPOD_CLEANUP_ZONE_POLICY_FILE:-$ROOT/bitpod-tools/config/cleanup_zones_policy.tsv}"
 NOW="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
