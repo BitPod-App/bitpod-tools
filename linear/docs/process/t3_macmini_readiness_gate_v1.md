@@ -11,6 +11,8 @@ Define the simple gate that turns T3 cleanup truth into permission to start the 
 
 This is meant to reduce re-litigation, not add a new architecture lane.
 
+The explicit operating defaults and boundary guardrails that govern this rollout are recorded in `linear/docs/process/execution_hq_architecture_decisions_v1.md`.
+
 ## Core rule
 
 - [BIT-104 — Execute Mac Mini guest-boundary bootstrap for OpenClaw execution node](https://linear.app/bitpod-app/issue/BIT-104/execute-mac-mini-guest-boundary-bootstrap-for-openclaw-execution-node) stays blocked until a full forced `cleanup-audit T3` honestly passes with `result=PORCELAIN`.
