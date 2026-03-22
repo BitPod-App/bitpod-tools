@@ -3,7 +3,7 @@
 Version: v3
 Status: Active
 Owner: Product Development (Codex + Taylor)
-Last updated: 2026-03-14
+Last updated: 2026-03-22
 Primary issue: [BIT-22 — Versioned Linear operating guide for agents (with rollback path)](https://linear.app/bitpod-app/issue/BIT-22/versioned-linear-operating-guide-for-agents-with-rollback-path)
 Supersedes: `linear_operating_guide_v2.md` as the active guide
 
@@ -50,16 +50,30 @@ Define the canonical way agents use Linear for execution tracking, evidence logg
 - Do not move issues into `In Progress` unless someone is actively executing.
 - If an issue is blocked, make the blocker explicit and include the next action.
 
-7. Capability degradation handling
+7. `update Linear` means increase issue truth
+- Default interpretation: make the issue materially more truthful, not merely leave a note.
+- After meaningful execution or repo-thread closeout, update any clearly stale safe field when evidence is clear:
+  - status/state when lifecycle actually changed
+  - GitHub PR or merge links when they exist
+  - assignee/delegate when ownership is clear
+  - project membership when obviously missing
+  - related/blocked links when explicit
+- Add a concise execution/progress comment with what changed, what was verified, and what remains.
+- For partial shipment on a broader issue, do not move it to `Done` unless the scoped acceptance criteria are actually satisfied; still update links, comments, and any field that became more accurate.
+- If a field is clearly stale and safe to update, comment-only is not enough.
+- Do not casually change priority, estimate, due date, or milestone when confidence is low.
+- Do not create duplicate retroactive issues when an existing issue already owns the scope.
+
+8. Capability degradation handling
 - If tool behavior is impaired, stop speculative actions and post minimal verified state.
 - Continue with the smallest reversible step or park with an explicit blocker.
 - Use `capability_state_truth_label_incident_protocol_v1.md` as the incident-response workflow.
 
-8. Linear admin change control
+9. Linear admin change control
 - Workflow, schema, template, automation, or other meaningful admin changes must follow `linear_admin_change_control_v1.md`.
 - Destructive or high-blast changes require a written proposal, a snapshot, and a rollback note before execution.
 
-9. Taylor01 portability gate
+10. Taylor01 portability gate
 - Any relevant issue must include a Taylor01 Portability Check block.
 - Relevant means the issue touches agents, workflows, process docs, workspace policy, or tool integrations.
 - Product-only BitPod work does not need the block unless it changes reusable operating behavior.
@@ -69,7 +83,7 @@ Define the canonical way agents use Linear for execution tracking, evidence logg
 - Default expectation is to solve portability now for new portable or mixed work unless there is a concrete reason not to.
 - Meaningful active bypasses should be tracked in `taylor01_active_bypass_register_v1.md` and reviewed soon, not left as vague backlog residue.
 
-10. Weekly hygiene beats backlog drift
+11. Weekly hygiene beats backlog drift
 - Keep Linear small and legible.
 - Close stale tickets, merge duplicates, and normalize missing acceptance criteria before adding more structure.
 - Prefer fewer labels unless a new label clearly solves repeated friction.
