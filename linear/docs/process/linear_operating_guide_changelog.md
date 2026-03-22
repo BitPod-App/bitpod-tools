@@ -18,6 +18,11 @@ Includes:
 - weekly hygiene guidance
 - Linear admin/process change-control and proposal template references
 
+Maintenance update — 2026-03-22:
+- define `update Linear` in the active guide as `make the issue materially more truthful`, not merely leave a note
+- make field truth maintenance explicit for status/state, links, ownership, project membership, and explicit dependency links
+- keep the BIT-35 workflow reconfiguration spec as target behavior while clarifying native-vs-custom automation limits
+
 Linked artifacts:
 - `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/linear_operating_guide_v3.md`
 - `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/linear_admin_change_control_v1.md`

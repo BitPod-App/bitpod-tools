@@ -3,7 +3,7 @@
 Status: PROPOSED  
 Issue: [BIT-35 — Reconfigure Linear Issues, Issue Status,, & Automations as per CJ's instructions](https://linear.app/bitpod-app/issue/BIT-35/reconfigure-linear-issues-issue-status-and-automations-as-per-cjs)  
 Owner: Taylor / Codex proposal; CJ applies UI-admin changes  
-Last updated: 2026-03-10
+Last updated: 2026-03-22
 
 ## Purpose
 
@@ -102,6 +102,13 @@ If an issue remains stale for more than 60 days:
 ### Automation 4: archive closed issues
 
 - Any issue in a closed state is auto-archived after 1 month.
+
+## Native vs custom limitation note
+
+- This spec remains the target BIT-35 workflow/configuration baseline. It is not a blanket claim that every automation here is already live.
+- Team-native settings clearly cover configurable statuses/default status and closed-state auto-close or auto-archive behavior.
+- Treat `Backlog` -> `Icebox` plus auto-comment and stale -> `Obsolete` plus notify behavior as requiring explicit verification or custom automation unless directly proven native.
+- The checked-in runtime models some aging transitions, but live Linear mutations remain fail-closed until an app-actor executor is configured and attribution is verified.
 
 ## Explicit non-goals
 
