@@ -80,6 +80,54 @@ Helpful:
 - `rsync`
 - Tailscale
 
+## Scripted Entry Points
+
+Use these helpers from the MacBook control console:
+
+1. Preflight the local operator surface:
+
+```bash
+bash bitpod-tools/linear/scripts/execution_hq_preflight.sh
+```
+
+2. Probe remote reachability once an AI HQ host or ssh alias exists:
+
+```bash
+AI_HQ_HOST="<host-or-alias>" \
+bash bitpod-tools/linear/scripts/execution_hq_remote_bootstrap.sh probe
+```
+
+3. Reset the execution-account workspace from GitHub:
+
+```bash
+AI_HQ_HOST="<host-or-alias>" \
+AI_HQ_EXEC_USER="taylorhq" \
+bash bitpod-tools/linear/scripts/execution_hq_remote_bootstrap.sh reset-workspace
+```
+
+4. Verify the rebuilt execution-account workspace:
+
+```bash
+AI_HQ_HOST="<host-or-alias>" \
+AI_HQ_EXEC_USER="taylorhq" \
+bash bitpod-tools/linear/scripts/execution_hq_remote_bootstrap.sh verify-workspace
+```
+
+5. Run the first remote smoke command once the runtime exists:
+
+```bash
+AI_HQ_HOST="<host-or-alias>" \
+AI_HQ_EXEC_USER="taylorhq" \
+AI_HQ_SMOKE_CMD="python3 -m taylor --help" \
+bash bitpod-tools/linear/scripts/execution_hq_remote_bootstrap.sh smoke
+```
+
+The scripts are intentionally honest:
+
+- they do not invent a host target
+- they do not fake account creation
+- they fail closed if ssh reachability or the workspace shape is not real yet
+
 ## Workspace Variables
 
 Use these defaults inside the execution-account shell unless a ticket says
