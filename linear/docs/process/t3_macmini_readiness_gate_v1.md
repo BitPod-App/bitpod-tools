@@ -1,77 +1,85 @@
 # T3 to Mac Mini / NemoClaw Readiness Gate v1
 
-Date: 2026-03-15  
+Date: 2026-03-22
 Primary issues:
 - [BIT-102 — Complete T3 workspace parity, legacy root retirement, and repo-rename preparation](https://linear.app/bitpod-app/issue/BIT-102/complete-t3-workspace-parity-legacy-root-retirement-and-repo-rename)
 - [BIT-104 — Execute Mac Mini execution-HQ bootstrap for NemoClaw runtime](https://linear.app/bitpod-app/issue/BIT-104/execute-mac-mini-execution-hq-bootstrap-for-nemoclaw-runtime)
 
 ## Purpose
 
-Define the simple gate that turns T3 cleanup truth into permission to start the Mac Mini / NemoClaw rollout work.
+Define the cleanup gate that permits Mac Mini bootstrap work to start.
 
-This is meant to reduce re-litigation, not add a new architecture lane.
+This note is only about the T3 readiness gate. It is not the operator pack and
+it is not the architecture decision record.
 
-The explicit operating defaults and boundary guardrails that govern this rollout are recorded in `linear/docs/process/execution_hq_architecture_decisions_v1.md`.
-The concrete operator step order for the first bootstrap pass is recorded in `linear/docs/process/execution_hq_operator_pack_v1.md`.
+The active operating defaults and boundary guardrails are recorded in
+`linear/docs/process/execution_hq_architecture_decisions_v1.md`.
+The concrete operator sequence is recorded in
+`linear/docs/process/execution_hq_operator_pack_v1.md`.
 
-## Core rule
+## Core Rule
 
-- [BIT-104 — Execute Mac Mini execution-HQ bootstrap for NemoClaw runtime](https://linear.app/bitpod-app/issue/BIT-104/execute-mac-mini-execution-hq-bootstrap-for-nemoclaw-runtime) stays blocked until a full forced `cleanup-audit T3` honestly passes with `result=PORCELAIN`.
-- T3 pass does **not** require `local-trash-delete` to be empty.
-- T3 pass does require `local-trash-delete` to no longer be part of the active operating surface.
-- T3 is the only authoritative cleanup tier in the active runbook.
-- Local-workspace checks are included in T3 by default.
-- Do not introduce `T4` cleanup language unless a new active cleanup contract explicitly adds it.
+- [BIT-104 — Execute Mac Mini execution-HQ bootstrap for NemoClaw runtime](https://linear.app/bitpod-app/issue/BIT-104/execute-mac-mini-execution-hq-bootstrap-for-nemoclaw-runtime)
+  stays blocked until a full forced `cleanup-audit T3` honestly passes with
+  `result=PORCELAIN`.
+- Once that pass is verified, the remaining blockers are execution/bootstrap
+  work, not more MacBook-side cleanup by default.
+- T3 pass does not require `local-trash-delete` to be empty.
+- T3 pass does require `local-trash-delete` to no longer be part of the active
+  operating surface.
+- T3 is the authoritative cleanup tier in the active runbook.
 
-## T3 pass checklist
+## T3 Pass Checklist
 
 Mark `T3_READY_FOR_MAC_MINI=true` only if all are true:
 
 1. Active root workspace is structurally clean.
-   - No ambiguous legacy top-level working roots remain active.
-   - Active repos plus `.github` and `local-workspace` are the intentional root shape.
-
 2. Useful repo truth is preserved.
-   - Useful local repo state is on GitHub branches or explicitly documented as local-only.
-   - Canonical repo identity is clear enough that the Mac Mini will clone from the cleaned GitHub state, not from retired local roots.
-
-3. Hidden local operating state is mapped.
-   - checked-in repo state and root policy surfaces are truthful enough to rebuild from GitHub
-   - no active machine-state dependency still requires copying old local runtime state into the Mac Mini bootstrap
-
+3. Hidden local operating state is mapped strongly enough to rebuild from
+   GitHub.
 4. `local-trash-delete` is no longer active.
-   - Nothing in `local-trash-delete` is still required by the live workspace.
-   - Remaining disposal references are policy, audit, or historical evidence only.
-
 5. Mac Mini scope is separated from later rename work.
-   - Repo/package/artifact rename work remains deferred.
-   - The Mac Mini setup is allowed to proceed from the current truthful state without waiting for naming normalization.
+6. Transition model is explicit:
+   - MacBook is the control console
+   - Mac Mini is Execution HQ
+   - GitHub is the canonical sync source
 
-6. Transition model is explicit.
-   - MacBook is treated as the control console, not the new execution node.
-   - Mac Mini is treated as Execution HQ.
-   - NemoClaw/OpenShell is the intended runtime layer.
-   - GitHub is the canonical sync source for the rebuilt Mac Mini workspace.
+## Verified Current Read on 2026-03-22
 
-## Operational interpretation
+The MacBook-side gate was re-verified on 2026-03-22 with a full forced
+`cleanup-audit T3` result of:
 
-If the checklist passes:
+```text
+Audit Control | T3 Cleanup
+Timestamp: 2026-03-22T08:52:28Z
+- result=PORCELAIN
+- overall=VERIFIED
+- repos_scanned=7
+- repo_findings=none
+- stale_local_codex_branches=0
+- stale_remote_codex_branches=0
+- open_pull_requests=0
+- local_workspace_status=PASS
+```
 
-- [BIT-102 — Complete T3 workspace parity, legacy root retirement, and repo-rename preparation](https://linear.app/bitpod-app/issue/BIT-102/complete-t3-workspace-parity-legacy-root-retirement-and-repo-rename) can be treated as no longer blocking machine transition work.
-- [BIT-104 — Execute Mac Mini execution-HQ bootstrap for NemoClaw runtime](https://linear.app/bitpod-app/issue/BIT-104/execute-mac-mini-execution-hq-bootstrap-for-nemoclaw-runtime) may move forward.
-- `local-trash-delete` remains the inactive disposal lane, not a transition blocker.
+Truthful interpretation:
 
-If the checklist does not pass:
+- the MacBook-side cleanup gate is satisfied
+- bootstrap work may proceed
+- if any issue relation still suggests the T3 gate is blocking, treat that as
+  stale relation state until Linear blocker cleanup catches up
 
-- keep [BIT-104 — Execute Mac Mini execution-HQ bootstrap for NemoClaw runtime](https://linear.app/bitpod-app/issue/BIT-104/execute-mac-mini-execution-hq-bootstrap-for-nemoclaw-runtime) blocked
-- record the exact failing criterion instead of speaking vaguely about “more cleanup”
+## Operational Interpretation
 
-## Current read on 2026-03-15
+If the verified pass above remains materially true:
 
-- `Verified`: active root workspace is materially clean.
-- `Verified`: useful repo state has been preserved to GitHub branches.
-- `Verified`: machine-state ambiguity is low enough that GitHub can serve as the clean bootstrap source.
-- `Verified`: `local-trash-delete` no longer appears to be part of the active operating surface.
-- `Verified`: rename work is already deferred separately under [BIT-103 — Defer post-T3 naming normalization for repos, packages, and artifact paths](https://linear.app/bitpod-app/issue/BIT-103/defer-post-t3-naming-normalization-for-repos-packages-and-artifact).
+- [BIT-102 — Complete T3 workspace parity, legacy root retirement, and repo-rename preparation](https://linear.app/bitpod-app/issue/BIT-102/complete-t3-workspace-parity-legacy-root-retirement-and-repo-rename)
+  is no longer the meaningful blocker for machine transition work
+- [BIT-104 — Execute Mac Mini execution-HQ bootstrap for NemoClaw runtime](https://linear.app/bitpod-app/issue/BIT-104/execute-mac-mini-execution-hq-bootstrap-for-nemoclaw-runtime)
+  may move forward into account, workspace, runtime, and smoke-proof execution
 
-Based on that read, T3 should be judged mostly by truthfulness and transition safety, not by whether the disposal lane has been physically emptied.
+If the workspace changes materially before bootstrap:
+
+- rerun the full forced `cleanup-audit T3`
+- record the exact failing criterion instead of speaking vaguely about more
+  cleanup
