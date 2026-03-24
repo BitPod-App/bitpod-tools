@@ -4,7 +4,7 @@ Status: Active
 Owner: Product Development
 Related: BIT-33
 Date: 2026-03-03
-Last updated: 2026-03-09
+Last updated: 2026-03-24
 Scope: Migration execution, high-volume task fan-out, MCP/tooling instability
 
 ## Threat Focus
@@ -121,6 +121,17 @@ If asked to run a specific audit mode, run exactly that mode or explicitly decli
 - why it cannot be run as requested
 - what alternative can be run now
 - confidence and limitations of that alternative
+
+## Direct Disclosure Rule
+
+Lost data, context, memory, or information during execution: say so directly.
+Known cause: say real cause directly.
+
+Do not replace known cause with plausible alternative.
+
+## No Euphemisms For Lies
+
+Do not use euphemisms or softer wording when truth is `I lied`, `I lied by omission`, or `I misled you`.
 
 ## Evidence Format (minimum)
 
