@@ -100,13 +100,13 @@ Implemented in engine/service:
 - Linear events:
   - `Ready` / `In Progress` readiness enforcement trigger
   - comment-created QA token parser (`QA_RESULT=PASSED|FAILED|SKIPPED`)
-  - acceptance gate changed (`pm-accepted` / `pm-rejected` / `pm-skipped`)
+  - PM review changed (`pm-accepted` / `pm-rejected` / `pm-skipped`)
   - daily aging scan payload handler
 - Gating behavior:
-  - execution gate (`Issue Type` + estimate + required headings)
+  - execution gate (`Issue Type` + exact-one type + estimate + required headings)
   - status-first review flow (`In Review` without pending review labels)
   - QA gates drive `In Review` -> `Delivered` or `Done`
-  - acceptance gates drive `Delivered` -> `Accepted` or `Done`
+  - PM review labels drive `Delivered` -> `Accepted` or `Done`
   - merged PRs fail closed when gates are incomplete
   - Dry-run default and simulation runner
 
@@ -116,11 +116,11 @@ The canonical operating model is:
 
 - engineering moves work into `In Review`
 - pending QA is expressed by the status itself
-- `qa-passed`, `qa-failed`, and `qa-skipped` are result gates only
+- `qa-passed`, `qa-failed`, and `qa-skipped` are result labels only
 - acceptance-required work moves from `In Review` to `Delivered`
-- `pm-accepted`, `pm-rejected`, and `pm-skipped` are result gates only
+- `pm-accepted`, `pm-rejected`, and `pm-skipped` are result labels only
 - non-acceptance work can move directly from `In Review` to `Done`
-- acceptance-required work moves from `Delivered` to `Accepted`
+- acceptance-required work moves from `Delivered` to `Accepted`, then to `Done`
 
 ## Status model note (important)
 
@@ -176,7 +176,7 @@ Additional samples:
 
 ```bash
 python3 simulate.py --mode gh_opened --event ../events/sample_pr_opened.json
-# PM label changed and merged gate are exercised through service payloads in ./events/
+# PM review change and merged gate are exercised through service payloads in ./events/
 ```
 
 Runtime contract validation:
@@ -190,8 +190,8 @@ python3 linear/scripts/validate_runtime_contract_artifacts.py
 - PR opened -> In Progress
 - PR ready for review -> `In Review`
 - QA comment token parse (`QA_RESULT=PASSED`) -> `Delivered`
-- acceptance gate signal (`pm-accepted`) -> `Accepted`
-- PR merged -> merge record comment only
+- PM review signal (`pm-accepted`) -> `Accepted`
+- PR merged -> final closure to `Done` plus merge record comment for acceptance-required work
 
 ## Discord operator preflight
 

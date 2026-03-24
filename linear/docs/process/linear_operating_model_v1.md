@@ -1,23 +1,27 @@
-# Linear Operating Model v1
+# `taylored_linear_ops`
 
-Status: Active canonical model  
-Owner: Product Development  
-Primary planning lane: [BIT-175 — Linear operating model v1 rollout plan](https://linear.app/bitpod-app/issue/BIT-175/linear-operating-model-v1-rollout-plan)  
+Status: Active canonical model
+Owner: Product Development
+Primary planning lane: [BIT-175 — Linear operating model v1 rollout plan](https://linear.app/bitpod-app/issue/BIT-175/linear-operating-model-v1-rollout-plan)
 Replanning lane: [BIT-183 — Re-plan with CJ in order to update BIT-175 post learnings](https://linear.app/bitpod-app/issue/BIT-183/re-plan-with-cj-in-order-to-update-bit-175-post-learnings)
 
-## Purpose
+## Abstract
 
-Define one complete Linear operating model for BitPod Product Development:
+Build a full, opinionated Linear operating model that is heavily influenced by Pivotal Tracker, while adapted for AI-assisted execution.
 
-- exact statuses and status types
-- exact label groups and labels
-- canonical blocker and dependency semantics
-- one shared board view
-- gate-driven QA and acceptance transitions
-- cycle and estimate expectations
-- native Linear vs BitPod/Taylor automation boundary
+The active v1 model remains the structural baseline: statuses, gate-driven movement, one shared board, blocker semantics, cycle cadence, estimate discipline, and the role of `Update Linear` remain canonical where still correct. This document rewrites that baseline into one complete operating doctrine.
 
-This document supersedes older partial workflow drafts as the active contract.
+Pivotal's discipline still matters:
+
+- small scoped work
+- meaningful backlog order
+- explicit gates
+- truthful completion
+- tools that constrain behavior instead of tolerating chaos
+
+AI changes one major thing: the smallest unit of implementation is no longer always the best unit of request. Very small tasks can complete in under a minute, so execution should remain small without forcing work to stop after every microscopic step. That is why `Plan` tickets exist. They serve the role epics normally serve, but in a more operational, chronological, and execution-aware way.
+
+The same philosophy should be portable to other systems later, but this document is specifically for Linear. Assume the workflow automations already exist. Adapter-layer skills and HTTPS endpoints may later override parts of this model, but this document is the canonical default doctrine, not an options menu.
 
 ## Truth note
 
@@ -27,67 +31,270 @@ The original long planning paragraph that informed this lane was lost to memory 
 - live Product Development team state
 - existing Linear tickets
 - the obsolete `PLAN.md`
-- the current planning session with CJ
+- CJ planning decisions captured after the loss
+
+## Purpose
+
+Define one complete Linear operating model for a team that wants:
+
+- one clear workflow
+- one shared board per team
+- strong status truth
+- narrow, meaningful labels
+- explicit QA and PM gates
+- minimal but useful planning hierarchy
+- automation-backed enforcement
+- a Pivotal-style operating feel without pretending AI teams work like 2015 human-only scrum teams
+
+## Core philosophy
+
+### Pivotal influence, adapted
+
+The core doctrine is:
+
+- smaller scoped work is better
+- backlog order should mean something
+- `Ready` should mean actually ready
+- review and acceptance should be explicit
+- completion should reflect reality, not optimism
+- the tool should constrain behavior instead of tolerating chaos
+
+The smallest unit of implementation is not always the best unit of request. Execution should still happen in small pieces, but AI teams often need those pieces to live under a parent container so the system can keep moving until the full feature is meaningfully complete.
+
+### What Plan tickets are for
+
+`Plan` tickets serve the purpose epics normally serve.
+
+A `Plan` ticket is:
+
+- a parent ticket
+- created through real planning
+- broken into sub-issues in chronological rollout order
+- used when one coherent feature or initiative should be requested as one thing, but executed as smaller nested tickets
+
+This keeps the Pivotal instinct of smaller parts and clearer work while adapting it for agents that move fast enough that stopping after each tiny step becomes counterproductive.
+
+Outside of `Plan` and `Release`, sub-issues should generally be avoided.
+
+### Projects are not epics
+
+Plans are the epic-equivalent.
+
+Projects are for really large, long-term bodies of work such as:
+
+- building an iOS app
+- a major app rewrite
+- a massive architecture overhaul
+- a very large multi-month product track
+
+Projects should not be used for ordinary features or as a second backlog.
 
 ## Canonical workflow
 
-### Status order
+### Workflow map
 
-| Status Type | Status | Meaning |
+| Stage | Status | Short description |
 |---|---|---|
-| Backlog | `Icebox 🧊` | Very cold work that is unlikely to be done and is under delete / cancel / obsolete consideration. |
-| Backlog | `Backlog` | Default landing space for new or deferred work that is real but not execution-ready. |
-| Unstarted | `Ready` | Execution-ready work. Minimum required fields and gates are satisfied. |
-| Started | `In Progress` | Active execution or implementation. |
-| Started | `In Review` | Active QA / technical review stage. Pending QA is expressed by the status itself. |
-| Started | `Delivered` | QA-cleared work waiting for product / operational acceptance. Pending acceptance is expressed by the status itself. |
-| Completed | `Accepted` | Explicitly accepted outcome. Normal terminal state for acceptance-required work. |
-| Completed | `Done` | Fully complete and closed. Normal terminal state for work that does not need a separate acceptance end-state. |
-| Canceled | `Canceled` | Intentionally stopped and no longer pursued. |
-| Canceled | `Duplicate` | Closed because the canonical work exists in another issue. |
-| Canceled | `Obsolete` | Closed because the context changed and the work is no longer relevant. |
-| Canceled | `Won't Do` | Explicitly understood and intentionally not implemented. |
+| Cold | `Icebox 🧊` | Stale work under reconsideration, delete, cancel, or obsolete review |
+| Intake | `Backlog` | Default landing place for real work that is not yet execution-ready |
+| Ready lane | `Ready` | Fully shaped and allowed to start |
+| Execution | `In Progress` | Active implementation or execution |
+| QA gate | `In Review` | Active QA / technical review stage |
+| PM gate | `Delivered` | QA-cleared work waiting for PM acceptance or rejection |
+| Accepted end-state | `Accepted` | Explicitly accepted outcome; ready for final operational closure if needed |
+| Done end-state | `Done` | Fully complete and closed |
+| Canceled | `Canceled` | Intentionally stopped |
+| Canceled | `Duplicate` | Superseded by canonical work elsewhere |
+| Canceled | `Obsolete` | Context changed; no longer relevant |
+| Canceled | `Won't Do` | Explicitly understood and intentionally not implemented |
 
-### Workflow rules
+### Path map
 
-- Default issue status is `Backlog`.
-- `Triage` is not part of the Product Development team workflow.
-- `Ready` is the canonical unstarted execution-ready status.
-- `In Acceptance` is retired and replaced by `Delivered`.
-- All canceled-family statuses remain real statuses and remain visible in the canonical board model.
-- `Accepted` and `Done` both remain. They are not duplicates.
-- `Accepted` does not automatically mean `Done`.
+Standard path:
+`Backlog -> Ready -> In Progress -> In Review -> Delivered -> Accepted -> Done`
 
-### Type to path
+Short path for explicit low-risk exceptions:
+`Backlog -> Ready -> In Progress -> In Review -> Done`
 
-| Issue type | Default end-state | Acceptance required by default |
-|---|---|---|
-| `Type: 📄 Plan` | `Accepted` | Yes |
-| `Type: 🏁 Release` | `Accepted` | Yes |
-| `Type: ⭐️ Feature` | `Accepted` | Yes |
-| `Type: 🎨 Design` | `Accepted` | Yes |
-| `Type: 🐞 Bug` | `Done` | No, unless CJ or PM explicitly requests acceptance |
-| `Type: ⚙️ Chore` | `Done` | No, unless CJ or PM explicitly requests acceptance |
+Rejection loops:
+`In Review --qa-failed--> In Progress`
+`Delivered --pm-rejected--> In Progress`
 
-Default forward paths:
+Aging path:
+`Backlog --untouched--> Icebox 🧊`
 
-- Acceptance-required work: `Backlog` -> `Ready` -> `In Progress` -> `In Review` -> `Delivered` -> `Accepted`
-- Non-acceptance work: `Backlog` -> `Ready` -> `In Progress` -> `In Review` -> `Done`
+### Status rules
 
-## Canonical labels
+- Default issue status is `Backlog`
+- `Ready` is the only canonical execution-ready status
+- `Accepted` and `Done` are both real and are not duplicates
+- `Accepted` is not terminal for the standard path; it is the accepted checkpoint before final closure in `Done`
+- `Icebox 🧊` is not a default intake lane
+- no emoji issue statuses except `Icebox 🧊`
+- assume work generally requires acceptance, with a few explicit low-risk exceptions such as tiny dependency-update chores or tiny low-risk bug fixes
 
-Use exactly four single-select label groups with no group emojis.
+## One shared board
+
+There should be exactly one shared board per team.
+
+That board is the primary operating surface. It should include the full workflow, including completed and canceled-family statuses. Personal filters are fine. Shared workflow reality stays singular.
+
+Use:
+
+- Layout: `Board`
+- Columns: `Status`
+- Rows: `None`
+- one team-wide shared board
+- no competing main boards
+
+Default shared-board configuration:
+
+- Ordering: `Updated`, descending
+- Completed recently: `On`
+- Completed issues window: `Last month`
+- Show sub-issues: `On`
+- Show empty columns: `Off`
+- Project filter: blank
+- Status Type filter: blank
+- Assignee filter: blank
+- Issue Type filter: `All`
+- AI filter: blank
+
+This board is the closest Linear equivalent to a single meaningful Pivotal board.
+
+## Ticket types
+
+Canonical issue types:
+
+- `Plan`
+- `Feature`
+- `Bug`
+- `Chore`
+- `Design`
+- `Release`
+
+### Type descriptions
+
+| Type | Short description |
+|---|---|
+| `Plan` | Parent planning ticket that structures one coherent rollout through chronological sub-issues |
+| `Feature` | User-facing or team-facing meaningful enhancement |
+| `Bug` | Broken behavior, regression, or defect fix |
+| `Chore` | Maintenance, upgrades, cleanup, or non-feature technical work |
+| `Design` | Standalone UI/UX or design-system work owned by design agents |
+| `Release` | Large coordinated shipping object with a real release date and grouped rollout scope |
+
+### Type rules
+
+- No ticket can move to `Ready` without exactly one canonical type assigned
+- no extra type taxonomy
+- `Plan` and `Release` are the only issue types where sub-issues are generally expected
+- outside of `Plan` and some `Release` tickets, sub-issues should usually be avoided
+
+### Feature definition
+
+Define a `Feature` as:
+
+> A user-facing or team-facing meaningful enhancement.
+
+## Plan tickets
+
+Plan tickets are the epic-equivalent.
+
+Use them when:
+
+- one feature needs a real planning pass first
+- work should be broken into 3–8 smaller steps
+- a coherent rollout should be requested as one thing
+- smaller nested tickets make execution more truthful and less brittle
+
+Plan tickets should:
+
+- be created through real planning
+- act as parent tickets
+- own chronological sub-issues
+- stay out of cycles unless there is a very strong reason
+- not be treated as normal velocity units
+
+## Release tickets
+
+Release tickets are like Plans, but larger, looser, and tied to actual shipping.
+
+A Release ticket is:
+
+- the only ticket type with a real date
+- a grouped release object
+- a coordinated shipping container
+- likely associated with a major version bump
+- expected to include a checklist of everything that must be `Done` before shipping
+
+A Release should usually also imply:
+
+- final verification
+- release notes or announcement work
+- rollout checks
+- post-release checks
+- version bump coordination
+
+## Estimates
+
+Every single ticket must have at least `1` point.
+
+Use:
+
+- `1`
+- `2`
+- `3`
+- `5`
+- `8`
+
+Do not allow unestimated active work. Do not allow `0-point` philosophical exceptions.
+
+### Who estimates what
+
+| Type | Estimated by |
+|---|---|
+| `Feature` | Engineering |
+| `Bug` | Engineering |
+| `Chore` | Engineering |
+| `Plan` | Product + Engineering |
+| `Release` | Product + Engineering |
+| `Design` | Design / UI-UX agents |
+
+### Estimation policy by type
+
+| Type | Pointed by default? | Notes |
+|---|---:|---|
+| `Feature` | Yes | Always pointed |
+| `Bug` | Yes | Minimum 1 even when tiny |
+| `Chore` | Yes | Minimum 1; chores and features can blur in practice |
+| `Plan` | Yes | If acting mostly as a parent container, children carry most forecasting value |
+| `Design` | Yes | Estimated by design agents based on scope |
+| `Release` | Yes | Estimated as a coordination object, not pure implementation effort |
+
+## Labels, gates, and automation
+
+Use labels mainly as automation triggers. Labels should only stay on tickets while they still make sense.
+
+### Canonical label groups
+
+Use exactly four single-select label groups with short descriptions:
+
+- `Issue Type`
+- `Blocked By`
+- `QA Review`
+- `PM Review`
 
 ### `Issue Type`
 
 Description: `Primary work type`
 
-- `Type: 📄 Plan` — `Planned parent rollout via subticket tasklist`
-- `Type: ⭐️ Feature` — `Net-new capability or enhancement`
-- `Type: 🐞 Bug` — `Broken behavior, defect, or regression fix`
-- `Type: ⚙️ Chore` — `Maintenance, cleanup, upgrade, or refactor work`
-- `Type: 🎨 Design` — `UX, UI, visual, or design-system work`
-- `Type: 🏁 Release` — `Shipping, cutover, launch, or release-readiness work`
+- `Plan` — `Parent planning ticket for one coherent rollout`
+- `Feature` — `Meaningful enhancement for users or the team`
+- `Bug` — `Broken behavior, regression, or defect fix`
+- `Chore` — `Maintenance, cleanup, upgrade, or refactor work`
+- `Design` — `Standalone UX, UI, or design-system work`
+- `Release` — `Coordinated shipping object with real rollout scope`
 
 ### `Blocked By`
 
@@ -104,249 +311,158 @@ Description: `Current generic blocker reason`
 
 Rules:
 
-- `Blocked By` is metadata only. It is not a swimlane, gate, or workflow stage.
-- Every blocker label must start with `needs-`.
-- `needs-other` always requires an explanatory issue comment.
-- `needs-type` and `needs-estimate` should normally be resolved before `Ready`.
-- `needs-CTO` is reserved for high-reasoning technical redesign or architecture direction.
-- Do not add alternate blocker spellings such as `missing-specs` or `poorly-specified`.
+- `Blocked By` is metadata only
+- it is not a status, lane, swimlane, or gate
+- use native Linear dependencies whenever one ticket is blocked by another specific ticket
+- use blocker labels only for generic conditions not best represented as another issue
+- keep blocker naming professional
+- `needs-other` requires a comment
 
-### `QA Gate`
+### `QA Review`
 
-Description: `Formal QA verdict used to unlock work out of In Review`
+Description: `QA result used to unlock work out of In Review`
 
-- `qa-passed` — `Real QA completed; no blocking issues`
-- `qa-failed` — `Real QA found blocking issues`
-- `qa-skipped` — `QA bypass explicitly approved and reason recorded`
+- `qa-passed` — `QA passed with artifact`
+- `qa-failed` — `QA failed with artifact`
+- `qa-skipped` — `QA skipped with explicit authorization`
 
-Rules:
+### `PM Review`
 
-- There is no pending QA label.
-- Pending QA is expressed only by the status `In Review`.
-- `qa-passed`, `qa-failed`, and `qa-skipped` are mutually exclusive.
-- A QA gate label is valid only when there is a real QA artifact or explicit skip authorization on the issue.
-- If a PR exists, the same artifact or a link to it should also appear in PR comments.
+Description: `PM result used to unlock work out of Delivered`
 
-### `Acceptance Gate`
+- `pm-accepted` — `PM accepted with artifact`
+- `pm-rejected` — `PM rejected with artifact`
+- `pm-skipped` — `PM skipped with explicit authorization`
 
-Description: `Formal acceptance verdict used to unlock work out of Delivered`
+### Gate rule summary
 
-- `pm-accepted` — `Real acceptance review approved`
-- `pm-rejected` — `Acceptance review rejected; changes required`
-- `pm-skipped` — `Acceptance bypass explicitly approved and reason recorded`
+- `In Review` means QA stage
+- `Delivered` means PM acceptance / rejection stage
+- labels trigger automation
+- stale gate labels must be cleared on re-entry to the relevant status
+- labels should not linger after they stop being semantically useful
+- there are no pending QA or PM labels
 
-Rules:
+## Blockers vs native Linear dependencies
 
-- There is no pending PM / acceptance label.
-- Pending acceptance is expressed only by the status `Delivered`.
-- `pm-accepted`, `pm-rejected`, and `pm-skipped` are mutually exclusive.
-- Delegated acceptance to Taylor01 or another approved agent does not change taxonomy. The gate label records the verdict. Delegation belongs in the artifact comment, delegate field, or linked evidence.
+Use native Linear dependencies whenever a ticket is blocked by another specific issue.
 
-### Explicit removals
+Use blocker labels only when the blocker is not best represented as another issue.
 
-- no `QA Review` group
-- no `PM Review` group
-- no pending review labels such as `QA: Pending` or `PM: Waiting`
-- no `Needs-CJ` label
-- no extra operational noun labels outside the canonical groups
+Use native `blocked by` when:
 
-## Relations and decomposition
+- ticket A depends on ticket B
+- a design issue must finish before an implementation issue
+- a release gate depends on specific issue completion
+- one real ticket blocks another real ticket
 
-| Need | Canonical tool | Use it when | Do not use it for |
+Use blocker labels for generic conditions such as:
+
+- `needs-CTO`
+- `needs-pm`
+- `needs-specs`
+- `needs-other`
+
+Do not use blocker labels as a lazy substitute for proper issue-to-issue blocking.
+
+## Review, acceptance, and skips
+
+### Canonical transition table
+
+| Current | Trigger | Evidence | Next |
 |---|---|---|---|
-| Workflow state | Status | The issue is moving through the lifecycle | Metadata, acceptance verdict, or dependency graph |
-| Generic blocker reason | `Blocked By` label | The issue is blocked by a class of reason | Specific upstream issue dependency |
-| Specific prerequisite issue | `Blocked by` / `Blocks` relation | A real issue must finish first | Generic missing context like missing specs |
-| Context only | `Related to` relation | The issue is connected but not gated | Sequencing or decomposition |
-| Decomposition | Parent / sub-issues | One piece of work should be split into children | Generic cross-ticket dependency modeling |
+| `In Progress` | ready for QA | execution evidence | `In Review` |
+| `In Review` | `qa-passed` | QA artifact | `Delivered` or `Done` |
+| `In Review` | `qa-failed` | QA artifact | `In Progress` |
+| `In Review` | `qa-skipped` | skip authorization + reason | `Delivered` or `Done` |
+| `Delivered` | `pm-accepted` | acceptance artifact | `Accepted` |
+| `Delivered` | `pm-rejected` | rejection artifact | `In Progress` |
+| `Delivered` | `pm-skipped` | skip authorization + reason | `Done` |
+| `Accepted` | final closure step | closure evidence if needed | `Done` |
 
-Operational rules:
+### Skip controls
 
-- If an issue is blocked by a specific other issue and the reason class is known, use both the relation and the blocker label.
-- Parent/sub-issues are not substitutes for blocking relations.
-- `Type: 📄 Plan` issues use parent/sub-issues first and blocking relations only when one child truly depends on another.
-- Duplicates always point to the canonical issue.
+Skips should be allowed through skills, either:
 
-## Shared board
+- per ticket
+- per ticket type
+- or as global toggles
 
-Use one single shared team board as the default operating surface:
+These are policy controls, not excuses for workflow sloppiness.
 
-- view URL: <https://linear.app/bitpod-app/view/proddev-team-all-issues-or-board-e33cd891cdc5>
-- scope: team/global view
-- workspace rule: every Product Development member favorites it manually
-- admin rule: set its display options as the default for everyone on that page
+## Delegation
 
-### Exact display configuration
+Support delegation through skills.
 
-- Layout: `Board`
-- Columns: `Status`
-- Rows / sub-grouping: `None`
-- Ordering: `Last updated`, descending
-- Secondary temporary operator sort: `Priority`
-- Completed recently: `On`
-- Completed issues window: `Last month`
-- Show sub-issues: `On`
-- Show empty columns: `Off`
-- Project filter: blank by default
-- Status Type filter: blank by default
-- Assignee filter: blank by default
-- Issue Type filter: `All`
-- AI filter: blank by default
+Delegated acceptance belongs in the enforcement layer, not in native Linear structure. PM labels and artifacts still record the truth even when a PM-role agent performs the action.
 
-Board semantics:
+## Descriptions
 
-- The board is defined across the full workflow from `Icebox 🧊` through all completed and canceled-family statuses.
-- Because `Show empty columns` is off, empty statuses may disappear visually, but the board model still includes every canonical status.
-- Canceled-family columns remain part of the canonical board instead of being hidden behind a different default view.
-- This is the single shared surface that everyone should look at first.
+Every:
 
-## Workflow gates and automations
+- issue status
+- label group
+- label
 
-### Entry gates
+should have a short description.
 
-Before an issue can move to `Ready`, it must have:
+Keep them short. One sentence or less.
 
-- exactly one canonical `Issue Type` label
-- a valid estimate, except for parent `Type: 📄 Plan` issues
-- a minimally valid issue description using the canonical template
-- no unresolved `needs-type` or `needs-estimate` blocker
+## Native Linear vs enforcement layer
 
-Before an issue can move to `In Progress`, it must already satisfy the `Ready` requirements.
+### Native Linear should handle
 
-Plan-parent rules:
+- statuses
+- board layout
+- cycles
+- relations
+- parent / sub-issue support
+- baseline workflow structure
 
-- `Type: 📄 Plan` issues are coordination containers, not velocity units.
-- Plan parents normally do not carry cycle points.
-- Child issues carry estimates, cycle commitments, and execution movement.
-- Enable parent auto-close so the plan closes when its child work is complete.
+### The enforcement layer should handle
 
-### Review and acceptance transitions
-
-| Current status | Gate / event | Required evidence | Next status |
-|---|---|---|---|
-| `In Progress` | ready for QA | execution evidence and work genuinely ready | `In Review` |
-| `In Review` | `qa-passed` | real QA artifact | `Delivered` if acceptance-required, otherwise `Done` |
-| `In Review` | `qa-failed` | real QA artifact | `In Progress` |
-| `In Review` | `qa-skipped` | explicit skip authorization and reason | `Delivered` if acceptance-required, otherwise `Done` |
-| `Delivered` | `pm-accepted` | real acceptance artifact | `Accepted` |
-| `Delivered` | `pm-rejected` | real acceptance artifact | `In Progress` |
-| `Delivered` | `pm-skipped` | explicit skip authorization and reason | `Done` |
-
-Additional rules:
-
-- `qa-failed` must mention the current assignee and point directly to the QA artifact.
-- `pm-rejected` must point directly to the rejection artifact and return the issue to `In Progress`.
-- Re-entering `In Review` clears stale prior `QA Gate` labels.
-- Re-entering `Delivered` clears stale prior `Acceptance Gate` labels.
-- Merge or rollout completion must not silently substitute for missing QA or acceptance evidence.
-
-### Aging
-
-- `Backlog` untouched for 30 days -> move to `Icebox 🧊` and add an automatic comment.
-- `Icebox 🧊` untouched for 60 days -> move to `Obsolete` and add an automatic comment.
-- Do not auto-obsolete `In Progress`, `In Review`, or `Delivered`.
-- Auto-archive all closed statuses after 1 month.
-- Enable parent auto-close and sub-issue auto-close in the workflow settings.
-
-### Native Linear vs BitPod/Taylor layer
-
-| Capability | Native Linear | BitPod / Taylor layer |
-|---|---|---|
-| Status ordering, default status, auto-archive, parent/sub-issue automation, cycles, board defaults | Yes | No |
-| Backlog -> Icebox comment workflow, Icebox -> Obsolete comment workflow | Partial | Yes |
-| Required type/estimate/template before `Ready` or `In Progress` | Not verified natively | Yes |
-| QA or acceptance artifact validation before gate labels | No | Yes |
-| Gate-driven status transitions | Partial | Yes |
-| `Update Linear` fail-closed mutation enforcement | No | Yes |
-| Skip authorization for QA or acceptance | No | Yes |
-| Delegated acceptance to Taylor01 | No | Yes |
-| GitHub PR signal consumption | Native integration exists | BitPod/Taylor wrapper is the truth-enforcing layer |
-
-## Template, estimate, cycle, and integration policy
-
-### Canonical issue template
-
-All execution issues use:
-
-- Objective
-- Scope
-- Required outputs
-- Verification plan
-- Rollback note
-- Acceptance / closure criteria
-- Taylor01 Portability Check when relevant
-
-`Done` or `Accepted` claims must include:
-
-- status line and transition reason
-- commands / UI checks
-- artifacts
-- pass / fail
-- risk / follow-up
-- portability block when relevant
-
-### Specialized templates
-
-Plan issue template:
-
-- requires a real planning session first
-- includes goal, ordered child plan, dependencies, exit criteria, and invalidation conditions
-
-Release issue template:
-
-- includes cutover steps, rollback, acceptance criteria, verification artifact lane, and post-release checks
-
-### Estimates
-
-- enable estimates
-- use Fibonacci values `1, 2, 3, 5, 8, 13`
-- keep `0` disabled by default
-- split issues larger than `13` before `Ready`
-- do not treat unestimated issues as acceptable active work
-- plan parents are exempt only when executable child issues carry the estimates
-
-### Cycles
-
-- cadence: `1 week`
-- start day: `Monday`
-- cooldown: `0 days`
-- upcoming cycles visible: `2`
-- cycle scope should reflect execution work, not parent plan containers
-- plan parents normally stay out of cycles
-- child execution issues carry cycle commitments and points
-
-### Integrations
-
-- GitHub: connected and authoritative for branch / PR context only, not for bypassing workflow truth
-- Slack: optional for notifications and synced discussion, not for canonical workflow truth
-- Google Sheets: optional after cycle and estimate hygiene is stable, for KPI and velocity analysis
-- Triage Intelligence / AI suggestions: assistive only; never authoritative for status or gate truth
-- additional integrations remain off by default until explicitly approved
+- truth validation
+- gate evidence checks
+- skip authorization
+- label hygiene
+- status-transition enforcement
+- delegated PM logic
+- rejection comments
+- mutation refusal when requirements are missing
+- persistence of short-lived structured operational memory if that layer exists
 
 ## `Update Linear`
 
-`Update Linear` is the required mutation contract for agent-driven Linear changes. Its job is to make the issue materially more truthful and fail closed when required truth-maintenance steps are missing.
+`Update Linear` is the mutation contract.
 
-Required behavior:
+Whenever an agent makes workflow changes, `Update Linear` should happen as part of that change flow, not as an afterthought.
 
-- validate status, labels, assignee/delegate, and relation hygiene together
-- refuse status moves that skip required evidence or required fields
+Its job is to make the ticket more truthful and fail closed when required truth-maintenance steps are missing.
+
+`Update Linear` must:
+
+- validate status, labels, assignee / delegate, and relation hygiene together
+- refuse moves that skip required evidence or required fields
 - enforce type and estimate requirements before `Ready` and `In Progress`
 - enforce gate artifacts before `qa-*` and `pm-*` labels
-- enforce the `needs-other` comment requirement
 - never silently apply partial truth updates
 - leave an explicit correction comment when a mutation is rejected
 
-Primary implementation lanes:
+Persistence notes:
 
-- [BIT-186 — Investigate and fix broken Update Linear enforcement path](https://linear.app/bitpod-app/issue/BIT-186/investigate-and-fix-broken-update-linear-enforcement-path)
-- [BIT-125 — Define and enable a safe Linear mutation executor for scheduled automations](https://linear.app/bitpod-app/issue/BIT-125/define-and-enable-a-safe-linear-mutation-executor-for-scheduled)
-- [BIT-130 — Implement Linear bot rules spec with soft-gating under interim QA/CJ acceptance policy](https://linear.app/bitpod-app/issue/BIT-130/implement-linear-bot-rules-spec-with-soft-gating-under-interim-qacj)
-- [BIT-121 — Mature QA/PM acceptance workflow and automation](https://linear.app/bitpod-app/issue/BIT-121/mature-qapm-acceptance-workflow-and-automation)
+- changes are recorded temporarily in the DB for 30 days
+- Linear ticket history remains the permanent durable log
+- QA artifacts / reviews are posted in the ticket, in the PR, and in the DB for 30 days
 
-## Implementation notes
+## Projects
 
-- Replace the description of [BIT-175 — Linear operating model v1 rollout plan](https://linear.app/bitpod-app/issue/BIT-175/linear-operating-model-v1-rollout-plan) with this operating model.
-- Use [BIT-183 — Re-plan with CJ in order to update BIT-175 post learnings](https://linear.app/bitpod-app/issue/BIT-183/re-plan-with-cj-in-order-to-update-bit-175-post-learnings) to close the replanning lane once the planning evidence and related follow-ups are truthfully complete.
-- Migrate live Product Development workflow and labels to match this file.
-- Preserve older docs such as the workflow reconfig spec and custom config draft as historical references, not as the active contract.
+Use Projects sparingly.
+
+Projects are for big, long-term bodies of work. Do not use them for:
+
+- normal features
+- one medium release
+- ordinary cleanup
+- things that should just be Plans
+
+Prefer using the Project itself rather than creating project-label sprawl.

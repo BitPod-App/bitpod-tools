@@ -55,28 +55,39 @@ class EngineTests(unittest.TestCase):
         issue = {
             "identifier": "BIT-45",
             "status": "Ready",
-            "labels": ["Type: ⭐️ Feature"],
+            "labels": ["Feature"],
             "description": "Objective\nScope\nRequired outputs\nVerification plan\nRollback note\nAcceptance / closure criteria",
         }
         actions = self.bot.on_linear_ready_gate(issue)
         self.assertTrue(any(a.kind == "set_label" and a.payload["value"] == "needs-estimate" for a in actions))
 
-    def test_ready_gate_plan_parent_can_skip_estimate(self):
+    def test_ready_gate_plan_parent_requires_estimate(self):
         issue = {
             "identifier": "BIT-45",
             "status": "Ready",
-            "labels": ["Type: 📄 Plan"],
+            "labels": ["Plan"],
             "description": "Objective\nScope\nRequired outputs\nVerification plan\nRollback note\nAcceptance / closure criteria",
         }
         actions = self.bot.on_linear_ready_gate(issue)
-        self.assertEqual(actions, [])
+        self.assertTrue(any(a.kind == "set_label" and a.payload["value"] == "needs-estimate" for a in actions))
+
+    def test_ready_gate_multiple_types_fails_closed(self):
+        issue = {
+            "identifier": "BIT-45",
+            "status": "Ready",
+            "labels": ["Feature", "Bug"],
+            "estimate": 3,
+            "description": "Objective\nScope\nRequired outputs\nVerification plan\nRollback note\nAcceptance / closure criteria",
+        }
+        actions = self.bot.on_linear_ready_gate(issue)
+        self.assertTrue(any(a.kind == "set_label" and a.payload["value"] == "needs-type" for a in actions))
 
     def test_linear_comment_failed(self):
         actions = self.bot.on_linear_comment(
             "BIT-45",
             "QA_RESULT=FAILED\nboom",
             "https://pr",
-            issue_labels=["Type: ⭐️ Feature"],
+            issue_labels=["Feature"],
         )
         self.assertEqual(actions[0].payload["value"], "qa-failed")
         self.assertEqual(actions[1].payload["status"], "In Progress")
@@ -86,7 +97,7 @@ class EngineTests(unittest.TestCase):
             "BIT-45",
             "QA_RESULT=PASSED\nok",
             "https://pr",
-            issue_labels=["Type: ⭐️ Feature"],
+            issue_labels=["Feature"],
         )
         self.assertEqual(actions[0].payload["value"], "qa-passed")
         self.assertEqual(actions[1].payload["status"], "Delivered")
@@ -96,7 +107,7 @@ class EngineTests(unittest.TestCase):
             "BIT-45",
             "QA_RESULT=PASSED\nok",
             "https://pr",
-            issue_labels=["Type: ⚙️ Chore"],
+            issue_labels=["Chore"],
         )
         self.assertEqual(actions[1].payload["status"], "Done")
 
@@ -105,7 +116,7 @@ class EngineTests(unittest.TestCase):
             "BIT-45",
             "QA_RESULT=SKIPPED\napproved skip",
             "",
-            issue_labels=["Type: 📄 Plan"],
+            issue_labels=["Plan"],
         )
         self.assertEqual(actions[0].payload["value"], "qa-skipped")
         self.assertEqual(actions[1].payload["status"], "Delivered")
@@ -115,7 +126,7 @@ class EngineTests(unittest.TestCase):
             "BIT-45",
             "QA_RESULT=PASSED\nok",
             "",
-            issue_labels=["Type: ⚙️ Chore"],
+            issue_labels=["Chore"],
         )
         self.assertEqual(len(actions), 2)
         self.assertEqual(actions[0].system, "linear")
@@ -134,20 +145,22 @@ class EngineTests(unittest.TestCase):
         self.assertEqual(actions[0].payload["status"], "Done")
 
     def test_merge_gate_fail_closed_for_feature_without_acceptance_gate(self):
-        issue = {"identifier": "BIT-45", "labels": ["Type: ⭐️ Feature", "qa-passed"]}
+        issue = {"identifier": "BIT-45", "labels": ["Feature", "qa-passed"]}
         actions = self.bot.on_github_pr_merged(issue, "https://pr", "sha")
         self.assertEqual(len(actions), 1)
         self.assertEqual(actions[0].kind, "comment")
         self.assertIn("workflow gates are incomplete", actions[0].payload["body"])
 
-    def test_merge_gate_pass_for_feature_with_acceptance_gate(self):
-        issue = {"identifier": "BIT-45", "labels": ["Type: ⭐️ Feature", "qa-passed", "pm-accepted"]}
+    def test_merge_gate_pass_for_feature_with_acceptance_gate_sets_done(self):
+        issue = {"identifier": "BIT-45", "labels": ["Feature", "qa-passed", "pm-accepted"]}
         actions = self.bot.on_github_pr_merged(issue, "https://pr", "sha")
-        self.assertEqual(actions[0].kind, "comment")
-        self.assertIn("Merged recorded", actions[0].payload["body"])
+        self.assertEqual(actions[0].kind, "set_status")
+        self.assertEqual(actions[0].payload["status"], "Done")
+        self.assertEqual(actions[1].kind, "comment")
+        self.assertIn("Merged recorded", actions[1].payload["body"])
 
     def test_merge_gate_pass_for_chore_with_qa_gate_only(self):
-        issue = {"identifier": "BIT-45", "labels": ["Type: ⚙️ Chore", "qa-passed"]}
+        issue = {"identifier": "BIT-45", "labels": ["Chore", "qa-passed"]}
         actions = self.bot.on_github_pr_merged(issue, "https://pr", "sha")
         self.assertEqual(actions[0].kind, "comment")
         self.assertIn("Merged recorded", actions[0].payload["body"])

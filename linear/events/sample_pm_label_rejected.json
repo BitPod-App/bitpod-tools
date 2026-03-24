@@ -1,5 +1,5 @@
 {
-  "type": "acceptance_gate_changed",
+  "type": "pm_review_changed",
   "issue_key": "BIT-45",
   "gate_value": "pm-rejected",
   "pr_url": "https://github.com/BitPod-App/bitpod-tools/pull/17"

@@ -4,7 +4,7 @@ from linear.src.runtime import BotRuntime
 
 
 class E2EFlowTests(unittest.TestCase):
-    def test_feature_happy_path_to_accepted(self):
+    def test_feature_happy_path_to_done_via_accepted(self):
         rt = BotRuntime()
 
         opened = {
@@ -39,7 +39,7 @@ class E2EFlowTests(unittest.TestCase):
             "issue_key": "BIT-45",
             "comment_body": "QA_RESULT=PASSED\nall checks pass",
             "pr_url": "https://github.com/BitPod-App/bitpod-tools/pull/7",
-            "issue_labels": ["Type: ⭐️ Feature"],
+            "issue_labels": ["Feature"],
         }
         actions_qa = rt.run_linear_event(qa_passed)
         self.assertTrue(any(a.kind == "set_label" and a.payload.get("value") == "qa-passed" for a in actions_qa))
@@ -64,10 +64,11 @@ class E2EFlowTests(unittest.TestCase):
             },
             "linear_issue": {
                 "identifier": "BIT-45",
-                "labels": ["Type: ⭐️ Feature", "qa-passed", "pm-accepted"],
+                "labels": ["Feature", "qa-passed", "pm-accepted"],
             },
         }
         actions_merged = rt.run_github_event(merged)
+        self.assertTrue(any(a.kind == "set_status" and a.payload.get("status") == "Done" for a in actions_merged))
         self.assertTrue(any(a.kind == "comment" and "Merged recorded" in a.payload.get("body", "") for a in actions_merged))
 
 

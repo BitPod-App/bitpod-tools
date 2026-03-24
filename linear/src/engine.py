@@ -17,12 +17,9 @@ REQUIRED_HEADINGS = [
     "Acceptance / closure criteria",
 ]
 
-ACCEPTANCE_REQUIRED_TYPES = {
-    "Type: 📄 Plan",
-    "Type: 🏁 Release",
-    "Type: ⭐️ Feature",
-    "Type: 🎨 Design",
-}
+CANONICAL_TYPES = {"Plan", "Feature", "Bug", "Chore", "Design", "Release"}
+ACCEPTANCE_REQUIRED_TYPES = {"Plan", "Release", "Feature", "Design"}
+VALID_ESTIMATES = {1, 2, 3, 5, 8}
 
 
 @dataclass
@@ -49,8 +46,8 @@ class BotConfig:
 
     type_group: str = "Issue Type"
     blocked_group: str = "Blocked By"
-    qa_gate_group: str = "QA Gate"
-    acceptance_gate_group: str = "Acceptance Gate"
+    qa_gate_group: str = "QA Review"
+    acceptance_gate_group: str = "PM Review"
 
     blocked_needs_specs: str = "needs-specs"
     blocked_needs_type: str = "needs-type"
@@ -97,16 +94,23 @@ class LinearBotEngine:
     def _labels(self, issue_labels: Optional[List[str]]) -> Set[str]:
         return set(issue_labels or [])
 
-    def _requires_acceptance(self, labels: Set[str]) -> bool:
-        return bool(labels.intersection(ACCEPTANCE_REQUIRED_TYPES))
+    def _type_labels(self, labels: Set[str]) -> Set[str]:
+        return labels.intersection(CANONICAL_TYPES)
 
-    def _has_estimate(self, issue: Dict[str, Any]) -> bool:
+    def _requires_acceptance(self, labels: Set[str]) -> bool:
+        return bool(self._type_labels(labels).intersection(ACCEPTANCE_REQUIRED_TYPES))
+
+    def _has_valid_estimate(self, issue: Dict[str, Any]) -> bool:
         raw = issue.get("estimate")
         if isinstance(raw, dict):
             raw = raw.get("value")
         if raw in (None, "", 0):
             raw = issue.get("estimateValue")
-        return raw not in (None, "", 0)
+        try:
+            value = int(raw)
+        except (TypeError, ValueError):
+            return False
+        return value in VALID_ESTIMATES
 
     def _github_comment(self, pr_url: str, body: str) -> List[Action]:
         if not pr_url:
@@ -153,16 +157,8 @@ class LinearBotEngine:
         labels = self._labels(issue.get("labels", []))
         description = issue.get("description", "")
 
-        if not labels.intersection(
-            {
-                "Type: 📄 Plan",
-                "Type: ⭐️ Feature",
-                "Type: 🐞 Bug",
-                "Type: ⚙️ Chore",
-                "Type: 🎨 Design",
-                "Type: 🏁 Release",
-            }
-        ):
+        type_labels = self._type_labels(labels)
+        if len(type_labels) != 1:
             return [
                 Action(
                     "linear",
@@ -175,13 +171,13 @@ class LinearBotEngine:
                     "comment",
                     issue_key,
                     {
-                        "body": "Missing `Issue Type`. Set one of: `Type: 📄 Plan` `Type: ⭐️ Feature` `Type: 🐞 Bug` `Type: ⚙️ Chore` `Type: 🎨 Design` `Type: 🏁 Release`"
+                        "body": "Missing or invalid `Issue Type`. Set exactly one of: `Plan` `Feature` `Bug` `Chore` `Design` `Release`"
                     },
                 ),
                 Action("linear", "set_status", issue_key, {"status": self.cfg.backlog_status}),
             ]
 
-        if "Type: 📄 Plan" not in labels and not self._has_estimate(issue):
+        if not self._has_valid_estimate(issue):
             return [
                 Action(
                     "linear",
@@ -193,7 +189,7 @@ class LinearBotEngine:
                     "linear",
                     "comment",
                     issue_key,
-                    {"body": "Missing estimate. Add a Fibonacci estimate before moving this issue into active execution."},
+                    {"body": "Missing or invalid estimate. Set one of: `1` `2` `3` `5` `8` before moving this issue into active execution."},
                 ),
                 Action("linear", "set_status", issue_key, {"status": self.cfg.backlog_status}),
             ]
@@ -302,14 +298,18 @@ class LinearBotEngine:
         )
 
         if qa_ok and acceptance_ok:
-            return [
+            actions: List[Action] = []
+            if acceptance_required and self.cfg.pm_accepted in labels:
+                actions.append(Action("linear", "set_status", issue_key, {"status": self.cfg.done_status}))
+            actions.append(
                 Action(
                     "linear",
                     "comment",
                     issue_key,
-                    {"body": f"Merged recorded: {pr_url} | SHA: {merge_sha}. Status should already reflect the gate outcome."},
+                    {"body": f"Merged recorded: {pr_url} | SHA: {merge_sha}. Final closure can now move through the standard path."},
                 )
-            ]
+            )
+            return actions
 
         return [
             Action(

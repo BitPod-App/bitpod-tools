@@ -7,6 +7,6 @@
   },
   "linear_issue": {
     "identifier": "BIT-45",
-    "labels": ["Type: ⭐️ Feature", "qa-passed"]
+    "labels": ["Feature", "qa-passed"]
   }
 }

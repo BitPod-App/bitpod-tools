@@ -58,11 +58,11 @@ def main() -> int:
         "issue_key": issue_key,
         "comment_body": "QA_RESULT=PASSED\nAll checks green.",
         "pr_url": "https://github.com/BitPod-App/bitpod-tools/pull/101",
-        "issue_labels": ["Type: ⭐️ Feature"],
+        "issue_labels": ["Feature"],
     }
     step3 = rt.run_linear_event(qa)
 
-    # 4) Acceptance approved -> Accepted
+    # 4) PM review accepted -> Accepted
     acceptance = {
         "type": "acceptance_gate_changed",
         "issue_key": issue_key,
@@ -82,7 +82,7 @@ def main() -> int:
         },
         "linear_issue": {
             "identifier": issue_key,
-            "labels": ["Type: ⭐️ Feature", "qa-passed", "pm-accepted"],
+            "labels": ["Feature", "qa-passed", "pm-accepted"],
         },
     }
     step5 = rt.run_github_event(merged)
@@ -111,9 +111,8 @@ def main() -> int:
             "step4_sets_accepted": any(
                 a.kind == "set_status" and a.payload.get("status") == "Accepted" for a in step4
             ),
-            "step5_records_merge_only": any(
-                a.kind == "comment" and "Merged recorded" in a.payload.get("body", "") for a in step5
-            ),
+            "step5_sets_done": any(a.kind == "set_status" and a.payload.get("status") == "Done" for a in step5),
+            "step5_records_merge": any(a.kind == "comment" and "Merged recorded" in a.payload.get("body", "") for a in step5),
         },
     }
 

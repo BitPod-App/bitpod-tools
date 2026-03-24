@@ -137,7 +137,7 @@ class Handler(BaseHTTPRequestHandler):
                 actions = self.runtime.run_linear_event(data)
             elif kind == "issue_ready_gate":
                 actions = self.runtime.run_linear_event(data)
-            elif kind in ("pm_label_changed", "acceptance_gate_changed"):
+            elif kind in ("pm_label_changed", "acceptance_gate_changed", "pm_review_changed"):
                 actions = self.runtime.run_linear_event(data)
             elif kind == "daily_aging_scan":
                 actions = self.runtime.run_linear_event(data)
