@@ -1,5 +1,17 @@
 # Execution HQ Architecture Decisions and Boundary Guardrails v1
 
+Status: supporting operator detail, partially superseded for current setup truth
+
+Current decision/sequence source of truth:
+- [AI HQ Semi-Initial Setup Plan v2](../../../../bitpod-docs/process/ai-hq-semi-initial-setup-plan-v2.md)
+
+Archived original preserved at:
+- `../../../../bitpod-docs/archive/legacy-context/execution-hq/execution_hq_architecture_decisions_v1.md`
+
+Use this v1 note only where it stays consistent with the v2 setup plan. If
+there is any conflict on sequence, blockers, or boundary interpretation, v2
+wins.
+
 Date: 2026-03-22
 Primary issue: [BIT-105 — Execution HQ architecture decisions and boundary guardrails](https://linear.app/bitpod-app/issue/BIT-105/execution-hq-architecture-decisions-and-boundary-guardrails)
 

@@ -1,5 +1,24 @@
 # Execution HQ Operator Pack v1
 
+Status: supporting operator detail, partially superseded for current setup truth
+
+Current decision/sequence source of truth:
+- [AI HQ Semi-Initial Setup Plan v2](../../../../bitpod-docs/process/ai-hq-semi-initial-setup-plan-v2.md)
+
+Archived original preserved at:
+- `../../../../bitpod-docs/archive/legacy-context/execution-hq/execution_hq_operator_pack_v1.md`
+
+Use this v1 pack only where it stays consistent with the v2 setup plan. If
+there is any conflict on sequence, blockers, or boundary interpretation, v2
+wins.
+
+Drift corrections applied to this live v1 copy:
+- treat the repo clone list below as a 2026-03-22 snapshot, not as current
+  canonical workspace composition
+- do not treat `python3 -m taylor --help` as the locked smoke command without
+  re-validating it against the active runtime surface
+- use the current [BIT-139 — Stage legacy secret retirement and 1Password cutover for AI HQ agent operations](https://linear.app/bitpod-app/issue/BIT-139/stage-legacy-secret-retirement-and-1password-cutover-for-ai-hq-agent) framing from v2, not the older wording preserved in the archived copy
+
 Date: 2026-03-22
 Primary issue: [BIT-104 — Execute Mac Mini execution-HQ bootstrap for NemoClaw runtime](https://linear.app/bitpod-app/issue/BIT-104/execute-mac-mini-execution-hq-bootstrap-for-nemoclaw-runtime)
 
@@ -122,6 +141,9 @@ AI_HQ_SMOKE_CMD="python3 -m taylor --help" \
 bash bitpod-tools/linear/scripts/execution_hq_remote_bootstrap.sh smoke
 ```
 
+Treat the smoke command above as a historical example only. Reconcile it
+against the active NemoClaw/OpenShell runtime surface before use.
+
 The scripts are intentionally honest:
 
 - they do not invent a host target
@@ -184,6 +206,10 @@ done
 ls "$WORKSPACE"
 ```
 
+Treat the repo list above as a 2026-03-22 workspace snapshot only. Reconcile it
+against the current active workspace composition before using it as a live
+bootstrap block.
+
 If SSH-backed clones are preferred, replace the clone line with:
 
 ```bash
@@ -233,7 +259,7 @@ Minimum proof before calling the first bootstrap pass successful:
   - dependency install and temporary secret baseline for smoke proof
 - [BIT-110 — NemoClaw/OpenShell installation, validation, and first HQ smoke workflow](https://linear.app/bitpod-app/issue/BIT-110/nemoclawopenshell-installation-validation-and-first-hq-smoke-workflow)
   - runtime validation and first smoke proof
-- [BIT-139 — Plan and execute safe upgrade to 1Password 8 for Taylor01/OpenClaw secret management](https://linear.app/bitpod-app/issue/BIT-139/plan-and-execute-safe-upgrade-to-1password-8-for-taylor01openclaw)
+- [BIT-139 — Stage legacy secret retirement and 1Password cutover for AI HQ agent operations](https://linear.app/bitpod-app/issue/BIT-139/stage-legacy-secret-retirement-and-1password-cutover-for-ai-hq-agent)
   - staged secrets transition and final cutover gate before Taylor01 team
     bring-up
 - [BIT-98 — Stand up Taylor01 minimal team inside NemoClaw execution HQ](https://linear.app/bitpod-app/issue/BIT-98/stand-up-taylor01-minimal-team-inside-nemoclaw-execution-hq)
