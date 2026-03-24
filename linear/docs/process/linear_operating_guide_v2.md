@@ -1,13 +1,20 @@
 # Linear Operating Guide v2 (Agents + Taylor01 Portability)
 
 Version: v2
-Status: Active
+Status: HISTORICAL / SUPERSEDED
 Owner: Product Development (Codex + Taylor)
 Last updated: 2026-03-12
 Primary issue: [BIT-100 — Define AI-agent portability boundary and repo extraction strategy](https://linear.app/bitpod-app/issue/BIT-100/define-ai-agent-portability-boundary-and-repo-extraction-strategy)
-Supersedes: `linear_operating_guide_v1.md` as the active guide
+Supersedes: `linear_operating_guide_v1.md` as the former active guide
+
+Superseded by:
+
+- `/Users/cjarguello/BitPod-App/bitpod-tools/linear/docs/process/linear_operating_guide_v3.md`
+- `/Users/cjarguello/BitPod-App/bitpod-tools/linear/docs/process/linear_operating_model_v1.md`
 
 ## Purpose
+
+This file preserves the earlier v2 operating guide. It is no longer the active guide and should not be used as the canonical current workflow reference.
 
 Define the canonical way agents use Linear for execution tracking, evidence logging, safe status transitions, and Taylor01 portability review.
 

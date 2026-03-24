@@ -1,15 +1,19 @@
 # Linear Issue Workflow Reconfig Spec (v1)
 
-Status: PROPOSED  
+Status: HISTORICAL / SUPERSEDED
 Issue: [BIT-35 — Reconfigure Linear Issues, Issue Status,, & Automations as per CJ's instructions](https://linear.app/bitpod-app/issue/BIT-35/reconfigure-linear-issues-issue-status-and-automations-as-per-cjs)  
 Owner: Taylor / Codex proposal; CJ applies UI-admin changes  
 Last updated: 2026-03-22
+
+Superseded by:
+
+- `/Users/cjarguello/BitPod-App/bitpod-tools/linear/docs/process/linear_operating_model_v1.md`
 
 ## Purpose
 
 Define the exact BitPod Product Development issue workflow target so team settings can be reconfigured once, verified, and versioned in repo.
 
-This file is the canonical repo-side specification. It does **not** claim the Linear UI has already been updated.
+This file is no longer the canonical repo-side specification. It preserves the earlier BIT-35 workflow/config target and should be read as historical planning input only. The active canonical contract is `linear_operating_model_v1.md`.
 
 ## Source instruction to preserve exactly
 

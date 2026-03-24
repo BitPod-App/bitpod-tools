@@ -9,6 +9,13 @@ Current live governance still depends on:
 
 Use this file as implementation reference, not as a claim that the richer acceptance-state workflow is already live.
 
+Current canonical operating model:
+
+- `$WORKSPACE/bitpod-tools/linear/docs/process/linear_operating_model_v1.md`
+
+This file preserves the older label-safe implementation draft and should not be treated as the active final workflow contract.
+The status-first model in `$WORKSPACE/bitpod-tools/linear/docs/process/linear_operating_model_v1.md` supersedes the older `QA Review`, `PM Review`, `Ready`, and `In Acceptance` sections that remain below for historical implementation context.
+
 > **Purpose:** implement a Linear+GitHub automation bot that enforces CJ’s minimal workflow.  
 > **Style:** fail-closed; if uncertain, do nothing and comment.
 
@@ -51,30 +58,33 @@ Use this file as implementation reference, not as a claim that the richer accept
 
 ### 1.2 Label Groups (single-select)
 
-`🏷️ Type` (required for `☑️ Ready`)
-- `⭐️ Feature`
-- `🐞 Bug`
-- `⚙️ Chore`
-- `🎨 Design`
-- `🏁 Release`
+`Issue Type` (required for `☑️ Ready`)
+- `Type: 📄 Plan`
+- `Type: ⭐️ Feature`
+- `Type: 🐞 Bug`
+- `Type: ⚙️ Chore`
+- `Type: 🎨 Design`
+- `Type: 🏁 Release`
 
-`🧪 QA` (required in `🧪 In Review`)
-- `🔶 QA: Not Done`
+`QA Review` (required in `🧪 In Review`)
+- `🔶 QA: Pending`
 - `🔷 QA: Passed`
 - `♦️ QA: Failed`
+- `◆ QA: Skipped`
 
-`🔑 PM` (future intended acceptance-stage group; older draft below still mixes it earlier than intended)
+`PM Review` (future intended acceptance-stage group; older draft below still mixes it earlier than intended)
 - `✴️ PM: Waiting`
-- `❇️ PM: Approved`
+- `❇️ PM: Accepted`
 - `❌ PM: Rejected`
 
-`🛑 Blocked` (optional)
-- `⛔ needs-discussion`
-- `⛔ needs-pm`
-- `⛔ needs-specs`
-- `⛔ needs-decision`
-- `⛔ needs-type`
-- `⛔ other`
+`Blocked By` (optional)
+- `needs-discussion`
+- `needs-pm`
+- `needs-specs`
+- `needs-decision`
+- `needs-CTO`
+- `needs-type`
+- `needs-other`
 
 ---
 
@@ -120,15 +130,15 @@ If no link is found, bot MUST do nothing except comment on PR:
 
 ### 5.1 On Linear issue moved to `☑️ Ready`
 
-**IF** `🏷️ Type` missing  
-→ set `🛑 Blocked = ⛔ needs-type`  
+**IF** `Issue Type` missing
+→ set `Blocked By = needs-type`
 → comment:  
-> “Missing `🏷️ Type`. Set one of: `⭐️ Feature` `🐞 Bug` `⚙️ Chore` `🎨 Design` `🏁 Release`”  
+> “Missing `Issue Type`. Set one of: `Type: 📄 Plan` `Type: ⭐️ Feature` `Type: 🐞 Bug` `Type: ⚙️ Chore` `Type: 🎨 Design` `Type: 🏁 Release`”
 → move issue → `📂 Backlog`  
 → STOP
 
 **ELSE IF** required headings missing  
-→ set `🛑 Blocked = ⛔ needs-specs`  
+→ set `Blocked By = needs-specs`
 → comment:  
 > “Missing required sections: Context / Goal / Implementation List / DO NOT list / DoD / Acceptance Criteria”  
 → move issue → `📂 Backlog`  
@@ -154,10 +164,10 @@ Current truth note:
 - the `PM: Waiting` default below is retained as older draft behavior only
 
 → move linked Linear issue → `🧪 In Review`  
-→ set `🧪 QA = 🔶 QA: Not Done` (overwrite any QA value)  
-→ if `🔑 PM` empty: set `🔑 PM = ✴️ PM: Waiting`  
+→ set `QA Review = 🔶 QA: Pending` (overwrite any QA value)
+→ if `PM Review` empty: set `PM Review = ✴️ PM: Waiting`
 → comment on Linear issue:  
-> “PR in review: <PR_URL>. QA set to Not Done.”
+> “PR in review: <PR_URL>. QA set to Pending.”
 
 ---
 
@@ -170,7 +180,7 @@ Bot detects QA result from a Linear comment containing either token:
 Bot also parses `PR_URL=` if present; otherwise use the linked PR.
 
 #### If `QA_RESULT=FAILED`
-→ set `🧪 QA = ♦️ QA: Failed`  
+→ set `QA Review = ♦️ QA: Failed`
 → move issue → `🏗️ In Progress`  
 → comment on PR (as bot):  
 > “QA FAILED. Summary: <first 10 lines of QA comment>. See Linear: <issue_url>”  
@@ -182,13 +192,13 @@ Future intended workflow note:
 
 - preferred model is:
   - `QA: Passed` moves `In Review` -> `In Acceptance`
-  - `PM: Waiting` / `PM: Approved` / `PM: Rejected` apply there
+  - `PM: Waiting` / `PM: Accepted` / `PM: Rejected` apply there
 - the actions below are the older simpler draft, kept as implementation reference only
 
-→ set `🧪 QA = 🔷 QA: Passed`  
-→ set `🔑 PM = ✴️ PM: Waiting` (overwrite unless PM already Approved/Rejected)  
+→ set `QA Review = 🔷 QA: Passed`
+→ set `PM Review = ✴️ PM: Waiting` (overwrite unless PM already Accepted/Rejected)
 → comment on PR (as bot):  
-> “QA PASSED. Awaiting PM approval in Linear. <issue_url>”  
+> “QA PASSED. Awaiting PM review in Linear. <issue_url>”
 → STOP
 
 *(If you prefer no tokens, replace this with “QA agent calls bot endpoint with issueId + pass/fail + summary.”)*
@@ -201,18 +211,18 @@ Future intended workflow note:
 
 - PM labels belong to `In Acceptance`, not `In Review`
 - `PM: Rejected` should send work back to `In Progress`
-- `PM: Approved` should establish merge readiness
+- `PM: Accepted` should establish merge readiness
 - the concrete actions below remain older draft behavior
 
-#### If `🔑 PM = ❌ PM: Rejected`
+#### If `PM Review = ❌ PM: Rejected`
 → move issue → `🏗️ In Progress`  
 → comment on PR (as bot):  
 > “PM REJECTED. See Linear for notes: <issue_url>”  
 → STOP
 
-#### If `🔑 PM = ❇️ PM: Approved`
+#### If `PM Review = ❇️ PM: Accepted`
 → comment on PR (as bot):  
-> “PM APPROVED. Merge authorized. (Bot will close issue after merge if QA Passed.)”  
+> “PM ACCEPTED. Merge authorized. (Bot will close issue after merge if QA Passed.)”
 → STOP
 
 ---
@@ -225,7 +235,7 @@ Current governance note:
 - status names like `Accepted` or `In Acceptance` are workflow visibility, not sufficient by themselves for merge authorization
 - if the richer acceptance-state model is later implemented, this section should be updated explicitly
 
-**IF** `🧪 QA = 🔷 QA: Passed` AND `🔑 PM = ❇️ PM: Approved`  
+**IF** `QA Review = 🔷 QA: Passed` AND `PM Review = ❇️ PM: Accepted`
 → move issue → `✅ Done`  
 → comment on Linear issue:  
 > “Merged: <PR_URL> | SHA: <merge_sha>”  
@@ -267,9 +277,9 @@ Compute `idle_days = now - max(updatedAt, lastCommentAt)`.
 
 ---
 
-## Amendment (optional v2): enforce `⛔ other` requires comment
+## Amendment (optional v2): enforce `needs-other` requires comment
 Not enforced in v1. For v2:
-- On `🛑 Blocked = ⛔ other`, require a new comment within 10 minutes containing:
+- On `Blocked By = needs-other`, require a new comment within 10 minutes containing:
   - `Blocked reason:`  
   - `Unblock action:`  
-Else revert `🛑 Blocked` to `⛔ needs-discussion` and comment: “`⛔ other` requires details.”
+Else revert `Blocked By` to `needs-discussion` and comment: “`needs-other` requires details.”

@@ -21,6 +21,7 @@ This folder contains the Linear tool surface plus the process canon that governs
 
 ## Active canon
 
+- `./docs/process/linear_operating_model_v1.md`
 - `./docs/process/linear_operating_guide_v3.md`
 - `./docs/process/startup_operating_model_v2.md`
 - `./docs/process/taylor_orchestrator_contract_v1.md`
@@ -95,41 +96,36 @@ Implemented in engine/service:
 - GitHub events:
   - `pull_request.opened`
   - `pull_request.ready_for_review`
-  - `pull_request.closed` with merged=true (fail-closed gate check)
+  - `pull_request.closed` with merged=true (gate-completeness check + merge record)
 - Linear events:
-  - ready-gate enforcement trigger
-  - comment-created QA token parser (`QA_RESULT=PASSED|FAILED`)
-  - PM label changed (`Approved` / `Rejected`)
+  - `Ready` / `In Progress` readiness enforcement trigger
+  - comment-created QA token parser (`QA_RESULT=PASSED|FAILED|SKIPPED`)
+  - acceptance gate changed (`pm-accepted` / `pm-rejected` / `pm-skipped`)
   - daily aging scan payload handler
 - Gating behavior:
-  - Ready gate (required Type + required headings)
-  - QA/PM label defaults in review flow (older transitional behavior)
-  - merge gate requires QA Passed + PM Approved
-  - fail-closed comments when gates are not met
-- Dry-run default and simulation runner
+  - execution gate (`Issue Type` + estimate + required headings)
+  - status-first review flow (`In Review` without pending review labels)
+  - QA gates drive `In Review` -> `Delivered` or `Done`
+  - acceptance gates drive `Delivered` -> `Accepted` or `Done`
+  - merged PRs fail closed when gates are incomplete
+  - Dry-run default and simulation runner
 
 ## Preferred workflow note
 
-The preferred operating model is:
+The canonical operating model is:
 
 - engineering moves work into `In Review`
-- QA runs in `In Review`
-- `QA: Passed` should move work to `In Acceptance`
-- PM labels should belong to `In Acceptance`
-- `PM: Approved` should establish merge readiness
-- `PM: Rejected` should send work back to `In Progress`
-
-That model is not yet fully represented in the checked-in engine and simulation files, so treat it as the target workflow rather than the current implementation truth.
+- pending QA is expressed by the status itself
+- `qa-passed`, `qa-failed`, and `qa-skipped` are result gates only
+- acceptance-required work moves from `In Review` to `Delivered`
+- `pm-accepted`, `pm-rejected`, and `pm-skipped` are result gates only
+- non-acceptance work can move directly from `In Review` to `Done`
+- acceptance-required work moves from `Delivered` to `Accepted`
 
 ## Status model note (important)
 
-SOP expects emoji statuses (`☑️ Ready`, `🏗️ In Progress`, `🧪 In Review`, etc).
-Current BIT workspace still uses mixed/non-emoji statuses (`Backlog`, `Todo`, `In Progress`, `In Review`, `Done`, `Icebox 🧊`, `Obsolete`).
-
-This implementation includes fallback handling for current statuses where safe, but full parity requires final Linear status normalization.
-
 Canonical target for the Product Development team workflow reconfiguration:
-- `./docs/process/linear_issue_workflow_reconfig_spec_v1.md`
+- `./docs/process/linear_operating_model_v1.md`
 
 ## How to run
 
@@ -190,12 +186,12 @@ cd $WORKSPACE/bitpod-tools
 python3 linear/scripts/validate_runtime_contract_artifacts.py
 ```
 
-`simulate_e2e.py` runs the full happy-path sequence:
+`simulate_e2e.py` runs the feature happy-path sequence:
 - PR opened -> In Progress
-- PR ready for review -> In Review + QA/PM defaults
-- QA comment token parse (`QA_RESULT=PASSED`)
-- PM approval label signal
-- PR merged with gates satisfied -> Done
+- PR ready for review -> `In Review`
+- QA comment token parse (`QA_RESULT=PASSED`) -> `Delivered`
+- acceptance gate signal (`pm-accepted`) -> `Accepted`
+- PR merged -> merge record comment only
 
 ## Discord operator preflight
 

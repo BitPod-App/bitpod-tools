@@ -3,7 +3,7 @@
 Version: v3
 Status: Active
 Owner: Product Development (Codex + Taylor)
-Last updated: 2026-03-22
+Last updated: 2026-03-24
 Primary issue: [BIT-22 — Versioned Linear operating guide for agents (with rollback path)](https://linear.app/bitpod-app/issue/BIT-22/versioned-linear-operating-guide-for-agents-with-rollback-path)
 Supersedes: `linear_operating_guide_v2.md` as the active guide
 
@@ -115,8 +115,9 @@ Define the canonical way agents use Linear for execution tracking, evidence logg
 
 ## Current workspace status model
 
-- Active statuses observed: `Backlog`, `Todo`, `In Progress`, `In Review`, `Done`, `Canceled`, `Duplicate`, plus `Icebox 🧊` or `Obsolete` in some views.
-- Legacy lifecycle labels (`LIFECYCLE/*`) remain acceptable during transition.
+- Active statuses observed: `Icebox 🧊`, `Backlog`, `Ready`, `In Progress`, `In Review`, `Delivered`, `Accepted`, `Done`, `Canceled`, `Duplicate`, `Obsolete`, `Won't Do`.
+- Canonical status, label, board, gate, and automation semantics now live in `linear_operating_model_v1.md`.
+- Legacy lifecycle labels and older review label groups are transitional residue and should not be expanded.
 
 ## Version to config mapping (v3)
 
@@ -130,6 +131,7 @@ This version corresponds to:
 
 Artifacts:
 
+- `linear_operating_model_v1.md`
 - `linear_operating_guide_v3.md`
 - `linear_issue_template_evidence_contract_v2.md`
 - `taylor01_portability_review_gate_v1.md`

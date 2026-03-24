@@ -17,7 +17,7 @@ def _issue_key(actions):
 def _labels(actions):
     values = []
     for action in actions:
-        if action.kind in ("set_label", "set_label_if_empty") and "value" in action.payload:
+        if action.kind == "set_label" and "value" in action.payload:
             values.append(action.payload["value"])
     return values
 
@@ -39,7 +39,7 @@ def main() -> int:
     step1 = rt.run_github_event(opened)
     issue_key = _issue_key(step1)
 
-    # 2) PR ready_for_review -> In Review + QA Not Done + PM Waiting
+    # 2) PR ready_for_review -> In Review
     review = {
         "action": "ready_for_review",
         "pull_request": {
@@ -52,25 +52,26 @@ def main() -> int:
     }
     step2 = rt.run_github_event(review)
 
-    # 3) QA comment token -> QA Passed and await PM
+    # 3) QA comment token -> QA passed and feature work moves to Delivered
     qa = {
         "type": "comment_created",
         "issue_key": issue_key,
         "comment_body": "QA_RESULT=PASSED\nAll checks green.",
         "pr_url": "https://github.com/BitPod-App/bitpod-tools/pull/101",
+        "issue_labels": ["Type: ⭐️ Feature"],
     }
     step3 = rt.run_linear_event(qa)
 
-    # 4) PM approved label -> authorization comment
-    pm = {
-        "type": "pm_label_changed",
+    # 4) Acceptance approved -> Accepted
+    acceptance = {
+        "type": "acceptance_gate_changed",
         "issue_key": issue_key,
-        "pm_value": "❇️ PM: Approved",
+        "gate_value": "pm-accepted",
         "pr_url": "https://github.com/BitPod-App/bitpod-tools/pull/101",
     }
-    step4 = rt.run_linear_event(pm)
+    step4 = rt.run_linear_event(acceptance)
 
-    # 5) PR merged -> Done when both gates satisfied
+    # 5) PR merged -> record merge only; gate state already drove status
     merged = {
         "action": "closed",
         "pull_request": {
@@ -81,7 +82,7 @@ def main() -> int:
         },
         "linear_issue": {
             "identifier": issue_key,
-            "labels": ["🔷 QA: Passed", "❇️ PM: Approved"],
+            "labels": ["Type: ⭐️ Feature", "qa-passed", "pm-accepted"],
         },
     }
     step5 = rt.run_github_event(merged)
@@ -92,15 +93,26 @@ def main() -> int:
             "pr_opened": [a.__dict__ for a in step1],
             "pr_ready_for_review": [a.__dict__ for a in step2],
             "qa_comment_passed": [a.__dict__ for a in step3],
-            "pm_approved": [a.__dict__ for a in step4],
+            "acceptance_approved": [a.__dict__ for a in step4],
             "pr_merged": [a.__dict__ for a in step5],
         },
         "checks": {
-            "step2_has_qa_not_done": "🔶 QA: Not Done" in _labels(step2),
-            "step2_has_pm_waiting": "✴️ PM: Waiting" in _labels(step2),
-            "step3_has_qa_passed": "🔷 QA: Passed" in _labels(step3),
-            "step5_sets_done": any(
-                a.kind == "set_status" and a.payload.get("status") == "✅ Done" for a in step5
+            "step1_sets_in_progress": any(
+                a.kind == "set_status" and a.payload.get("status") == "In Progress" for a in step1
+            ),
+            "step2_sets_in_review": any(
+                a.kind == "set_status" and a.payload.get("status") == "In Review" for a in step2
+            ),
+            "step2_has_no_pending_review_labels": not any(a.kind == "set_label" for a in step2),
+            "step3_has_qa_passed": "qa-passed" in _labels(step3),
+            "step3_sets_delivered": any(
+                a.kind == "set_status" and a.payload.get("status") == "Delivered" for a in step3
+            ),
+            "step4_sets_accepted": any(
+                a.kind == "set_status" and a.payload.get("status") == "Accepted" for a in step4
+            ),
+            "step5_records_merge_only": any(
+                a.kind == "comment" and "Merged recorded" in a.payload.get("body", "") for a in step5
             ),
         },
     }

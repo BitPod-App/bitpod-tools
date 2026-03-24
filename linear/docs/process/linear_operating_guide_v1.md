@@ -1,12 +1,19 @@
 # Linear Operating Guide v1 (Agents)
 
 Version: v1
-Status: Active
+Status: HISTORICAL / SUPERSEDED
 Owner: Product Development (Codex + Taylor)
 Last updated: 2026-03-07
 Related issue: https://linear.app/bitpod-app/issue/BIT-22/versioned-linear-operating-guide-for-agents-with-rollback-path
 
+Superseded by:
+
+- `/Users/cjarguello/BitPod-App/bitpod-tools/linear/docs/process/linear_operating_guide_v3.md`
+- `/Users/cjarguello/BitPod-App/bitpod-tools/linear/docs/process/linear_operating_model_v1.md`
+
 ## Purpose
+
+This file preserves the original v1 operating guide. It is no longer the active guide and should not be used as the canonical current workflow reference.
 
 Define the canonical way BitPod agents use Linear for execution tracking, evidence logging, and safe status transitions.
 

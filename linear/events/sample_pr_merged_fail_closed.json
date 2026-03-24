@@ -7,6 +7,6 @@
   },
   "linear_issue": {
     "identifier": "BIT-45",
-    "labels": ["🔶 QA: Not Done", "✴️ PM: Waiting"]
+    "labels": ["Type: ⭐️ Feature", "qa-passed"]
   }
 }

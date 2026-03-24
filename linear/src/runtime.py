@@ -68,10 +68,10 @@ class BotRuntime:
             )
         elif kind == "issue_ready_gate":
             out = self.engine.on_linear_ready_gate(event.get("issue", {}))
-        elif kind == "pm_label_changed":
-            out = self.engine.on_linear_pm_label_change(
+        elif kind in ("pm_label_changed", "acceptance_gate_changed"):
+            out = self.engine.on_linear_acceptance_gate_change(
                 issue_key=event.get("issue_key", ""),
-                pm_value=event.get("pm_value", ""),
+                gate_value=event.get("pm_value", "") or event.get("gate_value", ""),
                 pr_url=event.get("pr_url", ""),
             )
         elif kind == "daily_aging_scan":
