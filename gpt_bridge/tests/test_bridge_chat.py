@@ -83,6 +83,5 @@ class BridgeChatRouteTests(unittest.TestCase):
         self.assertNotIn("system_prompt", captured["meta"])
         self.assertIn("gpt: Generic GPT reply.", stdout.getvalue())
 
-
 if __name__ == "__main__":
     unittest.main()

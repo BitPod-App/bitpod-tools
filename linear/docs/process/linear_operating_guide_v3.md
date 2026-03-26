@@ -74,6 +74,12 @@ Define the canonical way agents use Linear for execution tracking, evidence logg
 - If tool behavior is impaired, stop speculative actions and post minimal verified state.
 - Continue with the smallest reversible step or park with an explicit blocker.
 - Use `capability_state_truth_label_incident_protocol_v1.md` as the incident-response workflow.
+- Current known degraded surface: Linear MCP read truth is not authoritative for all workspace state.
+- Treat the Linear UI as the source of truth when MCP conflicts with the UI on project deletion state, blocker relations, or workspace-admin configuration.
+- Current reproduced MCP failures:
+  - deleted project can still read back as active
+  - removed blocker relations can still read back as present
+  - broad project-list queries can fail with `Query too complex`
 
 9. Linear admin change control
 - Workflow, schema, template, automation, or other meaningful admin changes must follow `linear_admin_change_control_v1.md`.
