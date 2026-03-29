@@ -150,6 +150,10 @@ The proof loop should use this exact path:
 4. HQ performs work
 5. result returns with durable issue/repo evidence
 
+For the shortest Taylor-real acceptance pass that matches this contract, use:
+
+- `linear/examples/openclaw_taylor_real_quickcheck_template_v1.md`
+
 ### For BIT-122
 
 Supporting adapters should be judged only by whether they preserve:
