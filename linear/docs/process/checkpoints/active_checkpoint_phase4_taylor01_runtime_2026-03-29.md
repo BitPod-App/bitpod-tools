@@ -45,6 +45,9 @@ Related context:
 
 - [BIT-115 — Prove personal-computer -> OpenClaw HQ conversational/dispatch loop](https://linear.app/bitpod-app/issue/BIT-115/prove-personal-computer-openclaw-hq-conversationaldispatch-loop) is no longer blocked by basic Mini bring-up.
 - [BIT-97 — Prove Taylor as a real AI agent in any live operator surface](https://linear.app/bitpod-app/issue/BIT-97/prove-taylor-as-a-real-ai-agent-in-any-live-operator-surface) can now move from setup/debug into operator acceptance evidence.
+- in current reality, the early OpenClaw execution surface on `mini-01` is the
+  OpenClaw contract layered over the live Taylor01 runtime rather than a
+  separate already-installed OpenClaw package
 
 ## Still not proven
 

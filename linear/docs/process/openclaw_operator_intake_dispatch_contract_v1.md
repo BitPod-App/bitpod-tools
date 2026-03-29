@@ -22,6 +22,10 @@ be used now, while preserving room for a cleaner UI later.
 
 - `MacBook` remains the control console, not the primary execution host.
 - `Mac Mini` execution account remains the real HQ execution environment.
+- there is not yet a separately verified installable `OpenClaw` package/codebase
+  in the active workspace
+- current early OpenClaw reality is the operator/control contract layered over
+  the live Taylor01 runtime path on the Mac Mini
 - first truthful HQ smoke proof already exists under the execution-account path
   from the Phase 3 spine
 - final AI-agent operability is still gated by
@@ -123,11 +127,15 @@ They must not do these things:
 ### Transitional now
 
 - personal computer chat plus remote console remains the main operator bridge
+- the Taylor01 runtime on `mini-01` is the current execution substrate for the
+  early OpenClaw surface
 - some runtime proofs may still use temporary harnesses
 - adapter parity remains secondary work after the primary operator path is clear
 
 ### Target-state later
 
+- a more explicit OpenClaw runtime/package may be built on top of the current
+  Taylor01-backed execution substrate
 - a cleaner OpenClaw-native intake surface may replace parts of the current
   control-console UX
 - supporting adapters should map onto the same intake and result contract
