@@ -57,8 +57,9 @@ Related context:
 
 1. Use the now-live Taylor01 runtime for one explicit operator quickcheck aligned to [BIT-97 — Prove Taylor as a real AI agent in any live operator surface](https://linear.app/bitpod-app/issue/BIT-97/prove-taylor-as-a-real-ai-agent-in-any-live-operator-surface).
 2. Capture one retained acceptance artifact from that exchange.
-3. Move immediately to the first non-Taylor specialist embodiment lane for [BIT-99 — Embody first specialist as a real AI agent/runtime beyond lane or skill proxy](https://linear.app/bitpod-app/issue/BIT-99/embody-first-specialist-as-a-real-ai-agentruntime-beyond-lane-or-skill).
-4. Use that specialist proof to drive the first honest team-loop artifact for [BIT-98 — Prove real multi-agent team loop with Taylor plus embodied specialist agent(s)](https://linear.app/bitpod-app/issue/BIT-98/prove-real-multi-agent-team-loop-with-taylor-plus-embodied-specialist).
+3. Keep the active path on OpenClaw-first operator-surface proof rather than opening a pre-OpenClaw specialist lane.
+4. Revisit [BIT-99 — Embody first specialist as a real AI agent/runtime beyond lane or skill proxy](https://linear.app/bitpod-app/issue/BIT-99/embody-first-specialist-as-a-real-ai-agentruntime-beyond-lane-or-skill) only after the OpenClaw embodiment surface is in place strongly enough to create Vera through OpenClaw.
+5. Use that later OpenClaw-born specialist proof to drive the first honest team-loop artifact for [BIT-98 — Prove real multi-agent team loop with Taylor plus embodied specialist agent(s)](https://linear.app/bitpod-app/issue/BIT-98/prove-real-multi-agent-team-loop-with-taylor-plus-embodied-specialist).
 
 ## Current recommendation
 
