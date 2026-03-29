@@ -3,9 +3,17 @@
 Status: Active design guardrail  
 Scope: Prevent lock-in to Discord while preserving current execution velocity.
 
+Related contract:
+
+- `openclaw_operator_intake_dispatch_contract_v1.md`
+
 ## Rule
 
 Discord is a transport adapter, not a system-of-record and not a permanent dependency.
+
+The primary operator surface is defined separately in
+`openclaw_operator_intake_dispatch_contract_v1.md`. This document only defines
+the portability and anti-lock-in rules for supporting transports.
 
 ## Source-of-Record Boundaries
 
@@ -30,12 +38,55 @@ Transport adapters then map this envelope to:
 - future internal dashboard feed
 - future additional channels if required
 
+Supporting transports must preserve the intake/result behavior defined in the
+operator contract, not invent a separate durable truth model.
+
 ## Anti-Lock-In Requirements
 
 - No business logic should depend on Discord channel IDs directly.
 - No irreversible workflow should require Discord-only features.
 - Every Discord-posting workflow should have a no-discord fallback path.
 - Channel naming maps live in config, not hardcoded.
+
+## Required Parity Behaviors
+
+Any supporting chat adapter worth keeping during bootstrap must preserve these
+behaviors:
+
+- operator request entry can be mapped back to the owning Linear issue or
+  execution lane
+- progress or result messages can carry durable references back to Linear, PRs,
+  and artifacts
+- result or status return can be delivered without making the transport the only
+  durable record
+- operator can tell whether the message is a request, status summary, review
+  note, or final result
+- the adapter preserves the rule that HQ remains primary and the transport
+  remains secondary
+
+If a candidate adapter cannot preserve the above without bespoke logic or
+durability drift, it should not be treated as parity-critical.
+
+## Optional Adapter Behaviors
+
+These may improve UX, but are not required for bootstrap parity:
+
+- rich embeds or custom formatting
+- mentions, slash commands, or thread-specific UX
+- reactions, acknowledgements, or presence indicators
+- mobile-first notifications
+- transport-specific shortcuts that do not change durable truth
+
+## Supporting-Surface Recommendation During Bootstrap
+
+Keep the supporting-surface set intentionally narrow:
+
+- keep Discord as the only actively supported chat adapter during the current
+  bootstrap window because it already has relevant history and existing related
+  tickets
+- treat any additional messaging surface as deferred unless it can reuse the
+  same event envelope and operator contract with near-zero new bespoke logic
+- do not let supporting-adapter work outrun the primary HQ operator-loop proof
 
 ## Migration Readiness Criteria
 
@@ -50,6 +101,8 @@ Before declaring communication layer mature:
 
 - Keep completing Phase 2 parity via Discord because it is the active path now.
 - Build all new communication work so it can switch transports with minimal refactor.
+- In Phase 4, preserve Discord only as a supporting adapter and avoid
+  multiplying adapter surfaces before the primary HQ loop is fully proven.
 
 ## Discord Baseline Matrix
 

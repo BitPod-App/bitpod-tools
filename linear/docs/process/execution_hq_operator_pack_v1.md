@@ -12,6 +12,11 @@ Use this note for the actual step order. Use
 `execution_hq_architecture_decisions_v1.md` for the boundary and policy
 decisions.
 
+For the Phase 4 operator-side contract that sits on top of this machine
+bootstrap lane, use:
+
+- `openclaw_operator_intake_dispatch_contract_v1.md`
+
 ## Machine Split
 
 ### MacBook control console
