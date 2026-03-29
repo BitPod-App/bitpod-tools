@@ -251,7 +251,7 @@ repo_sync_eval() {
   local name branch upstream dirty ahead behind head_sha upstream_sha head_eq_upstream remote_fresh
   name="$(basename "$repo_path")"
   branch="$(cd "$repo_path" && git rev-parse --abbrev-ref HEAD)"
-  upstream="$(cd "$repo_path" && git rev-parse --abbrev-ref --symbolic-full-name @{u} 2>/dev/null || true)"
+  upstream="$(cd "$repo_path" && git for-each-ref --format='%(upstream:short)' "refs/heads/$branch" | head -n1)"
   dirty="$(cd "$repo_path" && git status --porcelain | wc -l | tr -d ' ')"
   ahead=0
   behind=0
@@ -271,17 +271,19 @@ repo_sync_eval() {
     fi
   fi
 
-  if [[ -n "$upstream" ]]; then
+  if [[ -n "$upstream" ]] && (cd "$repo_path" && git rev-parse --verify --quiet "$upstream^{commit}" >/dev/null); then
     local ab
-    ab="$(cd "$repo_path" && git rev-list --left-right --count HEAD...@{u})"
+    ab="$(cd "$repo_path" && git rev-list --left-right --count "HEAD...$upstream")"
     ahead="$(printf '%s' "$ab" | awk '{print $1}')"
     behind="$(printf '%s' "$ab" | awk '{print $2}')"
-    upstream_sha="$(cd "$repo_path" && git rev-parse @{u})"
+    upstream_sha="$(cd "$repo_path" && git rev-parse "$upstream")"
     if [[ "$head_sha" == "$upstream_sha" ]]; then
       head_eq_upstream="true"
     else
       head_eq_upstream="false"
     fi
+  elif [[ -n "$upstream" ]]; then
+    upstream=""
   fi
 
   local code status_key verification verification_detail meaning
