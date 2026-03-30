@@ -27,11 +27,9 @@ The same philosophy should be portable to other systems later, but this document
 
 This document is the active BitPod-specific Linear operating overlay.
 
-It is allowed to stay current-org-specific while Taylor01 / Claw runtime decisions are still moving, as long as that boundary remains explicit.
+It may stay current for the BitPod execution lane while Taylor portability work is still in progress.
 
-Do not treat this document, or the current SKILL.md-based local operator surfaces around it, as the final Taylor capability model.
-
-If a future Taylor01 / Claw runtime decision implies a different portable shape, update the Taylor portability boundary docs and bypass notes rather than silently assuming this document already defines the long-term platform contract.
+Do not treat this document, or current local `SKILL.md`-based operator surfaces around it, as the final Taylor capability model.
 
 ## Truth note
 

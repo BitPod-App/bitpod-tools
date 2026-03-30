@@ -34,9 +34,9 @@ Use it only for couplings that:
 | T01-C10 | `linear/docs/process/team_session_platform_migration_contract_v1.md` | Historical transport coupling | Taylor runtime migration story is still anchored to Zulip -> Discord transition history | Keep historical context, separate generic adapter contract from migration history |
 | T01-C11 | `/Users/cjarguello/bitpod-app/bitpod-docs/process/project-sources/13_AGENT_EXECUTION_GATES_v1.md` | Product-era execution coupling | Gate model is reusable but framed as current BitPod/Codex runtime control | Normalize into Taylor01 policy layer and keep BitPod-specific execution notes separate |
 | T01-C12 | `/Users/cjarguello/bitpod-app/bitpod-docs/process/read-first-protocol.md` | Workspace authority coupling | First-read behavior likely belongs to Taylor01 policy, but lives only in BitPod docs tree | Promote generic policy version once reviewed against current usage |
+| T01-C13 | `linear/docs/process/linear_operating_model_v1.md` + `linear/docs/process/linear_operating_guide_v3.md` | BitPod overlay coupling | These are the active owning doctrine docs for the current BitPod lane, but they should not be mistaken for the final Taylor adapter/core specification | Keep the overlay explicit and bounded; extract only in a dedicated later lane |
 | T01-C14 | `/Users/cjarguello/bitpod-app/local-workspace/local-codex/skills/isolation-mode/SKILL.md` plus dormant policy state | Legacy feature coupling | Isolation intent is valid, but the feature depends on quarantined legacy implementation and should not define future Taylor01/OpenClaw boundaries | Retire the feature and preserve only the hardening/runtime intent in active canon |
-| T01-C15 | `linear/docs/process/linear_operating_model_v1.md` + `linear/docs/process/linear_operating_guide_v3.md` | Active adapter/workflow coupling | Current Linear doctrine is intentionally BitPod- and org-specific, but could be misread as the final Taylor adapter shape if the boundary stays implicit | Keep local now, record explicit bypass, and revisit only after active Taylor01 / Claw runtime decisions settle |
-| T01-C16 | `/Users/cjarguello/bitpod-app/local-workspace/local-codex/skills/**/*.md` and other current SKILL.md-based local surfaces | Capability-model coupling | Current skill surfaces reflect local operator overlays and experimentation, not a finalized Taylor capability model | Mark as transitional, keep local, and revisit after the runtime/operator model becomes real enough to define stable capability boundaries |
+| T01-C15 | Current local `SKILL.md`-based operator surfaces used around the Linear/process lane | Transitional local-surface coupling | Current skill-backed operator surfaces are useful and real for the BitPod lane, but they are still local overlays rather than the final Taylor capability model | Keep them truthful as transitional overlays and replace only when a durable Taylor surface is actually ready |
 
 ## Working interpretation
 
@@ -47,7 +47,7 @@ Use it only for couplings that:
 
 ## Next cleanup order
 
-1. keep active BitPod-specific overlays truthful and explicitly marked as local/transitional
-2. record temporary bypasses whenever mixed artifacts are intentionally deferred
-3. normalize mixed workspace/path policies only when the current execution lane does not need the local overlay to stay stable
-4. revisit portable extraction only after active Taylor01 / Claw runtime decisions define a clearer long-term capability shape
+1. add portability gate to PR and Linear workflows
+2. publish Taylor01-aware operating docs (`v2` where versioning already exists)
+3. normalize mixed workspace/path policies
+4. prepare subtree landing zones before moving portable content

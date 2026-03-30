@@ -21,7 +21,6 @@ This guide is the active BitPod-specific Linear overlay, not the final Taylor ca
 - degraded-capability behavior during tool outages
 - Taylor01 portability classification for relevant work
 - high-impact Linear admin/process change control
-- explicit boundary notes for current BitPod-specific overlays and temporary Taylor portability bypasses
 
 ## Operating rules
 
@@ -97,8 +96,7 @@ This guide is the active BitPod-specific Linear overlay, not the final Taylor ca
 - Temporary bypass is allowed for bounded experimental work; hidden coupling is not.
 - Default expectation is to solve portability now for new portable or mixed work unless there is a concrete reason not to.
 - Meaningful active bypasses should be tracked in `taylor01_active_bypass_register_v1.md` and reviewed soon, not left as vague backlog residue.
-- Current SKILL.md-based local operator surfaces are transitional evidence and operator overlays, not the final Taylor capability shape.
-- Keep current BitPod-specific docs and workflows truthful here when they are still needed for current execution; do not silently promote them into Taylor core by implication.
+- Current `SKILL.md`-based local operator surfaces are acceptable as transitional overlays for current execution, but they are not the final Taylor capability model.
 
 11. Weekly hygiene beats backlog drift
 - Keep Linear small and legible.
