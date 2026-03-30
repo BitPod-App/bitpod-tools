@@ -194,6 +194,8 @@ exact issue payloads.
    Current working baseline: `claw_v1_boundary_model_v1.md`.
 3. Classify current Taylor artifacts by durability before broad extraction or
    cleanup.
+   Current working baseline:
+   `taylor01_current_artifact_durability_map_v1.md`.
 4. Keep the first embodiment lane on
    [BIT-114 — Define OpenClaw-native operator intake and dispatch surface](https://linear.app/bitpod-app/issue/BIT-114/define-openclaw-native-operator-intake-and-dispatch-surface),
    [BIT-115 — Prove personal-computer -> OpenClaw HQ conversational/dispatch loop](https://linear.app/bitpod-app/issue/BIT-115/prove-personal-computer-openclaw-hq-conversationaldispatch-loop),
