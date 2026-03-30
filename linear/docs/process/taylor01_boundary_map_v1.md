@@ -62,6 +62,8 @@ Artifacts that exist because the product is BitPod:
 | `linear/docs/process/specialist_agent_registry_v1.md` | Taylor01 Portable Core | `portable` | `move-later` | Registry semantics are reusable beyond BitPod |
 | `linear/docs/process/agent_runtime_portability_plan_v1.md` | Taylor01 Portable Core | `mixed` | `move-later` | Concept is portable, examples are tied to current repo layout |
 | `linear/docs/process/vera_runtime_minimum_v1.md` | Taylor01 Portable Core | `portable` | `keep-local-now` | Vera runtime minimum is reusable even though it was extracted from BitPod-era runtime evidence |
+| `linear/docs/process/linear_operating_model_v1.md` | Taylor01 Adapter Layer | `bitpod-specific` | `keep-local` | Active BitPod-specific Linear overlay; do not treat as the final Taylor adapter/core spec |
+| `linear/docs/process/linear_operating_guide_v3.md` | Taylor01 Adapter Layer | `bitpod-specific` | `keep-local` | Active BitPod-specific operating guide for the current lane; portability/bypass truth is recorded here without implying extraction |
 | `linear/docs/process/linear_operating_guide_v1.md` | Taylor01 Adapter Layer | `mixed` | `create-generic-version-now` | Workflow is reusable, but current language is BitPod-first |
 | `linear/docs/process/linear_issue_template_evidence_contract_v1.md` | Taylor01 Adapter Layer | `mixed` | `create-generic-version-now` | Needs explicit portability fields |
 | `.github/PULL_REQUEST_TEMPLATE.md` | Taylor01 Adapter Layer | `mixed` | `create-generic-version-now` | Template should carry Taylor01 portability check for relevant PRs |
@@ -69,6 +71,7 @@ Artifacts that exist because the product is BitPod:
 | `linear/docs/process/team_session_platform_migration_contract_v1.md` | Taylor01 Adapter Layer | `mixed` | `move-later` | Current transport migration story is still tied to Zulip/Discord lineage |
 | `linear/docs/process/startup_operating_model_v1.md` | Mixed | `mixed` | `create-generic-version-now` | Needs explicit Taylor01/BitPod dual-product framing |
 | `linear/docs/process/workspace_local_state_location_policy_v1.md` | Taylor01 Workspace / Org Policy | `mixed` | `create-generic-version-now` | Policy is reusable; current absolute path is BitPod-specific |
+| Current local `SKILL.md`-based operator surfaces around the Linear/process lane | Mixed | `mixed` | `keep-local` | Transitional operator overlays for current execution; not the final Taylor capability model |
 | `/Users/cjarguello/bitpod-app/local-workspace/local-codex/skills/isolation-mode/SKILL.md` | Taylor01 Workspace / Org Policy | `mixed` | `retire` | Preserve only the hardening intent; do not revive the dormant legacy isolation feature as portable core |
 
 ## Immediate working rule

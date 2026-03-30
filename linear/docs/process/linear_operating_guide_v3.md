@@ -11,6 +11,8 @@ Supersedes: `linear_operating_guide_v2.md` as the active guide
 
 Define the canonical way agents use Linear for execution tracking, evidence logging, safe status transitions, Taylor01 portability review, and reversible admin/process changes.
 
+This guide is the active BitPod-specific Linear overlay, not the final Taylor capability model.
+
 ## Scope
 
 - issue lifecycle handling for migration and operations work
@@ -94,6 +96,7 @@ Define the canonical way agents use Linear for execution tracking, evidence logg
 - Temporary bypass is allowed for bounded experimental work; hidden coupling is not.
 - Default expectation is to solve portability now for new portable or mixed work unless there is a concrete reason not to.
 - Meaningful active bypasses should be tracked in `taylor01_active_bypass_register_v1.md` and reviewed soon, not left as vague backlog residue.
+- Current `SKILL.md`-based local operator surfaces are acceptable as transitional overlays for current execution, but they are not the final Taylor capability model.
 
 11. Weekly hygiene beats backlog drift
 - Keep Linear small and legible.

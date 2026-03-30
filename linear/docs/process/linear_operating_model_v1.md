@@ -23,6 +23,14 @@ AI changes one major thing: the smallest unit of implementation is no longer alw
 
 The same philosophy should be portable to other systems later, but this document is specifically for Linear. Assume the workflow automations already exist. Adapter-layer skills and HTTPS endpoints may later override parts of this model, but this document is the canonical default doctrine, not an options menu.
 
+## Lane boundary
+
+This document is the active BitPod-specific Linear operating overlay.
+
+It may stay current for the BitPod execution lane while Taylor portability work is still in progress.
+
+Do not treat this document, or current local `SKILL.md`-based operator surfaces around it, as the final Taylor capability model.
+
 ## Truth note
 
 The original long planning paragraph that informed this lane was lost to memory compaction. This document is the truthful reconstruction from:
