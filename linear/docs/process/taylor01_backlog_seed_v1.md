@@ -41,6 +41,28 @@ Seed the future Taylor01 backlog without forcing immediate execution.
 8. Taylor01 extraction readiness review
    - periodic review of whether repo split is justified yet
 
+9. Lock minimum real-Taylor runtime contract
+   - define the minimum active runtime required to count as "real Taylor"
+   - keep pure local skill-overlay behavior out of the durable runtime contract
+
+10. Decide Claw v1 scope and boundary
+   - lock whether Claw v1 is an operator surface, runtime wrapper, embodiment
+     contract, or a narrow combination
+
+11. Decide Taylor capability container direction
+   - evaluate `SKILL.md`, `sould.md`, manifest-first package, or another
+     explicit alternative without overhardening the current compatibility
+     surface
+
+12. Classify current Taylor artifacts by durability
+   - classify active work across `bitpod-tools`, `bitpod-taylor-runtime`, and
+     `taylor01-skills` into durable substrate, transitional compatibility, and
+     BitPod/local overlay
+
+13. Define future dedicated repo extraction trigger for Taylor01 Claw
+   - keep repo name open until runtime and container boundaries are clearer
+   - define what content moves when the trigger is met
+
 ## Suggested future ticket titles
 
 - Taylor01: normalize workspace path policy into portable base + BitPod overlay
@@ -48,6 +70,11 @@ Seed the future Taylor01 backlog without forcing immediate execution.
 - Taylor01: define Slack adapter scaffold from current Discord contract
 - Taylor01: define Jira adapter scaffold from current Linear contract
 - Taylor01: package contractor-facing Taylor01 offer narrative and operating artifacts
+- Taylor01: lock minimum real-Taylor runtime contract
+- Taylor01: decide Claw v1 scope and non-goals
+- Taylor01: decide capability container direction beyond current `SKILL.md`
+- Taylor01: classify current Taylor artifacts by durability
+- Taylor01: define future Taylor01 Claw repo extraction trigger
 
 ## Current stance
 
