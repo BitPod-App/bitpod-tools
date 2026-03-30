@@ -206,6 +206,8 @@ exact issue payloads.
    deferred until the runtime and Claw v1 boundaries are locked.
 6. Use the capability-container and extraction-trigger lanes only after the
    above architecture and embodiment decisions settle.
+   Current working baseline:
+   `taylor01_claw_repo_extraction_trigger_v1.md`.
 
 ## Decisions that must be locked before broad implementation
 
