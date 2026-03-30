@@ -128,38 +128,16 @@ Claw v1 should not be treated yet as:
 - [BIT-99 — Embody first specialist as a real AI agent/runtime beyond lane or skill proxy](https://linear.app/bitpod-app/issue/BIT-99/embody-first-specialist-as-a-real-ai-agentruntime-beyond-lane-or-skill)
   remains deferred until the Claw embodiment surface is stronger
 
-## Missing Linear lanes to create
+## New Linear lanes created
 
-Create these as new issues instead of overloading the current proof lanes:
+These were created from `taylor01_claw_v1_linear_issue_packet.md` on
+2026-03-30:
 
-Use `taylor01_claw_v1_linear_issue_packet.md` as the creation packet for the
-exact issue payloads.
-
-1. `Lock minimum real-Taylor runtime contract`
-   - define the minimum active runtime required to count as "real Taylor"
-   - output one explicit runtime contract with required surfaces, execution
-     boundary, persistence expectations, and exclusion of pure local skill
-     overlay behavior
-
-2. `Decide Claw (v1) scope and boundary`
-   - decide whether Claw v1 is primarily an operator surface contract, runtime
-     wrapper, embodiment contract, or a narrow combination
-   - output one short boundary model with explicit non-goals
-
-3. `Decide Taylor capability container direction`
-   - evaluate `SKILL.md`, `sould.md`, manifest-first package, or another
-     explicit alternative
-   - keep current `SKILL.md` surfaces marked transitional until this is locked
-
-4. `Classify current Taylor artifacts by durability`
-   - classify current work across `bitpod-tools`, `bitpod-taylor-runtime`, and
-     `taylor01-skills` into durable substrate, transitional compatibility, and
-     BitPod/local overlay
-
-5. `Define future dedicated repo extraction trigger for Taylor01 Claw`
-   - keep the future repo name open
-   - define the extraction trigger and what content should move when the
-     trigger is met
+1. [BIT-214 — Taylor01: lock minimum real-Taylor runtime contract](https://linear.app/bitpod-app/issue/BIT-214/taylor01-lock-minimum-real-taylor-runtime-contract)
+2. [BIT-215 — Taylor01: decide Claw v1 scope and boundary](https://linear.app/bitpod-app/issue/BIT-215/taylor01-decide-claw-v1-scope-and-boundary)
+3. [BIT-216 — Taylor01: decide capability container direction beyond current `SKILL.md`](https://linear.app/bitpod-app/issue/BIT-216/taylor01-decide-capability-container-direction-beyond-current-skillmd)
+4. [BIT-217 — Taylor01: classify current artifacts by durability and overlay status](https://linear.app/bitpod-app/issue/BIT-217/taylor01-classify-current-artifacts-by-durability-and-overlay-status)
+5. [BIT-218 — Taylor01: define future dedicated repo extraction trigger for Claw](https://linear.app/bitpod-app/issue/BIT-218/taylor01-define-future-dedicated-repo-extraction-trigger-for-claw)
 
 ## Repo-boundary recommendation
 
