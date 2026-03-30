@@ -188,6 +188,7 @@ exact issue payloads.
 1. Lock the minimum runtime contract for "real Taylor" under
    [BIT-198 — Plan: Taylor01 runtime boundary and Claw-direction architecture](https://linear.app/bitpod-app/issue/BIT-198/plan-taylor01-runtime-boundary-and-claw-direction-architecture)
    plus a new runtime-contract issue.
+   Current working baseline: `taylor01_runtime_minimum_v1.md`.
 2. Lock the narrow scope and non-goals of Claw v1 in a dedicated boundary
    issue.
 3. Classify current Taylor artifacts by durability before broad extraction or
