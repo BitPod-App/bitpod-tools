@@ -191,6 +191,7 @@ exact issue payloads.
    Current working baseline: `taylor01_runtime_minimum_v1.md`.
 2. Lock the narrow scope and non-goals of Claw v1 in a dedicated boundary
    issue.
+   Current working baseline: `claw_v1_boundary_model_v1.md`.
 3. Classify current Taylor artifacts by durability before broad extraction or
    cleanup.
 4. Keep the first embodiment lane on
