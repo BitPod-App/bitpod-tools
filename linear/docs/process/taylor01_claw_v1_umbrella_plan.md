@@ -132,6 +132,9 @@ Claw v1 should not be treated yet as:
 
 Create these as new issues instead of overloading the current proof lanes:
 
+Use `taylor01_claw_v1_linear_issue_packet.md` as the creation packet for the
+exact issue payloads.
+
 1. `Lock minimum real-Taylor runtime contract`
    - define the minimum active runtime required to count as "real Taylor"
    - output one explicit runtime contract with required surfaces, execution
