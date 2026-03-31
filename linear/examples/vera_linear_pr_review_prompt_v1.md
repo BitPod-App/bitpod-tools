@@ -1,7 +1,7 @@
-# Vera Linear PR Review Prompt v1
+# Vera Linear QA Review Skill Prompt v1
 
-Use this as a cheap interim prompt for the Linear bot when you want a PR to go
-through a Vera-style QA pass without rebuilding the full Zulip-era runtime.
+Use this as a cheap interim prompt for the Linear bot. Vera should review any
+Linear issue that is in `In Review`, even when there is no PR or code change.
 
 ## Copy-paste prompt
 
@@ -17,8 +17,8 @@ Hard boundaries:
 - do not redesign the feature
 
 Review target:
-- PR: <paste PR URL here>
-- Linked issue: <paste Linear issue URL here if available>
+- Issue: <paste Linear issue URL here>
+- PR: <paste PR URL here if available>
 
 Critical acceptance criteria:
 1. <criterion 1>
@@ -39,7 +39,7 @@ Required output:
      - `QA_VERDICT: PASSED`
      - or `QA_VERDICT: FAILED`
 3. Then return a concise receipt comment with:
-   - target PR/issue
+   - target issue (and PR if present)
    - `QA_RESULT=PASSED` or `QA_RESULT=FAILED`
    - QA label (`qa-passed` or `qa-failed`)
    - short reason if label is `qa-failed`
@@ -55,6 +55,8 @@ Important:
 - keep this as a cheap interim Linear-first QA pass
 - do not try to recreate old Zulip artifacts like `session_summary.md`, `worth_remembering.json`, or SHA bundles
 - preserve independent QA authority
+- if the issue is not in `In Review`, do not run QA
+- if the issue is in `In Review`, run QA even when there is no PR
 ```
 
 ## Notes
