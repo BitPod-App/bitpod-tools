@@ -1,6 +1,6 @@
 # Taylor01 Claw v1 Umbrella Plan
 
-Status: Active planning canon
+Status: Active checklist plan
 Primary issue: [BIT-198 — Plan: Taylor01 runtime boundary and Claw-direction architecture](https://linear.app/bitpod-app/issue/BIT-198/plan-taylor01-runtime-boundary-and-claw-direction-architecture)
 Related issues:
 - [BIT-100 — Define AI-agent portability boundary and repo extraction strategy](https://linear.app/bitpod-app/issue/BIT-100/define-ai-agent-portability-boundary-and-repo-extraction-strategy)
@@ -20,11 +20,14 @@ compatibility surfaces harden into the final Taylor capability model.
 
 This is a planning surface only. The umbrella path is not a git repo.
 
+Use this as the latest active retained plan for the Bootstrap/Taylor01 Claw
+reconciliation lane.
+
 ## Current truth
 
 - `/Users/cjarguello/BitPod-App` is a local container of standalone repos.
-- active repo parity is clean enough to proceed; current forced T3 failure is
-  cleanup residue, not active branch divergence
+- active repo parity is clean enough to proceed; remaining forced T3 fracture
+  is review-gated PR residue, not active branch divergence
 - `taylor01-skills` is the portable Taylor substrate repo
 - `bitpod-tools` remains the owning repo for active BitPod-specific doctrine,
   checkpoints, overlays, and the current OpenClaw/Taylor boundary canon
@@ -139,6 +142,26 @@ These were created from `taylor01_claw_v1_linear_issue_packet.md` on
 4. [BIT-217 — Taylor01: classify current artifacts by durability and overlay status](https://linear.app/bitpod-app/issue/BIT-217/taylor01-classify-current-artifacts-by-durability-and-overlay-status)
 5. [BIT-218 — Taylor01: define future dedicated repo extraction trigger for Claw](https://linear.app/bitpod-app/issue/BIT-218/taylor01-define-future-dedicated-repo-extraction-trigger-for-claw)
 
+## Current structure alignment
+
+- [BIT-198 — Plan: Taylor01 runtime boundary and Claw-direction architecture](https://linear.app/bitpod-app/issue/BIT-198/plan-taylor01-runtime-boundary-and-claw-direction-architecture)
+  remains the single architecture owner and stays under
+  [BIT-100 — Define AI-agent portability boundary and repo extraction strategy](https://linear.app/bitpod-app/issue/BIT-100/define-ai-agent-portability-boundary-and-repo-extraction-strategy)
+- [BIT-205 — Define Taylor01 operator intake and supporting surface adapters](https://linear.app/bitpod-app/issue/BIT-205/define-taylor01-operator-intake-and-supporting-surface-adapters)
+  plus [BIT-214 — Taylor01: lock minimum real-Taylor runtime contract](https://linear.app/bitpod-app/issue/BIT-214/taylor01-lock-minimum-real-taylor-runtime-contract),
+  [BIT-215 — Taylor01: decide Claw v1 scope and boundary](https://linear.app/bitpod-app/issue/BIT-215/taylor01-decide-claw-v1-scope-and-boundary),
+  [BIT-216 — Taylor01: decide capability container direction beyond current `SKILL.md`](https://linear.app/bitpod-app/issue/BIT-216/taylor01-decide-capability-container-direction-beyond-current-skillmd),
+  [BIT-217 — Taylor01: classify current artifacts by durability and overlay status](https://linear.app/bitpod-app/issue/BIT-217/taylor01-classify-current-artifacts-by-durability-and-overlay-status),
+  [BIT-218 — Taylor01: define future dedicated repo extraction trigger for Claw](https://linear.app/bitpod-app/issue/BIT-218/taylor01-define-future-dedicated-repo-extraction-trigger-for-claw),
+  and [BIT-235 — Plan: Taylor01-HQ org-agnostic local environment and bootstrap boundary](https://linear.app/bitpod-app/issue/BIT-235/plan-taylor01-hq-org-agnostic-local-environment-and-bootstrap-boundary)
+  are now aligned under the Taylor01 Phase 4 Claw lane
+- [BIT-113 — Phase 3 evidence pack and HQ go/no-go](https://linear.app/bitpod-app/issue/BIT-113/phase-3-evidence-pack-and-hq-gono-go)
+  is now the explicit Phase 3 closeout child under
+  [BIT-104 — Execute Mac Mini execution-HQ bootstrap for NemoClaw runtime](https://linear.app/bitpod-app/issue/BIT-104/execute-mac-mini-execution-hq-bootstrap-for-nemoclaw-runtime)
+- [BIT-220 — Plan: Normalize T3 local-workspace zone taxonomy and lean-profile semantics](https://linear.app/bitpod-app/issue/BIT-220/plan-normalize-t3-local-workspace-zone-taxonomy-and-lean-profile)
+  and children remain Bootstrap cleanup/meta framing rather than Taylor01
+  architecture work
+
 ## Repo-boundary recommendation
 
 - `taylor01-skills`
@@ -163,29 +186,77 @@ These were created from `taylor01_claw_v1_linear_issue_packet.md` on
 
 ## Minimum implementation sequence
 
-1. Lock the minimum runtime contract for "real Taylor" under
-   [BIT-198 — Plan: Taylor01 runtime boundary and Claw-direction architecture](https://linear.app/bitpod-app/issue/BIT-198/plan-taylor01-runtime-boundary-and-claw-direction-architecture)
-   plus a new runtime-contract issue.
-   Current working baseline: `taylor01_runtime_minimum_v1.md`.
-2. Lock the narrow scope and non-goals of Claw v1 in a dedicated boundary
-   issue.
-   Current working baseline: `claw_v1_boundary_model_v1.md`.
-3. Classify current Taylor artifacts by durability before broad extraction or
-   cleanup.
-   Current working baseline:
-   `taylor01_current_artifact_durability_map_v1.md`.
-4. Keep the first embodiment lane on
-   [BIT-114 — Define OpenClaw-native operator intake and dispatch surface](https://linear.app/bitpod-app/issue/BIT-114/define-openclaw-native-operator-intake-and-dispatch-surface),
-   [BIT-115 — Prove personal-computer -> OpenClaw HQ conversational/dispatch loop](https://linear.app/bitpod-app/issue/BIT-115/prove-personal-computer-openclaw-hq-conversationaldispatch-loop),
+1. Close Bootstrap Phase 3 truthfully through
+   [BIT-104 — Execute Mac Mini execution-HQ bootstrap for NemoClaw runtime](https://linear.app/bitpod-app/issue/BIT-104/execute-mac-mini-execution-hq-bootstrap-for-nemoclaw-runtime)
+   plus [BIT-113 — Phase 3 evidence pack and HQ go/no-go](https://linear.app/bitpod-app/issue/BIT-113/phase-3-evidence-pack-and-hq-gono-go).
+2. Lock only the minimum architecture floor under
+   [BIT-198 — Plan: Taylor01 runtime boundary and Claw-direction architecture](https://linear.app/bitpod-app/issue/BIT-198/plan-taylor01-runtime-boundary-and-claw-direction-architecture):
+   [BIT-214 — Taylor01: lock minimum real-Taylor runtime contract](https://linear.app/bitpod-app/issue/BIT-214/taylor01-lock-minimum-real-taylor-runtime-contract),
+   [BIT-215 — Taylor01: decide Claw v1 scope and boundary](https://linear.app/bitpod-app/issue/BIT-215/taylor01-decide-claw-v1-scope-and-boundary),
+   and [BIT-205 — Define Taylor01 operator intake and supporting surface adapters](https://linear.app/bitpod-app/issue/BIT-205/define-taylor01-operator-intake-and-supporting-surface-adapters).
+   Current working baselines: `taylor01_runtime_minimum_v1.md` and
+   `claw_v1_boundary_model_v1.md`.
+3. Start the real proof lane immediately after the floor is locked through
+   [BIT-115 — Prove personal-computer -> OpenClaw HQ conversational/dispatch loop](https://linear.app/bitpod-app/issue/BIT-115/prove-personal-computer-openclaw-hq-conversationaldispatch-loop)
    and [BIT-97 — Prove Taylor as a real AI agent in any live operator surface](https://linear.app/bitpod-app/issue/BIT-97/prove-taylor-as-a-real-ai-agent-in-any-live-operator-surface).
+   Activate [BIT-101 — Implement Taylor as a portable embodied AI agent/runtime beyond deterministic bot flows](https://linear.app/bitpod-app/issue/BIT-101/implement-taylor-as-a-portable-embodied-ai-agentruntime-beyond)
+   only if the current runtime cannot satisfy those proofs honestly.
+4. Use proof results to refine the future-facing Taylor01 lanes:
+   [BIT-216 — Taylor01: decide capability container direction beyond current `SKILL.md`](https://linear.app/bitpod-app/issue/BIT-216/taylor01-decide-capability-container-direction-beyond-current-skillmd),
+   [BIT-217 — Taylor01: classify current artifacts by durability and overlay status](https://linear.app/bitpod-app/issue/BIT-217/taylor01-classify-current-artifacts-by-durability-and-overlay-status),
+   [BIT-218 — Taylor01: define future dedicated repo extraction trigger for Claw](https://linear.app/bitpod-app/issue/BIT-218/taylor01-define-future-dedicated-repo-extraction-trigger-for-claw),
+   and [BIT-235 — Plan: Taylor01-HQ org-agnostic local environment and bootstrap boundary](https://linear.app/bitpod-app/issue/BIT-235/plan-taylor01-hq-org-agnostic-local-environment-and-bootstrap-boundary).
 5. Keep
    [BIT-98 — Prove real multi-agent team loop with Taylor plus embodied specialist agent(s)](https://linear.app/bitpod-app/issue/BIT-98/prove-real-multi-agent-team-loop-with-taylor-plus-embodied-specialist)
    and [BIT-99 — Embody first specialist as a real AI agent/runtime beyond lane or skill proxy](https://linear.app/bitpod-app/issue/BIT-99/embody-first-specialist-as-a-real-ai-agentruntime-beyond-lane-or-skill)
-   deferred until the runtime and Claw v1 boundaries are locked.
-6. Use the capability-container and extraction-trigger lanes only after the
-   above architecture and embodiment decisions settle.
-   Current working baseline:
-   `taylor01_claw_repo_extraction_trigger_v1.md`.
+   deferred until the proof lane is strong enough and
+   [BIT-173 — Final legacy secret removal and 1Password cutover gate before AI agent operability](https://linear.app/bitpod-app/issue/BIT-173/final-legacy-secret-removal-and-1password-cutover-gate-before-ai-agent)
+   is complete.
+
+## Active checklist
+
+### Bootstrap Phase 3 closeout
+
+- [ ] Reconcile [BIT-104 — Execute Mac Mini execution-HQ bootstrap for NemoClaw runtime](https://linear.app/bitpod-app/issue/BIT-104/execute-mac-mini-execution-hq-bootstrap-for-nemoclaw-runtime)
+  against current `taylor01` / MacBook-control-console / Mini-runtime truth.
+- [ ] Advance [BIT-113 — Phase 3 evidence pack and HQ go/no-go](https://linear.app/bitpod-app/issue/BIT-113/phase-3-evidence-pack-and-hq-gono-go)
+  as the explicit closeout owner.
+- [ ] Assemble evidence from
+  [BIT-105 — Execution HQ architecture decisions and boundary guardrails](https://linear.app/bitpod-app/issue/BIT-105/execution-hq-architecture-decisions-and-boundary-guardrails),
+  [BIT-106 — Mac Mini remote access and execution-HQ foundation](https://linear.app/bitpod-app/issue/BIT-106/mac-mini-remote-access-and-execution-hq-foundation),
+  [BIT-108 — Execution-HQ workspace bootstrap and lightweight local-workspace profile](https://linear.app/bitpod-app/issue/BIT-108/execution-hq-workspace-bootstrap-and-lightweight-local-workspace),
+  [BIT-109 — Execution-HQ runtime, integrations, secrets, and dependency setup](https://linear.app/bitpod-app/issue/BIT-109/execution-hq-runtime-integrations-secrets-and-dependency-setup),
+  and [BIT-110 — Validate first AI HQ runtime path and complete first truthful smoke workflow](https://linear.app/bitpod-app/issue/BIT-110/validate-first-ai-hq-runtime-path-and-complete-first-truthful-smoke).
+- [ ] Disposition [BIT-49 — Lock down personal GitHub account to human-only access (remove AI/runtime paths)](https://linear.app/bitpod-app/issue/BIT-49/lock-down-personal-github-account-to-human-only-access-remove)
+  and [BIT-74 — Execute post-bootstrap local scope hardening window after migration closeout](https://linear.app/bitpod-app/issue/BIT-74/execute-post-bootstrap-local-scope-hardening-window-after-migration)
+  for truthful Phase 3 closeout.
+- [ ] Record the explicit Phase 3 go/no-go verdict.
+
+### Minimum architecture floor
+
+- [ ] Lock [BIT-214 — Taylor01: lock minimum real-Taylor runtime contract](https://linear.app/bitpod-app/issue/BIT-214/taylor01-lock-minimum-real-taylor-runtime-contract).
+- [ ] Lock [BIT-215 — Taylor01: decide Claw v1 scope and boundary](https://linear.app/bitpod-app/issue/BIT-215/taylor01-decide-claw-v1-scope-and-boundary).
+- [ ] Lock [BIT-205 — Define Taylor01 operator intake and supporting surface adapters](https://linear.app/bitpod-app/issue/BIT-205/define-taylor01-operator-intake-and-supporting-surface-adapters).
+
+### First proof lane
+
+- [ ] Run [BIT-115 — Prove personal-computer -> OpenClaw HQ conversational/dispatch loop](https://linear.app/bitpod-app/issue/BIT-115/prove-personal-computer-openclaw-hq-conversationaldispatch-loop).
+- [ ] Run [BIT-97 — Prove Taylor as a real AI agent in any live operator surface](https://linear.app/bitpod-app/issue/BIT-97/prove-taylor-as-a-real-ai-agent-in-any-live-operator-surface).
+- [ ] Activate [BIT-101 — Implement Taylor as a portable embodied AI agent/runtime beyond deterministic bot flows](https://linear.app/bitpod-app/issue/BIT-101/implement-taylor-as-a-portable-embodied-ai-agentruntime-beyond)
+  only if the current runtime cannot satisfy those proofs honestly.
+
+### Proof-informed refinement
+
+- [ ] Refine [BIT-216 — Taylor01: decide capability container direction beyond current `SKILL.md`](https://linear.app/bitpod-app/issue/BIT-216/taylor01-decide-capability-container-direction-beyond-current-skillmd).
+- [ ] Refine [BIT-217 — Taylor01: classify current artifacts by durability and overlay status](https://linear.app/bitpod-app/issue/BIT-217/taylor01-classify-current-artifacts-by-durability-and-overlay-status).
+- [ ] Refine [BIT-218 — Taylor01: define future dedicated repo extraction trigger for Claw](https://linear.app/bitpod-app/issue/BIT-218/taylor01-define-future-dedicated-repo-extraction-trigger-for-claw).
+- [ ] Refine [BIT-235 — Plan: Taylor01-HQ org-agnostic local environment and bootstrap boundary](https://linear.app/bitpod-app/issue/BIT-235/plan-taylor01-hq-org-agnostic-local-environment-and-bootstrap-boundary).
+
+### Later embodiment gates
+
+- [ ] Execute [BIT-173 — Final legacy secret removal and 1Password cutover gate before AI agent operability](https://linear.app/bitpod-app/issue/BIT-173/final-legacy-secret-removal-and-1password-cutover-gate-before-ai-agent).
+- [ ] Run [BIT-98 — Prove real multi-agent team loop with Taylor plus embodied specialist agent(s)](https://linear.app/bitpod-app/issue/BIT-98/prove-real-multi-agent-team-loop-with-taylor-plus-embodied-specialist).
+- [ ] Run [BIT-99 — Embody first specialist as a real AI agent/runtime beyond lane or skill proxy](https://linear.app/bitpod-app/issue/BIT-99/embody-first-specialist-as-a-real-ai-agentruntime-beyond-lane-or-skill).
 
 ## Decisions that must be locked before broad implementation
 
