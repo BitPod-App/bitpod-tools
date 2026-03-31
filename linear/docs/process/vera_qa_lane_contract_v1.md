@@ -115,6 +115,59 @@ The minimum successful QA handoff is therefore:
 - Vera returns `verification_report.md`
 - Taylor or CJ decides what to do with that verdict
 
+## Interim Linear-first bridge
+
+Until Vera has a fuller dedicated runtime again, a cheap interim bridge is
+acceptable if it preserves the lane boundary.
+
+### Acceptable interim shape
+
+- the operator starts from a Linear issue or PR-linked Linear thread
+- the Linear bot receives:
+  - PR or issue link
+  - critical acceptance criteria
+  - verification target or commands when available
+- the bot returns one durable QA artifact:
+  - `verification_report.md`
+- the bot posts a concise receipt back to:
+  - the Linear issue, and
+  - the PR when a PR exists
+
+### Minimum receipt fields
+
+The receipt may be lightweight, but it should still include:
+
+- target PR or issue
+- verdict:
+  - `PASSED`, `FAILED`, or `NO_VERDICT`
+- durable artifact link or path
+- one-line reason when verdict is not `PASSED`
+
+Starter prompt/example:
+
+- `linear/examples/vera_linear_pr_review_prompt_v1.md`
+
+### Explicit non-goals for the interim bridge
+
+This interim Linear-first bridge does not need to recreate the full Zulip-era
+runtime package yet. It may omit:
+
+- `session_summary.md`
+- `worth_remembering.json`
+- conversation/window capture
+- SHA receipt bundles
+- multi-artifact upload cards
+- Taylor-branded `qa_review.md` receipt flow
+
+### Hard rule
+
+Even in the cheap interim bridge, the QA lane must still:
+
+- fail closed when context is insufficient
+- avoid implementation ownership
+- return an explicit verdict artifact rather than a casual chat opinion
+- keep QA authority separate from Taylor planning or engineering execution
+
 ## Independence Rules
 
 This contract inherits and operationalizes:
