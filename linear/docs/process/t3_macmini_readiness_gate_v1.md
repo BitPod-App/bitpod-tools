@@ -1,5 +1,17 @@
 # T3 to Mac Mini / NemoClaw Readiness Gate v1
 
+Status: supporting operator detail, partially superseded for current setup truth
+
+Current decision/sequence source of truth:
+- [AI HQ Semi-Initial Setup Plan v2](../../../../bitpod-docs/process/ai-hq-semi-initial-setup-plan-v2.md)
+
+Archived original preserved at:
+- `../../../../bitpod-docs/archive/legacy-context/execution-hq/t3_macmini_readiness_gate_v1.md`
+
+Use this v1 gate note only where it stays consistent with the v2 setup plan. If
+there is any conflict on sequence, blockers, or boundary interpretation, v2
+wins.
+
 Date: 2026-03-22
 Primary issues:
 - [BIT-102 — Complete T3 workspace parity, legacy root retirement, and repo-rename preparation](https://linear.app/bitpod-app/issue/BIT-102/complete-t3-workspace-parity-legacy-root-retirement-and-repo-rename)
