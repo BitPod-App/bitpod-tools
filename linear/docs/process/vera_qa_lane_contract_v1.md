@@ -138,10 +138,11 @@ acceptable if it preserves the lane boundary.
 The receipt may be lightweight, but it should still include:
 
 - target PR or issue
+- a `QA_RESULT=PASSED` or `QA_RESULT=FAILED` token
 - QA label:
-  - `qa_passed` or `qa_failed`
+  - `qa-passed` or `qa-failed`
 - durable artifact link or path
-- one-line reason when label is `qa_failed`
+- one-line reason when label is `qa-failed`
 
 Starter prompt/example:
 
@@ -163,7 +164,7 @@ runtime package yet. It may omit:
 
 Even in the cheap interim bridge, the QA lane must still:
 
-- fail closed to `qa_failed` when context is insufficient
+- fail closed to `QA_RESULT=FAILED` and `qa-failed` when context is insufficient
 - avoid implementation ownership
 - return an explicit verdict artifact rather than a casual chat opinion
 - keep QA authority separate from Taylor planning or engineering execution

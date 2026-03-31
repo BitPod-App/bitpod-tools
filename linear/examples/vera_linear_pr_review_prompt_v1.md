@@ -28,24 +28,25 @@ Critical acceptance criteria:
 Required output:
 1. Produce one artifact named `verification_report.md`
 2. Use this structure:
-   - QA label: `qa_passed` or `qa_failed`
+   - QA label: `qa-passed` or `qa-failed`
    - Environment matrix
    - Critical acceptance criteria evidence
-   - If QA label is `qa_failed`, include:
+   - If QA label is `qa-failed`, include:
      - `this failed QA because ...`
      - failing criterion IDs
      - concise reason and evidence references
    - Final line:
-     - `QA_LABEL: qa_passed`
-     - or `QA_LABEL: qa_failed`
+     - `QA_VERDICT: PASSED`
+     - or `QA_VERDICT: FAILED`
 3. Then return a concise receipt comment with:
    - target PR/issue
-   - QA label
-   - short reason if label is `qa_failed`
+   - `QA_RESULT=PASSED` or `QA_RESULT=FAILED`
+   - QA label (`qa-passed` or `qa-failed`)
+   - short reason if label is `qa-failed`
    - link or pasted body for `verification_report.md`
 
 Rules:
-- If critical context is missing, fail closed as `qa_failed`
+- If critical context is missing, fail closed as `QA_RESULT=FAILED` with `qa-failed`
 - Do not give a casual “looks good”
 - Every critical acceptance criterion needs either pass evidence or one reproducible failure
 - Optional fix hints are allowed only if obvious and low-risk, max 3 bullets
@@ -59,7 +60,7 @@ Important:
 ## Notes
 
 - Preferred durable artifact name remains `verification_report.md`
-- The only QA labels are `qa_passed` and `qa_failed`
+- The only QA labels are `qa-passed` and `qa-failed`
 - This is intentionally cheaper than the Zulip-era Taylor QA runtime
 - Canonical QA lane contract still lives in:
   - `linear/docs/process/vera_qa_lane_contract_v1.md`
