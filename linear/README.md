@@ -186,6 +186,13 @@ cd $WORKSPACE/bitpod-tools
 python3 linear/scripts/validate_runtime_contract_artifacts.py
 ```
 
+Taylor01 Claw issue-seed dry run:
+
+```bash
+cd $WORKSPACE/bitpod-tools
+python3 linear/scripts/create_linear_issues_from_seed.py
+```
+
 `simulate_e2e.py` runs the feature happy-path sequence:
 - PR opened -> In Progress
 - PR ready for review -> `In Review`
