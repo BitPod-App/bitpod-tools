@@ -138,11 +138,16 @@ acceptable if it preserves the lane boundary.
 The receipt may be lightweight, but it should still include:
 
 - target PR or issue
-- a `QA_RESULT=PASSED` or `QA_RESULT=FAILED` token
+- `PR_URL=<full PR URL>` when a PR exists
+- a `QA_RESULT=PASSED`, `QA_RESULT=FAILED`, or `QA_RESULT=SKIPPED` token
 - QA label:
-  - `qa-passed` or `qa-failed`
+  - `qa-passed`, `qa-failed`, or `qa-skipped`
 - durable artifact link or path
-- one-line reason when label is `qa-failed`
+- one-line reason when label is `qa-failed` or `qa-skipped`
+
+Interim mapping note:
+
+- if older language refers to `NO_VERDICT`, map that outcome to `QA_RESULT=SKIPPED` with label `qa-skipped`
 
 Starter prompt/example:
 
@@ -165,6 +170,7 @@ runtime package yet. It may omit:
 Even in the cheap interim bridge, the QA lane must still:
 
 - fail closed to `QA_RESULT=FAILED` and `qa-failed` when context is insufficient
+- map legacy `NO_VERDICT` semantics to `QA_RESULT=SKIPPED` and `qa-skipped` when a skip outcome is explicitly required
 - avoid implementation ownership
 - return an explicit verdict artifact rather than a casual chat opinion
 - keep QA authority separate from Taylor planning or engineering execution
