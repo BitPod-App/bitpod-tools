@@ -115,6 +115,66 @@ The minimum successful QA handoff is therefore:
 - Vera returns `verification_report.md`
 - Taylor or CJ decides what to do with that verdict
 
+## Interim Linear-first bridge
+
+Until Vera has a fuller dedicated runtime again, a cheap interim bridge is
+acceptable if it preserves the lane boundary.
+
+### Acceptable interim shape
+
+- the operator starts from a Linear issue or PR-linked Linear thread
+- the Linear bot receives:
+  - PR or issue link
+  - critical acceptance criteria
+  - verification target or commands when available
+- the bot returns one durable QA artifact:
+  - `verification_report.md`
+- the bot posts a concise receipt back to:
+  - the Linear issue, and
+  - the PR when a PR exists
+
+### Minimum receipt fields
+
+The receipt may be lightweight, but it should still include:
+
+- target PR or issue
+- `PR_URL=<full PR URL>` when a PR exists
+- a `QA_RESULT=PASSED`, `QA_RESULT=FAILED`, or `QA_RESULT=SKIPPED` token
+- QA label:
+  - `qa-passed`, `qa-failed`, or `qa-skipped`
+- durable artifact link or path
+- one-line reason when label is `qa-failed` or `qa-skipped`
+
+Interim mapping note:
+
+- if older language refers to `NO_VERDICT`, map that outcome to `QA_RESULT=SKIPPED` with label `qa-skipped`
+
+Starter prompt/example:
+
+- `linear/examples/vera_linear_pr_review_prompt_v1.md`
+
+### Explicit non-goals for the interim bridge
+
+This interim Linear-first bridge does not need to recreate the full Zulip-era
+runtime package yet. It may omit:
+
+- `session_summary.md`
+- `worth_remembering.json`
+- conversation/window capture
+- SHA receipt bundles
+- multi-artifact upload cards
+- Taylor-branded `qa_review.md` receipt flow
+
+### Hard rule
+
+Even in the cheap interim bridge, the QA lane must still:
+
+- fail closed to `QA_RESULT=FAILED` and `qa-failed` when context is insufficient
+- map legacy `NO_VERDICT` semantics to `QA_RESULT=SKIPPED` and `qa-skipped` when a skip outcome is explicitly required
+- avoid implementation ownership
+- return an explicit verdict artifact rather than a casual chat opinion
+- keep QA authority separate from Taylor planning or engineering execution
+
 ## Independence Rules
 
 This contract inherits and operationalizes:
