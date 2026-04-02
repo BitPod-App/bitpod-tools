@@ -442,7 +442,10 @@ collect_queue_health() {
   working_files="$(count_files "$ROOT/local-workspace/local-working-files")"
   trash_files="$(count_files "$ROOT/local-workspace/local-trash-delete")"
   handoff_files="$(count_files "$ROOT/local-workspace/local-handoffs")"
-  pm_only_files="$(count_files "$ROOT/local-workspace/local-cj-pm-only")"
+  pm_only_files="$(count_files "$ROOT/local-workspace/local-personal-only")"
+  if [[ "$pm_only_files" -eq 0 ]]; then
+    pm_only_files="$(count_files "$ROOT/local-workspace/local-cj-pm-only")"
+  fi
   codex_state_files="$(count_files "$ROOT/local-workspace/local-codex")"
   shared_dropoff_files="$(count_files "$ROOT/local-workspace/local-shared-dropoff")"
 }
