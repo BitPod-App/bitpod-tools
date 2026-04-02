@@ -139,7 +139,7 @@ setup_workspace() {
   mkdir -p "$WORKSPACE_ROOT/local-workspace/local-working-files/local-reference"
   mkdir -p "$WORKSPACE_ROOT/local-workspace/local-trash-delete"
   mkdir -p "$WORKSPACE_ROOT/local-workspace/local-trash-delete/local-purge"
-  mkdir -p "$WORKSPACE_ROOT/local-workspace/local-cj-pm-only"
+  mkdir -p "$WORKSPACE_ROOT/local-workspace/local-personal-only"
 
   ln -s "$AUDIT_CTL" "$WORKSPACE_ROOT/bitpod-tools/audit_ctl.sh"
   ln -s "$PROJECT_ROOT/scripts/parity_pulse_emit.sh" "$WORKSPACE_ROOT/bitpod-tools/scripts/parity_pulse_emit.sh"
@@ -154,7 +154,7 @@ required_paths = [
   "local-working-files",
   "local-trash-delete",
   "local-trash-delete/local-purge",
-  "local-cj-pm-only",
+  "local-personal-only",
 ]
 optional_paths = []
 disabled_paths = [
@@ -167,7 +167,7 @@ EOF
   cat > "$ZONE_POLICY_FILE" <<'EOF'
 # zone|mode|rel_path|notes
 working|STRICT_CANONICAL|local-workspace/local-working-files|active working files
-pm_only|REPORT_ONLY|local-workspace/local-cj-pm-only|personal-only lane when enabled by profile
+pm_only|REPORT_ONLY|local-workspace/local-personal-only|personal-only lane when enabled by profile
 EOF
 
   create_tracked_repo "alpha"
