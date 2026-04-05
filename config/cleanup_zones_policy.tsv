@@ -3,10 +3,9 @@
 # - REPORT_ONLY: cleanup audit only reports metrics (counts/dup names/large files), no action pressure.
 # - STRICT_CANONICAL: canonical zone, expected to stay organized and auditable.
 
-cj_pm_dropbox|REPORT_ONLY|local-workspace/local-cj-pm-only|explicit user-managed keep zone when enabled by the selected local-workspace profile; no cleanup pressure
+local_personal_folder|REPORT_ONLY|local-workspace/local-personal-only|personal-only lane when enabled by profile; compatibility alias: local-workspace/local-cj-pm-only
 local_trash_delete|REPORT_ONLY|local-workspace/local-trash-delete|inactive disposal holding lane; do not replicate; review only for purge
 local_working_files|REPORT_ONLY|local-workspace/local-working-files|default explicit keep path for local files that are still active or under review
-local_migration_history|REPORT_ONLY|local-workspace/local-working-files/local-migration-history|temporary migration-era packet if still present; not part of canonical skeleton; keep tiny and review regularly
 legacy_agent_bootstrap|REPORT_ONLY|bitpod-docs/archive/legacy-context/sector-feeds-agent-bootstrap|archived non-feed bootstrap material moved out of sector-feeds; preserve and monitor only
 templates_registry|STRICT_CANONICAL|bitpod-tools/linear/docs/templates_registry|canonical template index and references
 learnings_ledger|STRICT_CANONICAL|bitpod-docs/archive/learnings|canonical retros/protocol learnings
