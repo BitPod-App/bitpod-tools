@@ -1,6 +1,6 @@
 # Durable Artifact and Memory Flow Proof v1
 
-Status: Working proof  
+Status: Retained proof (inactive by default)  
 Linked issue: [BIT-87 — Prove durable decision, memory, and artifact flow in live AI-team operations](https://linear.app/bitpod-app/issue/BIT-87/prove-durable-decision-memory-and-artifact-flow-in-live-ai-team)
 
 ## Objective
@@ -24,9 +24,9 @@ Interpretation:
 
 Decision/planning artifacts:
 
-- `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/bootstrap_phase_normalization_plan_v1.md`
-- `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/stage4_5_agent_stack_execution_plan_v1.md`
-- `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/startup_operating_model_v1.md`
+- `$WORKSPACE/bitpod-tools/linear/docs/process/bootstrap_phase_normalization_plan_v1.md`
+- `$WORKSPACE/bitpod-tools/linear/docs/process/stage4_5_agent_stack_execution_plan_v1.md`
+- `$WORKSPACE/bitpod-tools/linear/docs/process/startup_operating_model_v1.md`
 
 Controlling issue/PR:
 
@@ -47,10 +47,10 @@ Execution lane:
 
 Representative implementation outputs:
 
-- `/Users/cjarguello/bitpod-app/sector-feeds/artifacts/runs/legacy_tuesday_track/jack_mallers_show/20260311T065208Z__status.json`
-- `/Users/cjarguello/bitpod-app/sector-feeds/artifacts/runs/legacy_tuesday_track/jack_mallers_show/20260311T065208Z__summary.md`
-- `/Users/cjarguello/bitpod-app/sector-feeds/artifacts/runs/experimental_track/jack_mallers_show/20260311T065224Z__status.json`
-- `/Users/cjarguello/bitpod-app/sector-feeds/artifacts/runs/experimental_track/jack_mallers_show/20260311T065224Z__summary.md`
+- `$WORKSPACE/sector-feeds/artifacts/runs/legacy_tuesday_track/jack_mallers_show/20260311T065208Z__status.json`
+- `$WORKSPACE/sector-feeds/artifacts/runs/legacy_tuesday_track/jack_mallers_show/20260311T065208Z__summary.md`
+- `$WORKSPACE/sector-feeds/artifacts/runs/experimental_track/jack_mallers_show/20260311T065224Z__status.json`
+- `$WORKSPACE/sector-feeds/artifacts/runs/experimental_track/jack_mallers_show/20260311T065224Z__summary.md`
 
 What this proves:
 
@@ -82,9 +82,9 @@ What this proves:
 
 Checkpoint protocol artifacts:
 
-- `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/long_thread_checkpoint_protocol_v1.md`
-- `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/checkpoints/thread_checkpoint_template_v1.md`
-- `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/checkpoints/active_checkpoint_sector_feeds_bit77_2026-03-11.md`
+- `$WORKSPACE/bitpod-tools/linear/docs/process/long_thread_checkpoint_protocol_v1.md`
+- `$WORKSPACE/bitpod-tools/linear/docs/process/checkpoints/thread_checkpoint_template_v1.md`
+- `$WORKSPACE/bitpod-tools/linear/docs/process/checkpoints/active_checkpoint_sector_feeds_bit77_2026-03-11.md`
 
 Controlling issue/PR:
 
@@ -107,6 +107,12 @@ The current live chain is:
 5. active checkpoint file persisted to protect against thread-context degradation
 
 That is a real decision -> execution -> QA/artifact -> memory/checkpoint chain.
+
+## Authority note
+
+This file is retained proof, not active execution policy. Use the policy
+registry to determine which current guide, contract, and runbook surfaces are
+still authoritative.
 
 ## What Is Still Missing
 

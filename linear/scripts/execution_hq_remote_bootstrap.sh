@@ -6,6 +6,7 @@ AI_HQ_EXEC_USER="${AI_HQ_EXEC_USER:-taylorhq}"
 AI_HQ_ADMIN_USER="${AI_HQ_ADMIN_USER:-cjarguello}"
 AI_HQ_WORKSPACE="${AI_HQ_WORKSPACE:-\$HOME/bitpod-app}"
 AI_HQ_GIT_SCHEME="${AI_HQ_GIT_SCHEME:-https}"
+AI_HQ_PROFILE="${AI_HQ_PROFILE:-taylor01_hq_lean}"
 AI_HQ_REPOS="${AI_HQ_REPOS:-bitpod-assets bitpod-docs bitpod-taylor-runtime bitpod-tools bitregime-core sector-feeds}"
 SSH_OPTS=(-o BatchMode=yes -o ConnectTimeout=5)
 
@@ -24,8 +25,9 @@ Environment:
 
 Notes:
 - probe is non-destructive and checks ssh reachability for both accounts
-- reset-workspace deletes and recreates the execution-account workspace
-- verify-workspace confirms the expected repo set under the execution account
+- reset-workspace deletes and recreates the execution-account workspace, then
+  writes minimal root metadata and the selected local-workspace profile
+- verify-workspace confirms root metadata, repo set, and the selected profile
 - smoke runs AI_HQ_SMOKE_CMD inside the execution-account shell
 EOF
 }
@@ -88,8 +90,8 @@ rm -rf \"\$WORKSPACE\"
 mkdir -p \"\$WORKSPACE\"
 cd \"\$WORKSPACE\"
 ${repo_lines}
-printf 'workspace reset complete at %s\n' \"\$WORKSPACE\"
-ls"
+bash \"\$WORKSPACE/bitpod-tools/scripts/bootstrap_org_workspace.sh\" --root \"\$WORKSPACE\" --profile \"${AI_HQ_PROFILE}\" --clone-scheme \"${AI_HQ_GIT_SCHEME}\" --skip-clone
+printf 'workspace reset complete at %s\n' \"\$WORKSPACE\""
 }
 
 command_verify_workspace() {
@@ -101,6 +103,10 @@ command_verify_workspace() {
   run_remote_exec "set -euo pipefail
 export WORKSPACE=\"${AI_HQ_WORKSPACE}\"
 [[ -d \"\$WORKSPACE\" ]] || { echo \"missing workspace: \$WORKSPACE\" >&2; exit 1; }
+[[ -f \"\$WORKSPACE/AGENTS.md\" ]] || { echo \"missing root AGENTS.md\" >&2; exit 1; }
+[[ -f \"\$WORKSPACE/.codex/org-workspace.toml\" ]] || { echo \"missing org-workspace.toml\" >&2; exit 1; }
+[[ -f \"\$WORKSPACE/.codex/environments/environment.toml\" ]] || { echo \"missing environment.toml\" >&2; exit 1; }
+[[ -d \"\$WORKSPACE/local-workspace\" ]] || { echo \"missing local-workspace\" >&2; exit 1; }
 ${verify_lines}
 printf 'workspace verified at %s\n' \"\$WORKSPACE\""
 }

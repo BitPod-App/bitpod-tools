@@ -80,14 +80,16 @@ If the handoff packet is incomplete, QA should reject the handoff and ask Taylor
 
 Every dedicated QA execution must produce a `verification_report.md`-style artifact with:
 
-1. verdict: `PASSED` or `FAILED`
+1. verdict: `PASSED`, `FAILED`, or `SKIPPED`
 2. environment matrix
 3. critical acceptance criteria with evidence per criterion
 4. `this failed QA because ...` section when verdict is `FAILED`
-5. optional low-risk fix hints only when obvious
-6. final line:
+5. `this QA was skipped because ...` section when verdict is `SKIPPED`
+6. optional low-risk fix hints only when obvious
+7. final line:
    - `QA_VERDICT: PASSED`, or
-   - `QA_VERDICT: FAILED`
+   - `QA_VERDICT: FAILED`, or
+   - `QA_VERDICT: SKIPPED`
 
 Allowed storage targets:
 

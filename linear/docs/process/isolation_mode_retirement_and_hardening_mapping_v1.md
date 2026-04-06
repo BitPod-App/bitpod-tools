@@ -1,6 +1,6 @@
 # Isolation Mode Retirement and Hardening Mapping v1
 
-Status: Working baseline  
+Status: Retained baseline (inactive by default)  
 Primary issue: [BIT-74 — Execute post-bootstrap local scope hardening window after migration closeout](https://linear.app/bitpod-app/issue/BIT-74/execute-post-bootstrap-local-scope-hardening-window-after-migration)
 
 ## Objective
@@ -14,8 +14,8 @@ Make the current truth explicit:
 
 Policy artifacts still exist:
 
-- `/Users/cjarguello/bitpod-app/local-workspace/local-codex/policy/isolation/enforcement_state.json`
-- `/Users/cjarguello/bitpod-app/local-workspace/local-codex/policy/isolation/violation_queue.json`
+- `$WORKSPACE/local-workspace/local-codex/policy/isolation/enforcement_state.json`
+- `$WORKSPACE/local-workspace/local-codex/policy/isolation/violation_queue.json`
 
 Current state is dormant:
 
@@ -25,9 +25,9 @@ Current state is dormant:
 
 Last known implementation exists only in quarantined legacy paths:
 
-- `/Users/cjarguello/bitpod-app/local-workspace/local-trash-delete/bitpod/scripts/isolation_ctl.py`
-- `/Users/cjarguello/bitpod-app/local-workspace/local-trash-delete/bitpod/tools/isolation/cli.py`
-- `/Users/cjarguello/bitpod-app/local-workspace/local-trash-delete/bitpod/tools/isolation/runtime.py`
+- `$WORKSPACE/local-workspace/local-trash-delete/bitpod/scripts/isolation_ctl.py`
+- `$WORKSPACE/local-workspace/local-trash-delete/bitpod/tools/isolation/cli.py`
+- `$WORKSPACE/local-workspace/local-trash-delete/bitpod/tools/isolation/runtime.py`
 
 ## Retirement decision
 
@@ -86,6 +86,12 @@ If OpenClaw or another operator surface later needs stronger isolation:
 - define the exact control needed
 - implement it in an approved active path
 - verify it in the current runtime/host model
+
+## Authority note
+
+This file is retained as an explanatory mapping, not as an active operating
+policy. Current authority lives in the active policy registry and the approved
+hardening/runtime boundary docs.
 
 ## Allowed remaining legacy state
 

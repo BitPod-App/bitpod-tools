@@ -1,21 +1,20 @@
 <!-- GENERATED FILE. DO NOT EDIT HERE. -->
-<!-- CANONICAL SOURCE: bitpod-docs/process/taylored-policy-rules.md -->
+<!-- CANONICAL SOURCE: bitpod-docs/policies/taylored-policy-rules.md -->
 <!-- MIRROR ROLE: repo packet mirror -->
 # Taylored Policy Rules
 
-CANONICAL SOURCE: `bitpod-docs/process/taylored-policy-rules.md`
-LOCAL ROOT MIRROR: `$WORKSPACE/taylored-policy-rules.md` bootstrap mirror only
-EDIT SURFACE: edit this file first; generated mirrors must not become parallel canon
+CANONICAL SOURCE: `bitpod-docs/policies/taylored-policy-rules.md`
+EDIT SURFACE: edit this file first
 
 NAME: Taylored Policy Rules
 STATUS: Active
-DATE: 2026-03-24
-VERSION: 1.1
+DATE: 2026-04-05
+VERSION: 1.2
 OWNER: Workspace / Product Development
 DESCRIPTION: Enumerates prohibition IDs, enforcement states, alertability, and exception eligibility.
 SCOPE: Root prohibitions for the entire workspace.
-ENTRYPOINT: Referenced by repo `AGENTS.md` files and governance docs.
-DEPENDENCIES: `taylored-policy.md`, `../AGENTS.md`.
+ENTRYPOINT: Referenced by repo `AGENTS.md` files, root `AGENTS.md`, and governance docs.
+DEPENDENCIES: `taylored-policy.md`, `policy-registry.toml`, `../AGENTS.md`.
 OVERRIDE_POLICY: Only rules marked `exception_allowed = YES` may be declared as explicit repo exceptions.
 
 Status: Active shared policy rules file
@@ -75,7 +74,7 @@ Every exception must include:
 | `TPR-011` | GitHub-Native Minimalism | Do not rely on GitHub-native config as the main Taylor01 portability layer. | root governance | `DOCUMENTED_ONLY` | `NO_ALERT_YET` | `NO` | `taylored-policy.md` |
 | `TPR-012` | Tokenized Public Root | Do not publish person-specific local paths in root public policy surfaces. | root public docs | `ENFORCED` | `ALERT_ON_SUCCESS` | `YES` | `taylored-policy.md` |
 | `TPR-013` | Secretless Repo Trees | Do not store secrets in tracked repo files or shared handoff folders by default. | repo files and handoffs | `ENFORCED` | `ALERT_ON_SUCCESS` | `YES` | `taylored-policy.md` |
-| `TPR-014` | Root Policy Canon | Do not create, restore, or treat legacy policy shim files as the primary policy authoring surface once `taylored-policy.md` exists. | root policy files | `ENFORCED` | `ALERT_ON_SUCCESS` | `NO` | `taylored-policy.md` |
+| `TPR-014` | Root Policy Canon | Do not create, restore, or treat competing root policy files as the primary policy authoring surface once `taylored-policy.md` exists. | root policy files | `ENFORCED` | `ALERT_ON_SUCCESS` | `NO` | `taylored-policy.md` |
 | `TPR-015` | Temporal Is Local Until Unified | Do not treat repo-local temporal metadata as the universal artifact lifecycle contract until a shared lifecycle taxonomy is adopted. | repo temporal metadata | `ENFORCED` | `ALERT_ON_SUCCESS` | `YES` | `temporal-and-local-working-artifact-policy.md` |
 | `TPR-016` | No Local Workspace README Docs | Do not create `README.md`, `readme.md`, or equivalent local folder documentation files anywhere under `#LOCAL_WORKSPACE`, including nested local folders. | `#LOCAL_WORKSPACE` | `ENFORCED` | `ALERT_ON_SUCCESS` | `YES` | `file-creation-and-artifact-placement-policy.md` |
 
@@ -83,3 +82,11 @@ Interpretation for `TPR-016`:
 
 - local-workspace lanes are operational holding surfaces, not documentation surfaces
 - canonical guidance belongs in root policy, shared process docs, owning repos, or approved external canonical systems
+
+## Registry companion
+
+The status of policy-like surfaces is governed by:
+
+- `bitpod-docs/policies/policy-registry.toml`
+
+Use the registry to distinguish active, compat, inactive, and legacy surfaces.
