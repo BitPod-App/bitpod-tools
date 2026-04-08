@@ -94,7 +94,7 @@ AUTHORITY MAP:
 - shared process docs = detailed semantics, naming, lifecycle, audit behavior, and packet contracts
 
 WORKFLOW POINTER:
-
+D
 - for cross-repo Linear issue-update semantics, treat `update Linear` as `make the issue materially more truthful`
 - that default preserves existing assignee/delegate by default and does not include assigning/delegating issues to Codex or mentioning `@Codex`; those actions are explicit cloud-task delegation only
 - the canonical detailed rule surface for that behavior is `$WORKSPACE/bitpod-tools/linear/docs/process/linear_operating_guide_v3.md`
