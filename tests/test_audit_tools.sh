@@ -237,9 +237,11 @@ test_cleanup_contracts() {
   assert_contains "$t1_output" "Audit Control | T1 Cleanup"
   assert_contains "$t1_output" "- result=NOT VERIFIED"
   assert_contains "$t1_output" "- overall=NOT VERIFIED"
-  assert_contains "$t1_output" "LIKELY MATCH"
-  assert_contains "$t1_output" "LOCAL DIVERGED"
-  assert_contains "$t1_output" "UNLINKED"
+  assert_contains "$t1_output" "- repo_scope=skipped"
+  assert_contains "$t1_output" "- repo_findings=skipped_for_t1"
+  assert_not_contains "$t1_output" "LIKELY MATCH"
+  assert_not_contains "$t1_output" "LOCAL DIVERGED"
+  assert_not_contains "$t1_output" "UNLINKED"
   assert_not_contains "$t1_output" "REMOTE MISMATCH"
   assert_contains "$t1_output" "Local workspace checks were suppressed for this run."
 
@@ -409,8 +411,9 @@ test_local_trash_bucket_actionability_is_t1_t2_visible() {
   [[ "$t1_status" -eq 0 ]] || fail "expected report-only trash bucket T1 exit status 0, got $t1_status"
   assert_contains "$t1_output" "- trash_actionable_buckets=1"
   assert_contains "$t1_output" "- trash_bucket=local-workspace/local-trash-delete/local-high-volume-residue action=review_for_local_purge files=101"
-  assert_contains "$t1_output" "Run T2 cleanup for local-workspace enforcement decisions."
-  assert_not_contains "$t1_output" "Would you like to execute safe local-workspace cleanup now?"
+  assert_contains "$t1_output" "- files_to_move_to_local_purge=101"
+  assert_contains "$t1_output" "Would you like to execute safe local-workspace cleanup now?"
+  assert_contains "$t1_output" "run T1 cleanup execute local-workspace"
 
   local t2_output=""
   local t2_status=0
@@ -426,6 +429,22 @@ test_local_trash_bucket_actionability_is_t1_t2_visible() {
   assert_contains "$t2_output" "Would you like to execute safe local-workspace cleanup now?"
 
   rm -rf "$bucket"
+}
+
+test_t1_safe_local_workspace_execute_moves_to_local_purge() {
+  local bucket="$WORKSPACE_ROOT/local-workspace/local-trash-delete/local-execute-residue"
+  mkdir -p "$bucket"
+  printf 'residue\n' > "$bucket/file.txt"
+  touch -t 202001010000 "$bucket/file.txt"
+
+  local execute_output
+  execute_output="$(run_audit_capture "$PERFECT_REGISTRY_FILE" "run T1 cleanup execute local-workspace")"
+  assert_contains "$execute_output" "Audit Control | T1 Cleanup"
+  assert_contains "$execute_output" "- trash_actionable_buckets=0"
+  assert_file_missing "$bucket/file.txt"
+  assert_file_exists "$WORKSPACE_ROOT/local-workspace/local-trash-delete/local-purge/local-execute-residue/file.txt"
+
+  rm -rf "$WORKSPACE_ROOT/local-workspace/local-trash-delete/local-purge/local-execute-residue"
 }
 
 test_bounded_network_probes() {
@@ -463,6 +482,7 @@ test_hook_installer
 test_scheduled_cleanup_helper
 test_contract_derived_local_workspace_guardrails
 test_local_trash_bucket_actionability_is_t1_t2_visible
+test_t1_safe_local_workspace_execute_moves_to_local_purge
 test_bounded_network_probes
 
 echo "PASS: test_audit_tools.sh"

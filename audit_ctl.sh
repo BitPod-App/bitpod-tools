@@ -15,6 +15,9 @@ trap 'rm -rf "$TMP_DIR"' EXIT
 REGISTRY_PROBLEMS_FILE="$TMP_DIR/registry_problems.txt"
 ZONE_ROWS_FILE="$TMP_DIR/zone_rows.txt"
 TRASH_BUCKET_ROWS_FILE="$TMP_DIR/trash_bucket_rows.txt"
+CLEANUP_PLAN_ROWS_FILE="$TMP_DIR/cleanup_plan_rows.txt"
+DUPLICATE_ROWS_FILE="$TMP_DIR/duplicate_rows.txt"
+REPO_TEMPORAL_ROWS_FILE="$TMP_DIR/repo_temporal_rows.txt"
 TMP_CANON_NAMES="$TMP_DIR/canon_names.txt"
 TMP_LOCAL_NAMES="$TMP_DIR/local_names.txt"
 TMP_IN_SHA="$TMP_DIR/in_sha.txt"
@@ -24,6 +27,9 @@ OPEN_PR_ROWS_FILE="$TMP_DIR/open_pr_rows.txt"
 
 NETWORK_TIMEOUT_SECONDS="${BITPOD_AUDIT_NETWORK_TIMEOUT_SECONDS:-15}"
 TRASH_BUCKET_ACTION_FILE_THRESHOLD="${BITPOD_TRASH_BUCKET_ACTION_FILE_THRESHOLD:-100}"
+LOCAL_TRASH_PURGE_DAYS="${BITPOD_LOCAL_TRASH_PURGE_DAYS:-30}"
+LOCAL_PURGE_OS_TRASH_DAYS="${BITPOD_LOCAL_PURGE_OS_TRASH_DAYS:-30}"
+LOCAL_PURGE_OS_TRASH_ALLOWED="${BITPOD_LOCAL_PURGE_OS_TRASH_ALLOWED:-0}"
 
 repo_rows=""
 repo_total=0
@@ -52,9 +58,18 @@ pm_only_files=0
 codex_state_files=0
 shared_dropoff_files=0
 trash_soft_purge_pending_files=0
-trash_soft_purge_threshold_days=14
+trash_soft_purge_threshold_days="$LOCAL_TRASH_PURGE_DAYS"
 trash_root_bucket_count=0
 trash_actionable_bucket_count=0
+cleanup_plan_move_to_trash_files=0
+cleanup_plan_move_to_purge_files=0
+cleanup_plan_os_trash_candidate_files=0
+cleanup_plan_report_only_files=0
+cleanup_plan_execution_allowed_count=0
+cleanup_plan_row_count=0
+local_purge_os_trash_candidate_files=0
+repo_temporal_candidate_count=0
+repo_temporal_candidate_files=0
 likely_duplicate_filename_count=0
 active_legacy_bucket_hits=0
 unexpected_local_workspace_children=0
@@ -432,6 +447,52 @@ count_files() {
   fi
 }
 
+count_dirs() {
+  local path="$1"
+  if [[ -d "$path" ]]; then
+    find "$path" -type d 2>/dev/null | wc -l | tr -d ' '
+  else
+    echo "0"
+  fi
+}
+
+append_cleanup_plan_row() {
+  local finding_id="$1"
+  local scope="$2"
+  local action="$3"
+  local path="$4"
+  local destination="$5"
+  local reason="$6"
+  local policy_rule="$7"
+  local file_count="$8"
+  local dir_count="$9"
+  local execution_allowed="${10}"
+  local requires_tier="${11}"
+  local requires_permission="${12}"
+
+  cleanup_plan_row_count=$((cleanup_plan_row_count + 1))
+  if [[ "$execution_allowed" == "true" ]]; then
+    cleanup_plan_execution_allowed_count=$((cleanup_plan_execution_allowed_count + 1))
+  fi
+  case "$action" in
+    soft_move_to_trash)
+      cleanup_plan_move_to_trash_files=$((cleanup_plan_move_to_trash_files + file_count))
+      ;;
+    move_to_local_purge)
+      cleanup_plan_move_to_purge_files=$((cleanup_plan_move_to_purge_files + file_count))
+      ;;
+    os_trash_candidate)
+      cleanup_plan_os_trash_candidate_files=$((cleanup_plan_os_trash_candidate_files + file_count))
+      ;;
+    report_only)
+      cleanup_plan_report_only_files=$((cleanup_plan_report_only_files + file_count))
+      ;;
+  esac
+
+  printf '%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s\n' \
+    "$finding_id" "$scope" "$action" "$path" "$destination" "$reason" "$policy_rule" "$file_count" "$dir_count" "$execution_allowed" "$requires_tier" "$requires_permission" >> "$CLEANUP_PLAN_ROWS_FILE"
+}
+
 is_generic_duplicate_name() {
   case "$1" in
     README.md|index.html)
@@ -459,6 +520,7 @@ collect_queue_health() {
 collect_likely_duplicate_names() {
   : > "$TMP_CANON_NAMES"
   : > "$TMP_LOCAL_NAMES"
+  : > "$DUPLICATE_ROWS_FILE"
 
   local canon_dirs=()
   while IFS='|' read -r repo rel_path pulse_enabled cleanup_enabled thread_visible verified notes; do
@@ -494,6 +556,18 @@ collect_likely_duplicate_names() {
   fi
 
   likely_duplicate_filename_count="$(comm -12 "$TMP_CANON_NAMES" "$TMP_LOCAL_NAMES" | wc -l | tr -d ' ')"
+  comm -12 "$TMP_CANON_NAMES" "$TMP_LOCAL_NAMES" | while IFS= read -r name; do
+    [[ -z "$name" ]] && continue
+    local local_matches=0
+    local canon_matches=0
+    local_matches="$(find "$ROOT/local-workspace/local-working-files" \
+      \( -path '*/.git' -o -path '*/.git/*' \) -prune -o \
+      -type f -name "$name" -print 2>/dev/null | wc -l | tr -d ' ')"
+    canon_matches="$(find "${canon_dirs[@]}" \
+      \( -path '*/.git' -o -path '*/.git/*' \) -prune -o \
+      -type f -name "$name" -print 2>/dev/null | wc -l | tr -d ' ')"
+    echo "$name|$local_matches|$canon_matches" >> "$DUPLICATE_ROWS_FILE"
+  done
 }
 
 collect_workspace_hygiene() {
@@ -578,6 +652,119 @@ collect_trash_bucket_actionability() {
 
     echo "$rel_path|$file_count|$dir_count|$stale_files|$has_git|$action" >> "$TRASH_BUCKET_ROWS_FILE"
   done < <(find "$trash_root" -maxdepth 1 -mindepth 1 -type d 2>/dev/null | sort)
+}
+
+collect_cleanup_plan() {
+  : > "$CLEANUP_PLAN_ROWS_FILE"
+  cleanup_plan_move_to_trash_files=0
+  cleanup_plan_move_to_purge_files=0
+  cleanup_plan_os_trash_candidate_files=0
+  cleanup_plan_report_only_files=0
+  cleanup_plan_execution_allowed_count=0
+  cleanup_plan_row_count=0
+  local_purge_os_trash_candidate_files=0
+
+  local lw_root="$ROOT/local-workspace"
+  local trash_root="$lw_root/local-trash-delete"
+  local purge_root="$trash_root/local-purge"
+  local today
+  today="$(date -u +%Y-%m-%d)"
+
+  if [[ -d "$lw_root" ]]; then
+    local child
+    while IFS= read -r child; do
+      [[ -z "$child" ]] && continue
+      local child_name="${child##*/}"
+      local rel_path="local-workspace/$child_name"
+      local files dirs reason policy_rule dest
+      if ! path_list_contains "$contract_allowed_direct_children" "$child_name"; then
+        files="$(count_files "$child")"
+        dirs="$(count_dirs "$child")"
+        reason="direct local-workspace child is not allowed by selected skeleton profile"
+        policy_rule="local-workspace-skeleton-contract"
+        dest="local-workspace/local-trash-delete/local-workspace-policy-$today/$child_name"
+        append_cleanup_plan_row "lw-unexpected-$child_name" "local_workspace" "soft_move_to_trash" "$rel_path" "$dest" "$reason" "$policy_rule" "$files" "$dirs" "true" "T1" "none"
+      elif [[ "$child_name" != local-* ]]; then
+        files="$(count_files "$child")"
+        dirs="$(count_dirs "$child")"
+        reason="direct local-workspace child does not use required local- prefix"
+        policy_rule="local-workspace-skeleton-contract"
+        dest="local-workspace/local-trash-delete/local-workspace-policy-$today/$child_name"
+        append_cleanup_plan_row "lw-prefix-$child_name" "local_workspace" "soft_move_to_trash" "$rel_path" "$dest" "$reason" "$policy_rule" "$files" "$dirs" "true" "T1" "none"
+      fi
+    done < <(find "$lw_root" -maxdepth 1 -mindepth 1 -type d 2>/dev/null | sort)
+  fi
+
+  local legacy_dir
+  while IFS= read -r legacy_dir; do
+    [[ -z "$legacy_dir" ]] && continue
+    local rel_path="${legacy_dir#"$ROOT/"}"
+    local legacy_name="${legacy_dir##*/}"
+    local files dirs dest
+    files="$(count_files "$legacy_dir")"
+    dirs="$(count_dirs "$legacy_dir")"
+    dest="local-workspace/local-trash-delete/legacy-local-workspace-bucket-$today/$legacy_name"
+    append_cleanup_plan_row "lw-legacy-$legacy_name" "local_workspace" "soft_move_to_trash" "$rel_path" "$dest" "legacy bucket name is prohibited in active local-workspace lanes" "workspace-organization-policy" "$files" "$dirs" "true" "T1" "none"
+  done < <(
+    {
+      [[ -d "$lw_root/local-working-files" ]] && find "$lw_root/local-working-files" -type d \( -name 'incoming-clutter' -o -name 'working-files' -o -name 'trash-delete' -o -name 'handoffs' -o -name 'reference-candidates' \) 2>/dev/null
+      [[ -d "$lw_root/local-shared-dropoff" ]] && find "$lw_root/local-shared-dropoff" -type d \( -name 'incoming-clutter' -o -name 'working-files' -o -name 'trash-delete' -o -name 'handoffs' -o -name 'reference-candidates' \) 2>/dev/null
+    } | sort
+  )
+
+  while IFS='|' read -r rel_path file_count dir_count stale_files has_git action; do
+    [[ -z "$rel_path" ]] && continue
+    [[ "$action" == "review_for_local_purge" ]] || continue
+    local name="${rel_path##*/}"
+    append_cleanup_plan_row "trash-bucket-$name" "local_workspace" "move_to_local_purge" "$rel_path" "local-workspace/local-trash-delete/local-purge/$name" "root local-trash-delete bucket is stale, high-volume, or repo-shaped" "local-trash-delete-retention" "$file_count" "$dir_count" "true" "T1" "none"
+  done < "$TRASH_BUCKET_ROWS_FILE"
+
+  if [[ -d "$purge_root" ]]; then
+    local purge_files
+    purge_files="$(find "$purge_root" -type f -mtime +"$LOCAL_PURGE_OS_TRASH_DAYS" 2>/dev/null | wc -l | tr -d ' ')"
+    local_purge_os_trash_candidate_files="$purge_files"
+    if [[ "$purge_files" -gt 0 ]]; then
+      local os_allowed="false"
+      [[ "$LOCAL_PURGE_OS_TRASH_ALLOWED" == "1" ]] && os_allowed="true"
+      append_cleanup_plan_row "purge-os-trash-candidates" "local_workspace" "os_trash_candidate" "local-workspace/local-trash-delete/local-purge" "~/.Trash" "local-purge files exceed OS Trash threshold" "local-trash-delete-retention" "$purge_files" "1" "$os_allowed" "T1" "os_trash"
+    fi
+  fi
+
+  while IFS='|' read -r name local_matches canon_matches; do
+    [[ -z "$name" ]] && continue
+    append_cleanup_plan_row "duplicate-name-$name" "local_workspace" "report_only" "local-workspace/local-working-files/**/$name" "" "local working filename duplicates a repo filename; human review required" "duplicate-name-guardrail" "$local_matches" "0" "false" "T1" "none"
+  done < "$DUPLICATE_ROWS_FILE"
+}
+
+collect_repo_temporal_candidates() {
+  local tier="$1"
+  : > "$REPO_TEMPORAL_ROWS_FILE"
+  repo_temporal_candidate_count=0
+  repo_temporal_candidate_files=0
+
+  [[ "$tier" == "T2" || "$tier" == "T3" ]] || return 0
+
+  while IFS='|' read -r repo rel_path pulse_enabled cleanup_enabled thread_visible verified notes; do
+    [[ -z "${repo// }" ]] && continue
+    [[ "$repo" =~ ^# ]] && continue
+    [[ "${cleanup_enabled:-0}" == "1" ]] || continue
+    [[ "${verified:-0}" == "1" ]] || continue
+
+    local abs_path="$ROOT/$rel_path"
+    [[ -d "$abs_path" ]] || continue
+
+    local metadata_path
+    while IFS= read -r metadata_path; do
+      [[ -z "$metadata_path" ]] && continue
+      if rg -q 'is_temporal[[:space:]]*[:=][[:space:]]*true' "$metadata_path" 2>/dev/null &&
+         rg -q 'cleanup_status[[:space:]]*[:=][[:space:]]*"?((ready)|(purge)|(delete)|(deleted))"?' "$metadata_path" 2>/dev/null; then
+        local rel_metadata="${metadata_path#"$ROOT/"}"
+        repo_temporal_candidate_count=$((repo_temporal_candidate_count + 1))
+        repo_temporal_candidate_files=$((repo_temporal_candidate_files + 1))
+        echo "$repo|$rel_metadata|$tier|report_only|is_temporal=true with cleanup_status ready/purge/delete requires repo-aware review" >> "$REPO_TEMPORAL_ROWS_FILE"
+      fi
+    done < <(find "$abs_path" \( -path '*/.git' -o -path '*/.git/*' -o -path '*/node_modules' -o -path '*/node_modules/*' \) -prune -o -type f \( -name '*.json' -o -name '*.toml' -o -name '*.yaml' -o -name '*.yml' -o -name '*.md' \) -print 2>/dev/null)
+  done < "$REGISTRY_FILE"
 }
 
 collect_branch_residue() {
@@ -814,6 +1001,8 @@ cleanup_verification_detail() {
     else
       echo "Fresh all-repo parity verification completed in this run."
     fi
+  elif [[ "$tier" == "T1" ]]; then
+    echo "T1 is local-workspace only; repo parity is intentionally not scanned."
   else
     echo "Repo parity in $tier is advisory only. Use T3 for authoritative fresh all-repo verification."
   fi
@@ -854,6 +1043,15 @@ reset_workspace_metrics() {
   trash_soft_purge_pending_files=0
   trash_root_bucket_count=0
   trash_actionable_bucket_count=0
+  cleanup_plan_move_to_trash_files=0
+  cleanup_plan_move_to_purge_files=0
+  cleanup_plan_os_trash_candidate_files=0
+  cleanup_plan_report_only_files=0
+  cleanup_plan_execution_allowed_count=0
+  cleanup_plan_row_count=0
+  local_purge_os_trash_candidate_files=0
+  repo_temporal_candidate_count=0
+  repo_temporal_candidate_files=0
   likely_duplicate_filename_count=0
   active_legacy_bucket_hits=0
   unexpected_local_workspace_children=0
@@ -874,6 +1072,9 @@ reset_workspace_metrics() {
   open_pr_rows=""
   : > "$ZONE_ROWS_FILE"
   : > "$TRASH_BUCKET_ROWS_FILE"
+  : > "$CLEANUP_PLAN_ROWS_FILE"
+  : > "$DUPLICATE_ROWS_FILE"
+  : > "$REPO_TEMPORAL_ROWS_FILE"
 }
 
 emit_registry_problems() {
@@ -897,6 +1098,11 @@ emit_parity_summary_section() {
   local require_fresh="$5"
 
   print_section "Parity summary"
+  if [[ "$surface" == "cleanup" && "$tier" == "T1" ]]; then
+    echo "- repo_scope=skipped"
+    echo "- detail=T1 is local-workspace only; use T2 for inferred repo clutter or T3 for authoritative repo verification."
+    return 0
+  fi
   echo "- repos_scanned=$repo_total"
   echo "- verification=$overall_verification"
   echo "- codes: 1:1=$code1 1:2=$code2 1:3=$code3 1:4=$code4 1:5=$code5"
@@ -944,6 +1150,11 @@ emit_repo_detail_row() {
 emit_cleanup_repo_details() {
   local tier="$1"
   local result="$2"
+
+  if [[ "$tier" == "T1" ]]; then
+    echo "- repo_findings=skipped_for_t1"
+    return 0
+  fi
 
   if [[ "$result" == "PORCELAIN" ]]; then
     echo "- repo_findings=none"
@@ -1020,6 +1231,30 @@ emit_queue_health_section() {
   echo "- shared_dropoff_files=$shared_dropoff_files"
 }
 
+emit_cleanup_plan_section() {
+  local include_local_workspace="$1"
+  print_section "Cleanup plan"
+  if [[ "$include_local_workspace" -eq 0 ]]; then
+    echo "- skipped=YES"
+    echo "- detail=Local workspace cleanup plan was suppressed for this run."
+    return 0
+  fi
+
+  echo "- findings=$cleanup_plan_row_count"
+  echo "- execution_allowed_findings=$cleanup_plan_execution_allowed_count"
+  echo "- files_to_move_to_local_trash=$cleanup_plan_move_to_trash_files"
+  echo "- files_to_move_to_local_purge=$cleanup_plan_move_to_purge_files"
+  echo "- files_to_offer_for_os_trash=$cleanup_plan_os_trash_candidate_files"
+  echo "- report_only_files=$cleanup_plan_report_only_files"
+  echo "- local_trash_purge_threshold_days=$LOCAL_TRASH_PURGE_DAYS"
+  echo "- local_purge_os_trash_threshold_days=$LOCAL_PURGE_OS_TRASH_DAYS"
+  echo "- os_trash_permission_enabled=$( [[ "$LOCAL_PURGE_OS_TRASH_ALLOWED" == "1" ]] && echo YES || echo NO )"
+  while IFS='|' read -r finding_id scope action path destination reason policy_rule file_count dir_count execution_allowed requires_tier requires_permission; do
+    [[ -z "$finding_id" ]] && continue
+    echo "- finding_id=$finding_id scope=$scope action=$action path=$path destination=${destination:-none} reason=\"$reason\" policy_rule=$policy_rule files=$file_count dirs=$dir_count execution_allowed=$execution_allowed requires_tier=$requires_tier requires_permission=$requires_permission"
+  done < "$CLEANUP_PLAN_ROWS_FILE"
+}
+
 emit_tier_specific_section() {
   local tier="$1"
   local include_local_workspace="$2"
@@ -1034,6 +1269,16 @@ emit_tier_specific_section() {
   echo "- stale_local_codex_branches=$stale_local_branch_count"
   echo "- stale_remote_codex_branches=$stale_remote_branch_count"
   echo "- open_pull_requests=$open_pr_count"
+  echo "- repo_temporal_candidates=$repo_temporal_candidate_count"
+  echo "- repo_temporal_candidate_files=$repo_temporal_candidate_files"
+  while IFS='|' read -r repo metadata tier_seen action reason; do
+    [[ -z "$repo" ]] && continue
+    if [[ "$tier" == "T2" ]]; then
+      echo "- repo_temporal_candidate=$repo path=$metadata confidence=inferred action=$action reason=\"$reason\" next=run_T3_for_repo_truth"
+    else
+      echo "- repo_temporal_candidate=$repo path=$metadata confidence=verified action=$action reason=\"$reason\""
+    fi
+  done < "$REPO_TEMPORAL_ROWS_FILE"
   while IFS='|' read -r repo scope ref; do
     [[ -z "$repo" ]] && continue
     echo "- stale_ref=$repo scope=$scope ref=$ref"
@@ -1075,10 +1320,12 @@ emit_cleanup_next_action() {
 
   print_section "Next action"
   if [[ "$tier" == "T1" ]]; then
-    if [[ "$include_local_workspace" -eq 1 && "$(quick_gate_status)" != "STOP_OK" ]]; then
-      echo "- Run T2 cleanup for local-workspace enforcement decisions."
+    if [[ "$include_local_workspace" -eq 1 && "$cleanup_plan_execution_allowed_count" -gt 0 ]]; then
+      echo "- Would you like to execute safe local-workspace cleanup now? Scope would be local-workspace only and based on the Cleanup plan section above."
+      echo "- To execute: run T1 cleanup execute local-workspace"
     fi
-    echo "- Run T3 cleanup only when you need authoritative repo parity."
+    echo "- Run T2 cleanup when you also want inferred repo clutter signals."
+    echo "- Run T3 cleanup only when you need authoritative repo truth."
     if [[ "$include_local_workspace" -eq 1 ]]; then
       echo "- Use 'only repos' or 'no local workspace' if you want to suppress local-workspace checks for the next manual run."
     fi
@@ -1086,8 +1333,12 @@ emit_cleanup_next_action() {
   fi
 
   if [[ "$tier" == "T2" ]]; then
-    if [[ "$include_local_workspace" -eq 1 && "$(medium_gate_status)" != "STOP_OK" ]]; then
+    if [[ "$include_local_workspace" -eq 1 && "$cleanup_plan_execution_allowed_count" -gt 0 ]]; then
       echo "- Would you like to execute safe local-workspace cleanup now? Scope would be local-workspace only; repo parity would remain report-only."
+      echo "- To execute: run T2 cleanup execute local-workspace"
+    fi
+    if [[ "$repo_temporal_candidate_count" -gt 0 ]]; then
+      echo "- Repo temporal cleanup candidates were inferred; run T3 cleanup before treating repo cleanup as verified."
     fi
     echo "- Run T3 cleanup only when you need authoritative repo parity."
     if [[ "$include_local_workspace" -eq 1 ]]; then
@@ -1099,8 +1350,9 @@ emit_cleanup_next_action() {
   if [[ "$result" == "PORCELAIN" ]]; then
     echo "- No cleanup action required."
   else
-    if [[ "$include_local_workspace" -eq 1 && "$(quick_gate_status)" != "STOP_OK" ]]; then
+    if [[ "$include_local_workspace" -eq 1 && "$cleanup_plan_execution_allowed_count" -gt 0 ]]; then
       echo "- Would you like to execute safe local-workspace cleanup now? Scope would be local-workspace only; repo parity would remain report-only."
+      echo "- To execute: run T3 cleanup execute local-workspace"
     fi
     echo "- Cleanup remains fractured; review the failing repo or workspace findings above and remediate until T3 passes."
   fi
@@ -1121,7 +1373,9 @@ emit_cleanup_report() {
   echo "- tier=$tier"
   echo "- scope=cleanup-audit"
   echo "- result=$result"
-  if [[ "$tier" == "T1" || "$tier" == "T2" ]]; then
+  if [[ "$tier" == "T1" ]]; then
+    echo "- note=T1 is local-workspace only and can propose safe local-workspace cleanup."
+  elif [[ "$tier" == "T2" ]]; then
     echo "- note=Repo parity in $tier is advisory only."
   else
     echo "- note=$( [[ "$result" == "PORCELAIN" ]] && echo "Full cleanup pass achieved." || echo "Full cleanup pass not achieved." )"
@@ -1135,8 +1389,59 @@ emit_cleanup_report() {
   emit_cleanup_repo_details "$tier" "$result"
   emit_workspace_hygiene_section "$include_local_workspace"
   emit_queue_health_section "$include_local_workspace"
+  emit_cleanup_plan_section "$include_local_workspace"
   emit_tier_specific_section "$tier" "$include_local_workspace"
   emit_cleanup_next_action "$tier" "$result" "$include_local_workspace"
+}
+
+unique_destination_path() {
+  local destination="$1"
+  if [[ ! -e "$destination" ]]; then
+    printf '%s\n' "$destination"
+    return 0
+  fi
+
+  local base="$destination"
+  local suffix=1
+  while [[ -e "${base}-$suffix" ]]; do
+    suffix=$((suffix + 1))
+  done
+  printf '%s\n' "${base}-$suffix"
+}
+
+apply_safe_local_workspace_cleanup() {
+  if [[ "$cleanup_plan_row_count" -eq 0 ]]; then
+    return 0
+  fi
+
+  while IFS='|' read -r finding_id scope action path destination reason policy_rule file_count dir_count execution_allowed requires_tier requires_permission; do
+    [[ -z "$finding_id" ]] && continue
+    [[ "$scope" == "local_workspace" ]] || continue
+    [[ "$execution_allowed" == "true" ]] || continue
+
+    local src="$ROOT/$path"
+    local dest="$ROOT/$destination"
+    case "$action" in
+      soft_move_to_trash|move_to_local_purge)
+        [[ -e "$src" ]] || continue
+        mkdir -p "$(dirname "$dest")"
+        dest="$(unique_destination_path "$dest")"
+        mv "$src" "$dest"
+        ;;
+      os_trash_candidate)
+        [[ "$LOCAL_PURGE_OS_TRASH_ALLOWED" == "1" ]] || continue
+        [[ -d "$src" ]] || continue
+        mkdir -p "$HOME/.Trash"
+        local item
+        while IFS= read -r item; do
+          [[ -z "$item" ]] && continue
+          local trash_dest="$HOME/.Trash/${item##*/}"
+          trash_dest="$(unique_destination_path "$trash_dest")"
+          mv "$item" "$trash_dest"
+        done < <(find "$src" -type f -mtime +"$LOCAL_PURGE_OS_TRASH_DAYS" 2>/dev/null | sort)
+        ;;
+    esac
+  done < "$CLEANUP_PLAN_ROWS_FILE"
 }
 
 emit_pulse_report() {
@@ -1174,13 +1479,16 @@ emit_pulse_report() {
 prepare_workspace_metrics() {
   local include_local_workspace="$1"
   local tier="$2"
-  collect_branch_residue
+  if [[ "$tier" == "T3" ]]; then
+    collect_branch_residue
+  fi
   if [[ "$include_local_workspace" -eq 0 ]]; then
     return 0
   fi
 
   collect_queue_health
   collect_workspace_hygiene
+  collect_cleanup_plan
   if [[ "$tier" == "T2" || "$tier" == "T3" ]]; then
     collect_medium_checks
   fi
@@ -1192,17 +1500,27 @@ prepare_workspace_metrics() {
 run_cleanup_tier() {
   local tier="$1"
   local include_local_workspace="$2"
+  local execute_local_workspace="${3:-0}"
   local require_fresh=0
   [[ "$tier" == "T3" ]] && require_fresh=1
 
   reset_repo_summary
   reset_workspace_metrics
 
-  assert_registry_ready
-  build_repo_rows "cleanup" "$require_fresh"
-  collect_registry_problems
-  summarize_repo_rows
+  if [[ "$tier" != "T1" ]]; then
+    assert_registry_ready
+    build_repo_rows "cleanup" "$require_fresh"
+    collect_registry_problems
+    summarize_repo_rows
+    collect_repo_temporal_candidates "$tier"
+  fi
   prepare_workspace_metrics "$include_local_workspace" "$tier"
+  if [[ "$execute_local_workspace" -eq 1 ]]; then
+    apply_safe_local_workspace_cleanup
+    collect_queue_health
+    collect_workspace_hygiene
+    collect_cleanup_plan
+  fi
   emit_cleanup_report "$tier" "$include_local_workspace" "$require_fresh"
 
   if [[ "$tier" == "T1" ]]; then
@@ -1219,28 +1537,28 @@ run_cleanup_auto() {
   local force_full="$2"
 
   local t1_status=0
-  if run_cleanup_tier "T1" "$include_local_workspace" >/dev/null 2>&1; then
+  if run_cleanup_tier "T1" "$include_local_workspace" 0 >/dev/null 2>&1; then
     t1_status=0
   else
     t1_status=$?
   fi
   if [[ "$t1_status" -eq 0 && "$force_full" -eq 0 ]]; then
-    run_cleanup_tier "T1" "$include_local_workspace"
+    run_cleanup_tier "T1" "$include_local_workspace" 0
     return 0
   fi
 
   local t2_status=0
-  if run_cleanup_tier "T2" "$include_local_workspace" >/dev/null 2>&1; then
+  if run_cleanup_tier "T2" "$include_local_workspace" 0 >/dev/null 2>&1; then
     t2_status=0
   else
     t2_status=$?
   fi
   if [[ "$t2_status" -eq 0 && "$force_full" -eq 0 ]]; then
-    run_cleanup_tier "T2" "$include_local_workspace"
+    run_cleanup_tier "T2" "$include_local_workspace" 0
     return 0
   fi
 
-  run_cleanup_tier "T3" "$include_local_workspace"
+  run_cleanup_tier "T3" "$include_local_workspace" 0
 }
 
 run_parity_pulse() {
@@ -1281,10 +1599,15 @@ main() {
 
   local force_full=0
   local auto=0
+  local execute_local_workspace=0
   has_phrase "$q" "force full" && force_full=1
   has_phrase "$q" " auto " && auto=1
   has_phrase "$q" "auto cleanup" && auto=1
   has_phrase "$q" "full audit auto" && auto=1
+  if (has_phrase "$q" "execute" || has_phrase "$q" "apply") &&
+     (has_phrase "$q" "local-workspace" || has_phrase "$q" "local workspace"); then
+    execute_local_workspace=1
+  fi
 
   local tier="T1"
   if has_phrase "$q" "t3" || has_phrase "$q" "tier 3" || has_phrase "$q" "v3" || has_phrase "$q" "full"; then
@@ -1300,7 +1623,7 @@ main() {
     exit 0
   fi
 
-  run_cleanup_tier "$tier" "$include_local_workspace"
+  run_cleanup_tier "$tier" "$include_local_workspace" "$execute_local_workspace"
 }
 
 main "$@"

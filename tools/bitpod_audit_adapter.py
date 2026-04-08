@@ -5,6 +5,7 @@ import csv
 import json
 import os
 import re
+import shlex
 import subprocess
 import tempfile
 import time
@@ -19,6 +20,7 @@ SECTION_NAMES = {
     "Parity summary",
     "Workspace hygiene",
     "Queue health",
+    "Cleanup plan",
     "Tier-specific checks",
     "Next action",
     "Registry",
@@ -65,6 +67,13 @@ class BitPodAuditAdapter:
         self.contract_file = workspace_root / "bitpod-docs" / "process" / "local-workspace-skeleton-contract.toml"
 
     def run(self, request: dict[str, Any]) -> dict[str, Any]:
+        if request.get("kind") == "capabilities":
+            return {
+                "contract_versions": ["v1", "v2"],
+                "actions": ["cleanup-audit", "parity-pulse", "cleanup", "assessment"],
+                "effects": {"planned": [], "applied": [], "highest_authority_used": "none"},
+            }
+
         alerts: list[Alert] = []
         try:
             engine_run = self._execute(request)
@@ -157,12 +166,21 @@ class BitPodAuditAdapter:
             "stderr": engine_run.stderr.strip(),
             "stdout_chars": len(engine_run.stdout),
         }
+        effects = parsed["effects"]
+        if request.get("phase") == "apply":
+            effects = {
+                "planned": [],
+                "applied": effects.get("planned", []),
+                "highest_authority_used": effects.get("highest_authority_used", "none"),
+            }
         return {
             "result": parsed["result"] or "DEGRADED",
             "verification": parsed["verification"] or "NOT VERIFIED",
             "summary": parsed["summary"],
             "findings": parsed["findings"],
             "alerts": [asdict(alert) for alert in alerts],
+            "effects": effects,
+            "plan_id": parsed["plan_id"],
             "engine": engine,
         }
 
@@ -233,9 +251,13 @@ class BitPodAuditAdapter:
         return tmp
 
     def _request_to_phrase(self, request: dict[str, Any]) -> str:
-        if request.get("surface") == "cleanup-audit":
+        if request.get("surface") == "cleanup-audit" or (
+            request.get("family") == "execution" and request.get("action") == "cleanup"
+        ):
             tier = request.get("tier") or "T1"
             tokens = ["run", tier, "cleanup", "audit"]
+            if request.get("phase") == "apply":
+                tokens.extend(["execute", "local-workspace"])
             if request.get("force"):
                 tokens.extend(["force", "full"])
             if request.get("include_local_workspace") is False:
@@ -271,6 +293,8 @@ class BitPodAuditAdapter:
         verification_data = self._parse_key_value_lines(sections.get("Verification", []))
         parity_data, parity_findings = self._parse_parity_summary(sections.get("Parity summary", []))
         findings.extend(parity_findings)
+        cleanup_plan_data, cleanup_plan_findings = self._parse_cleanup_plan(sections.get("Cleanup plan", []))
+        findings.extend(cleanup_plan_findings)
         tier_checks, tier_findings = self._parse_tier_specific(sections.get("Tier-specific checks", []))
         findings.extend(tier_findings)
 
@@ -280,15 +304,19 @@ class BitPodAuditAdapter:
             "parity_summary": parity_data,
             "workspace_hygiene": self._parse_key_value_lines(sections.get("Workspace hygiene", [])),
             "queue_health": self._parse_key_value_lines(sections.get("Queue health", [])),
+            "cleanup_plan": cleanup_plan_data,
             "tier_specific": tier_checks,
             "next_action": [line[2:] if line.startswith("- ") else line for line in sections.get("Next action", [])],
             "sections_present": section_order,
         }
+        effects = self._effects_from_cleanup_plan(sections.get("Cleanup plan", []))
         return {
             "result": result_data.get("result", parity_data.get("overall", "")),
             "verification": verification_data.get("overall", verification_data.get("verification", "")),
             "summary": summary,
             "findings": findings,
+            "effects": effects,
+            "plan_id": result_data.get("plan_id"),
         }
 
     def _parse_key_value_lines(self, lines: list[str]) -> dict[str, Any]:
@@ -319,6 +347,50 @@ class BitPodAuditAdapter:
             else:
                 data.setdefault("_lines", []).append(bullet)
         return data, findings
+
+    def _parse_cleanup_plan(self, lines: list[str]) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+        data: dict[str, Any] = {}
+        findings: list[dict[str, Any]] = []
+        for line in lines:
+            bullet = line[2:] if line.startswith("- ") else line
+            if bullet.startswith("finding_id="):
+                findings.append(self._parse_field_series("cleanup_plan", bullet))
+                continue
+            if "=" in bullet:
+                key, value = bullet.split("=", 1)
+                data[key.strip()] = value.strip()
+            else:
+                data.setdefault("_lines", []).append(bullet)
+        return data, findings
+
+    def _effects_from_cleanup_plan(self, lines: list[str]) -> dict[str, Any]:
+        planned: list[dict[str, Any]] = []
+        for line in lines:
+            bullet = line[2:] if line.startswith("- ") else line
+            if not bullet.startswith("finding_id="):
+                continue
+            item = self._parse_field_series("cleanup_plan", bullet)
+            if item.get("execution_allowed") != "true":
+                continue
+            action = item.get("action", "")
+            authority = "delete" if action == "os_trash_candidate" else "write"
+            planned.append(
+                {
+                    "kind": action,
+                    "authority": authority,
+                    "scope": item.get("scope", ""),
+                    "path": item.get("path", ""),
+                    "destination": item.get("destination", ""),
+                    "policy_rule": item.get("policy_rule", ""),
+                    "files": item.get("files", "0"),
+                }
+            )
+        highest = "none"
+        if any(item.get("authority") == "delete" for item in planned):
+            highest = "delete"
+        elif planned:
+            highest = "write"
+        return {"planned": planned, "applied": [], "highest_authority_used": highest}
 
     def _parse_repo_finding(self, line: str) -> dict[str, Any]:
         parts = [part.strip() for part in line.split("|")]
@@ -353,7 +425,11 @@ class BitPodAuditAdapter:
 
     def _parse_field_series(self, kind: str, bullet: str) -> dict[str, Any]:
         result: dict[str, Any] = {"kind": kind, "raw": bullet}
-        for token in bullet.split():
+        try:
+            tokens = shlex.split(bullet)
+        except ValueError:
+            tokens = bullet.split()
+        for token in tokens:
             if "=" not in token:
                 continue
             key, value = token.split("=", 1)
