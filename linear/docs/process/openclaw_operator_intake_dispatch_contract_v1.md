@@ -122,6 +122,31 @@ They must not do these things:
 - bypass Linear or repo truth for durable outcomes
 - force the system to depend on one transport-specific behavior
 
+## Taylor01 supporting-surface boundary
+
+This proving-ground contract is also the current practical input to
+[BIT-205 — Define Taylor01 operator intake and supporting surface adapters](https://linear.app/bitpod-app/issue/BIT-205/define-taylor01-operator-intake-and-supporting-surface-adapters).
+
+Taylor01-side retained artifact:
+
+- `linear/docs/process/taylor01_operator_intake_supporting_surface_adapters_v1.md`
+
+Use this split:
+
+- primary operator path:
+  personal computer control console -> HQ runtime -> durable repo or Linear
+  truth surfaces
+- supporting adapters:
+  Discord or other transports that can relay intent, mirror progress, or return
+  links without becoming the primary truth surface
+- non-goal:
+  do not treat a transport-specific command surface or local overlay as the
+  final Taylor01 adapter architecture
+
+This means the current OpenClaw contract informs the Taylor01 minimum floor,
+but does not replace the Taylor01-side architecture owner under
+[BIT-198 — Plan: Taylor01 runtime boundary and Claw-direction architecture](https://linear.app/bitpod-app/issue/BIT-198/plan-taylor01-runtime-boundary-and-claw-direction-architecture).
+
 ## Transitional versus target-state
 
 ### Transitional now

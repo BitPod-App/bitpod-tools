@@ -1,6 +1,6 @@
 # Taylor01 Claw v1 Linear Issue Packet
 
-Status: Active creation packet
+Status: Active reconciliation packet
 Primary issue: [BIT-198 — Plan: Taylor01 runtime boundary and Claw-direction architecture](https://linear.app/bitpod-app/issue/BIT-198/plan-taylor01-runtime-boundary-and-claw-direction-architecture)
 Related issues:
 - [BIT-100 — Define AI-agent portability boundary and repo extraction strategy](https://linear.app/bitpod-app/issue/BIT-100/define-ai-agent-portability-boundary-and-repo-extraction-strategy)
@@ -12,21 +12,39 @@ Project: [Taylor01](https://linear.app/bitpod-app/project/taylor01-b51442062c45)
 
 ## Purpose
 
-Provide ready-to-create Linear issue payloads for the missing Taylor01 Claw v1
-architecture lanes identified in `taylor01_claw_v1_umbrella_plan.md`.
+Provide the retained issue packet for the Taylor01 Claw v1 architecture lanes
+identified in `taylor01_claw_v1_umbrella_plan.md`, plus the current alignment
+notes for how those lanes should now be sequenced and parented.
 
-These payloads are intentionally narrow. They should create missing planning and
-boundary lanes without reopening proof work or prematurely starting extraction.
+These payloads were intentionally narrow so the missing planning and boundary
+lanes could be created without reopening proof work or prematurely starting
+extraction.
 
 ## Creation notes
 
-- milestone assignment is intentionally left unverified in this packet
-- create these issues as architecture and boundary lanes, not execution-closeout
-  tickets
-- link each issue back to
+- all created issues now live in Taylor01 Phase 4
+- all created issues now sit under
   [BIT-198 — Plan: Taylor01 runtime boundary and Claw-direction architecture](https://linear.app/bitpod-app/issue/BIT-198/plan-taylor01-runtime-boundary-and-claw-direction-architecture)
-  and [BIT-100 — Define AI-agent portability boundary and repo extraction strategy](https://linear.app/bitpod-app/issue/BIT-100/define-ai-agent-portability-boundary-and-repo-extraction-strategy)
-  where relevant
+- [BIT-205 — Define Taylor01 operator intake and supporting surface adapters](https://linear.app/bitpod-app/issue/BIT-205/define-taylor01-operator-intake-and-supporting-surface-adapters)
+  is part of the same minimum architecture floor and should be sequenced before
+  the first proof lane
+- [BIT-216 — Taylor01: decide capability container direction beyond current `SKILL.md`](https://linear.app/bitpod-app/issue/BIT-216/taylor01-decide-capability-container-direction-beyond-current-skillmd),
+  [BIT-217 — Taylor01: classify current artifacts by durability and overlay status](https://linear.app/bitpod-app/issue/BIT-217/taylor01-classify-current-artifacts-by-durability-and-overlay-status),
+  [BIT-218 — Taylor01: define future dedicated repo extraction trigger for Claw](https://linear.app/bitpod-app/issue/BIT-218/taylor01-define-future-dedicated-repo-extraction-trigger-for-claw),
+  and [BIT-235 — Plan: Taylor01-HQ org-agnostic local environment and bootstrap boundary](https://linear.app/bitpod-app/issue/BIT-235/plan-taylor01-hq-org-agnostic-local-environment-and-bootstrap-boundary)
+  are proof-informed refinement lanes rather than proof blockers
+
+## Current execution order
+
+1. Close Bootstrap Phase 3 truthfully.
+2. Lock the minimum architecture floor through
+   [BIT-214 — Taylor01: lock minimum real-Taylor runtime contract](https://linear.app/bitpod-app/issue/BIT-214/taylor01-lock-minimum-real-taylor-runtime-contract),
+   [BIT-215 — Taylor01: decide Claw v1 scope and boundary](https://linear.app/bitpod-app/issue/BIT-215/taylor01-decide-claw-v1-scope-and-boundary),
+   and [BIT-205 — Define Taylor01 operator intake and supporting surface adapters](https://linear.app/bitpod-app/issue/BIT-205/define-taylor01-operator-intake-and-supporting-surface-adapters).
+3. Start the first real proof lane through
+   [BIT-115 — Prove personal-computer -> OpenClaw HQ conversational/dispatch loop](https://linear.app/bitpod-app/issue/BIT-115/prove-personal-computer-openclaw-hq-conversationaldispatch-loop)
+   and [BIT-97 — Prove Taylor as a real AI agent in any live operator surface](https://linear.app/bitpod-app/issue/BIT-97/prove-taylor-as-a-real-ai-agent-in-any-live-operator-surface).
+4. Use proof results to refine the remaining future-facing Taylor01 issues.
 
 ## Creation record
 

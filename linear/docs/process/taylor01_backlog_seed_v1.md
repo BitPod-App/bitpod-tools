@@ -80,6 +80,22 @@ Seed the future Taylor01 backlog without forcing immediate execution.
 
 These are seed items only.
 
+Items 9 through 13 are now live as:
+
+- [BIT-214 — Taylor01: lock minimum real-Taylor runtime contract](https://linear.app/bitpod-app/issue/BIT-214/taylor01-lock-minimum-real-taylor-runtime-contract)
+- [BIT-215 — Taylor01: decide Claw v1 scope and boundary](https://linear.app/bitpod-app/issue/BIT-215/taylor01-decide-claw-v1-scope-and-boundary)
+- [BIT-216 — Taylor01: decide capability container direction beyond current `SKILL.md`](https://linear.app/bitpod-app/issue/BIT-216/taylor01-decide-capability-container-direction-beyond-current-skillmd)
+- [BIT-217 — Taylor01: classify current artifacts by durability and overlay status](https://linear.app/bitpod-app/issue/BIT-217/taylor01-classify-current-artifacts-by-durability-and-overlay-status)
+- [BIT-218 — Taylor01: define future dedicated repo extraction trigger for Claw](https://linear.app/bitpod-app/issue/BIT-218/taylor01-define-future-dedicated-repo-extraction-trigger-for-claw)
+
+Current ordering is minimum-floor-first:
+
+- first [BIT-214 — Taylor01: lock minimum real-Taylor runtime contract](https://linear.app/bitpod-app/issue/BIT-214/taylor01-lock-minimum-real-taylor-runtime-contract),
+  [BIT-215 — Taylor01: decide Claw v1 scope and boundary](https://linear.app/bitpod-app/issue/BIT-215/taylor01-decide-claw-v1-scope-and-boundary),
+  and [BIT-205 — Define Taylor01 operator intake and supporting surface adapters](https://linear.app/bitpod-app/issue/BIT-205/define-taylor01-operator-intake-and-supporting-surface-adapters)
+- then the first real proof lane in Bootstrap
+- then the later refinement lanes
+
 They should influence new work immediately, but they should not become a migration program unless explicitly promoted.
 
 Temporary bypasses should not be dumped here by default.
