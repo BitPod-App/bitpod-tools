@@ -18,6 +18,9 @@ Compatibility profile aliases are accepted: personal_full and taylor01_hq_lean.
 Creates or validates a BitPod org workspace root, clones missing repos, writes
 minimal root metadata, syncs repo policy packets, and creates the selected
 local-workspace profile skeleton.
+
+After bootstrap, Codex can verify repo-agnostic root-thread prerequisites with:
+  bitpod-tools/scripts/check_umbrella_root_health.sh
 EOF
 }
 

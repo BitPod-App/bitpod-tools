@@ -6,6 +6,7 @@ ROOT_DEFAULT="$(cd -- "$SCRIPT_DIR/../.." && pwd)"
 ROOT="${BITPOD_APP_ROOT:-${WORKSPACE:-$ROOT_DEFAULT}}"
 AUDIT_CTL="$ROOT/bitpod-tools/audit_ctl.sh"
 REGISTRY_REFRESH="$ROOT/bitpod-tools/scripts/refresh_repo_registry.sh"
+ROOT_HEALTH="$ROOT/bitpod-tools/scripts/check_umbrella_root_health.sh"
 REGISTRY_FILE="${BITPOD_REPO_REGISTRY_FILE:-$ROOT/bitpod-tools/config/repo_registry.tsv}"
 
 usage() {
@@ -15,6 +16,7 @@ Usage:
   $(basename "$0") status
   $(basename "$0") t3-repos
   $(basename "$0") t3-full
+  $(basename "$0") root-health
   $(basename "$0") refresh-registry
 
 Commands:
@@ -22,6 +24,7 @@ Commands:
   status            Run the fast umbrella status view (advisory T1 cleanup).
   t3-repos          Run authoritative repo-only umbrella parity.
   t3-full           Run authoritative full T3 audit.
+  root-health       Check repo-agnostic root-thread prerequisites for the umbrella root.
   refresh-registry  Refresh the umbrella repo registry from current child repos.
 
 Environment:
@@ -59,6 +62,10 @@ case "$cmd" in
   t3-full)
     require_file "$AUDIT_CTL" "audit_ctl"
     BITPOD_APP_ROOT="$ROOT" bash "$AUDIT_CTL" "run T3 audit"
+    ;;
+  root-health)
+    require_file "$ROOT_HEALTH" "check_umbrella_root_health"
+    BITPOD_APP_ROOT="$ROOT" bash "$ROOT_HEALTH"
     ;;
   refresh-registry)
     require_file "$REGISTRY_REFRESH" "refresh_repo_registry"
