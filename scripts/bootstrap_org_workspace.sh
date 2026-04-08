@@ -5,13 +5,15 @@ SCRIPT_DIR="$(cd -- "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WORKSPACE_DEFAULT="$(cd -- "$SCRIPT_DIR/../.." && pwd)"
 
 ROOT="${WORKSPACE_DEFAULT}"
-PROFILE="personal_full"
+PROFILE="personal_machine_full"
 CLONE_SCHEME="https"
 SKIP_CLONE=0
 
 usage() {
   cat <<'EOF'
-usage: bootstrap_org_workspace.sh [--root PATH] [--profile personal_full|taylor01_hq_lean] [--clone-scheme https|ssh] [--skip-clone]
+usage: bootstrap_org_workspace.sh [--root PATH] [--profile personal_machine_full|taylor01_execution_hq_lean] [--clone-scheme https|ssh] [--skip-clone]
+
+Compatibility profile aliases are accepted: personal_full and taylor01_hq_lean.
 
 Creates or validates a BitPod org workspace root, clones missing repos, writes
 minimal root metadata, syncs repo policy packets, and creates the selected
@@ -134,6 +136,8 @@ with contract_path.open("rb") as fh:
     data = tomllib.load(fh)
 
 profiles = data.get("profiles", {})
+aliases = data.get("profile_aliases", {})
+profile = aliases.get(profile, profile)
 if profile not in profiles:
     raise SystemExit(f"unknown profile: {profile}")
 

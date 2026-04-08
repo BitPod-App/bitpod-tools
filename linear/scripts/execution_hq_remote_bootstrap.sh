@@ -4,9 +4,9 @@ set -euo pipefail
 AI_HQ_HOST="${AI_HQ_HOST:-}"
 AI_HQ_EXEC_USER="${AI_HQ_EXEC_USER:-taylorhq}"
 AI_HQ_ADMIN_USER="${AI_HQ_ADMIN_USER:-cjarguello}"
-AI_HQ_WORKSPACE="${AI_HQ_WORKSPACE:-\$HOME/bitpod-app}"
+AI_HQ_WORKSPACE="${AI_HQ_WORKSPACE:-\$HOME/BitPod-App}"
 AI_HQ_GIT_SCHEME="${AI_HQ_GIT_SCHEME:-https}"
-AI_HQ_PROFILE="${AI_HQ_PROFILE:-taylor01_hq_lean}"
+AI_HQ_PROFILE="${AI_HQ_PROFILE:-taylor01_execution_hq_lean}"
 AI_HQ_REPOS="${AI_HQ_REPOS:-bitpod-assets bitpod-docs bitpod-taylor-runtime bitpod-tools bitregime-core sector-feeds}"
 SSH_OPTS=(-o BatchMode=yes -o ConnectTimeout=5)
 
@@ -18,12 +18,15 @@ Environment:
 - AI_HQ_HOST: required ssh host or hostname
 - AI_HQ_EXEC_USER: remote execution account (default: taylorhq)
 - AI_HQ_ADMIN_USER: remote admin account for probe only (default: cjarguello)
-- AI_HQ_WORKSPACE: execution-account workspace root (default: $HOME/bitpod-app)
+- AI_HQ_WORKSPACE: execution-account workspace root (default: $HOME/BitPod-App)
 - AI_HQ_GIT_SCHEME: https or ssh (default: https)
+- AI_HQ_PROFILE: local-workspace profile (default: taylor01_execution_hq_lean)
 - AI_HQ_REPOS: space-separated repo list
 - AI_HQ_SMOKE_CMD: required only for the smoke subcommand
 
 Notes:
+- Lowercase $HOME/bitpod-app may be passed explicitly as a temporary Mini
+  compatibility fallback, but it is not the canonical workspace spelling.
 - probe is non-destructive and checks ssh reachability for both accounts
 - reset-workspace deletes and recreates the execution-account workspace, then
   writes minimal root metadata and the selected local-workspace profile

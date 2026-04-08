@@ -41,7 +41,10 @@ Use `execution_hq_operator_pack_v1.md` for the practical step order.
   - use `$HOME` instead of hard-coding `/Users/cjarguello`
   - use `$WORKSPACE` for the working-tree root
 - Default workspace root for the execution account:
-  - `export WORKSPACE="${WORKSPACE:-$HOME/bitpod-app}"`
+  - `export WORKSPACE="${WORKSPACE:-$HOME/BitPod-App}"`
+- Lowercase `$HOME/bitpod-app` may remain a temporary Mac Mini compatibility
+  fallback when explicitly configured, but it is not the canonical workspace
+  spelling.
 - Continue treating GitHub as the canonical source used to rebuild the Mac Mini
   workspace.
 

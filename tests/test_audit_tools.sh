@@ -149,7 +149,10 @@ version = 1
 status = "canonical"
 contract_id = "local-workspace-skeleton"
 
-[profiles.personal_full]
+[profile_aliases]
+personal_full = "personal_machine_full"
+
+[profiles.personal_machine_full]
 required_paths = [
   "local-working-files",
   "local-trash-delete",
@@ -389,6 +392,42 @@ test_contract_derived_local_workspace_guardrails() {
   rm -rf "$WORKSPACE_ROOT/local-workspace/local-handoffs"
 }
 
+test_local_trash_bucket_actionability_is_t1_t2_visible() {
+  local bucket="$WORKSPACE_ROOT/local-workspace/local-trash-delete/local-high-volume-residue"
+  mkdir -p "$bucket"
+  for i in $(seq 1 101); do
+    printf 'residue %s\n' "$i" > "$bucket/file-$i.txt"
+  done
+
+  local t1_output=""
+  local t1_status=0
+  if t1_output="$(run_audit_capture "$PERFECT_REGISTRY_FILE" "run audit")"; then
+    t1_status=0
+  else
+    t1_status=$?
+  fi
+  [[ "$t1_status" -eq 0 ]] || fail "expected report-only trash bucket T1 exit status 0, got $t1_status"
+  assert_contains "$t1_output" "- trash_actionable_buckets=1"
+  assert_contains "$t1_output" "- trash_bucket=local-workspace/local-trash-delete/local-high-volume-residue action=review_for_local_purge files=101"
+  assert_contains "$t1_output" "Run T2 cleanup for local-workspace enforcement decisions."
+  assert_not_contains "$t1_output" "Would you like to execute safe local-workspace cleanup now?"
+
+  local t2_output=""
+  local t2_status=0
+  if t2_output="$(run_audit_capture "$PERFECT_REGISTRY_FILE" "run T2 audit")"; then
+    t2_status=0
+  else
+    t2_status=$?
+  fi
+  [[ "$t2_status" -eq 20 ]] || fail "expected trash bucket T2 exit status 20, got $t2_status"
+  assert_contains "$t2_output" "- trash_actionable_buckets=1"
+  assert_contains "$t2_output" "- quick_gate=ESCALATE_RECOMMENDED"
+  assert_contains "$t2_output" "- medium_gate=ESCALATE_RECOMMENDED"
+  assert_contains "$t2_output" "Would you like to execute safe local-workspace cleanup now?"
+
+  rm -rf "$bucket"
+}
+
 test_bounded_network_probes() {
   local fake_bin="$TEST_ROOT/fake-bin"
   mkdir -p "$fake_bin"
@@ -423,6 +462,7 @@ test_parity_pulse_contracts
 test_hook_installer
 test_scheduled_cleanup_helper
 test_contract_derived_local_workspace_guardrails
+test_local_trash_bucket_actionability_is_t1_t2_visible
 test_bounded_network_probes
 
 echo "PASS: test_audit_tools.sh"

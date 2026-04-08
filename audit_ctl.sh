@@ -7,13 +7,14 @@ ROOT="${BITPOD_APP_ROOT:-${WORKSPACE:-$DEFAULT_ROOT}}"
 REGISTRY_FILE="${BITPOD_REPO_REGISTRY_FILE:-$ROOT/bitpod-tools/config/repo_registry.tsv}"
 ZONE_POLICY_FILE="${BITPOD_CLEANUP_ZONE_POLICY_FILE:-$ROOT/bitpod-tools/config/cleanup_zones_policy.tsv}"
 LOCAL_WORKSPACE_CONTRACT_FILE="${BITPOD_LOCAL_WORKSPACE_CONTRACT_FILE:-$ROOT/bitpod-docs/process/local-workspace-skeleton-contract.toml}"
-LOCAL_WORKSPACE_PROFILE="${BITPOD_LOCAL_WORKSPACE_PROFILE:-personal_full}"
+LOCAL_WORKSPACE_PROFILE="${BITPOD_LOCAL_WORKSPACE_PROFILE:-personal_machine_full}"
 NOW="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 TMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/audit_ctl.XXXXXX")"
 trap 'rm -rf "$TMP_DIR"' EXIT
 
 REGISTRY_PROBLEMS_FILE="$TMP_DIR/registry_problems.txt"
 ZONE_ROWS_FILE="$TMP_DIR/zone_rows.txt"
+TRASH_BUCKET_ROWS_FILE="$TMP_DIR/trash_bucket_rows.txt"
 TMP_CANON_NAMES="$TMP_DIR/canon_names.txt"
 TMP_LOCAL_NAMES="$TMP_DIR/local_names.txt"
 TMP_IN_SHA="$TMP_DIR/in_sha.txt"
@@ -22,6 +23,7 @@ STALE_BRANCH_ROWS_FILE="$TMP_DIR/stale_branch_rows.txt"
 OPEN_PR_ROWS_FILE="$TMP_DIR/open_pr_rows.txt"
 
 NETWORK_TIMEOUT_SECONDS="${BITPOD_AUDIT_NETWORK_TIMEOUT_SECONDS:-15}"
+TRASH_BUCKET_ACTION_FILE_THRESHOLD="${BITPOD_TRASH_BUCKET_ACTION_FILE_THRESHOLD:-100}"
 
 repo_rows=""
 repo_total=0
@@ -51,6 +53,8 @@ codex_state_files=0
 shared_dropoff_files=0
 trash_soft_purge_pending_files=0
 trash_soft_purge_threshold_days=14
+trash_root_bucket_count=0
+trash_actionable_bucket_count=0
 likely_duplicate_filename_count=0
 active_legacy_bucket_hits=0
 unexpected_local_workspace_children=0
@@ -157,6 +161,8 @@ with open(contract_path, "rb") as fh:
     data = tomllib.load(fh)
 
 profiles = data.get("profiles", {})
+aliases = data.get("profile_aliases", {})
+profile = aliases.get(profile, profile)
 if profile not in profiles:
     raise SystemExit(f"profile not found in contract: {profile}")
 
@@ -493,6 +499,7 @@ collect_likely_duplicate_names() {
 collect_workspace_hygiene() {
   load_local_workspace_contract
   collect_likely_duplicate_names
+  collect_trash_bucket_actionability
   local legacy_scan_dirs=()
   if [[ -d "$ROOT/local-workspace/local-working-files" ]]; then
     legacy_scan_dirs+=("$ROOT/local-workspace/local-working-files")
@@ -535,6 +542,42 @@ collect_workspace_hygiene() {
     non_local_prefix_direct_children=0
     trash_soft_purge_pending_files=0
   fi
+}
+
+collect_trash_bucket_actionability() {
+  : > "$TRASH_BUCKET_ROWS_FILE"
+  trash_root_bucket_count=0
+  trash_actionable_bucket_count=0
+
+  local trash_root="$ROOT/local-workspace/local-trash-delete"
+  [[ -d "$trash_root" ]] || return 0
+
+  local bucket
+  while IFS= read -r bucket; do
+    [[ -z "$bucket" ]] && continue
+    local name="${bucket##*/}"
+    [[ "$name" == "local-purge" ]] && continue
+
+    trash_root_bucket_count=$((trash_root_bucket_count + 1))
+    local rel_path="local-workspace/local-trash-delete/$name"
+    local file_count=0
+    local dir_count=0
+    local stale_files=0
+    local has_git=0
+    local action="review"
+
+    file_count="$(find "$bucket" -type f 2>/dev/null | wc -l | tr -d ' ')"
+    dir_count="$(find "$bucket" -type d 2>/dev/null | wc -l | tr -d ' ')"
+    stale_files="$(find "$bucket" -type f -mtime +"$trash_soft_purge_threshold_days" 2>/dev/null | wc -l | tr -d ' ')"
+    [[ -d "$bucket/.git" ]] && has_git=1
+
+    if [[ "$file_count" -ge "$TRASH_BUCKET_ACTION_FILE_THRESHOLD" || "$stale_files" -gt 0 || "$has_git" -eq 1 ]]; then
+      action="review_for_local_purge"
+      trash_actionable_bucket_count=$((trash_actionable_bucket_count + 1))
+    fi
+
+    echo "$rel_path|$file_count|$dir_count|$stale_files|$has_git|$action" >> "$TRASH_BUCKET_ROWS_FILE"
+  done < <(find "$trash_root" -maxdepth 1 -mindepth 1 -type d 2>/dev/null | sort)
 }
 
 collect_branch_residue() {
@@ -679,7 +722,10 @@ collect_full_checks() {
 }
 
 quick_gate_status() {
-  if [[ "$active_legacy_bucket_hits" -eq 0 && "$unexpected_local_workspace_children" -eq 0 && "$non_local_prefix_direct_children" -eq 0 ]]; then
+  if [[ "$active_legacy_bucket_hits" -eq 0 &&
+        "$unexpected_local_workspace_children" -eq 0 &&
+        "$non_local_prefix_direct_children" -eq 0 &&
+        "$trash_actionable_bucket_count" -eq 0 ]]; then
     echo "STOP_OK"
   else
     echo "ESCALATE_RECOMMENDED"
@@ -687,7 +733,9 @@ quick_gate_status() {
 }
 
 medium_gate_status() {
-  if [[ "$exact_duplicate_md" -eq 0 && "$likely_duplicate_filename_count" -eq 0 ]]; then
+  if [[ "$(quick_gate_status)" == "STOP_OK" &&
+        "$exact_duplicate_md" -eq 0 &&
+        "$likely_duplicate_filename_count" -eq 0 ]]; then
     echo "STOP_OK"
   else
     echo "ESCALATE_RECOMMENDED"
@@ -698,6 +746,7 @@ t3_local_workspace_pass() {
   if [[ "$active_legacy_bucket_hits" -eq 0 &&
         "$unexpected_local_workspace_children" -eq 0 &&
         "$non_local_prefix_direct_children" -eq 0 &&
+        "$trash_actionable_bucket_count" -eq 0 &&
         "$likely_duplicate_filename_count" -eq 0 &&
         "$exact_duplicate_md" -eq 0 &&
         "$strict_canonical_zone_issues" -eq 0 ]]; then
@@ -803,6 +852,8 @@ reset_workspace_metrics() {
   codex_state_files=0
   shared_dropoff_files=0
   trash_soft_purge_pending_files=0
+  trash_root_bucket_count=0
+  trash_actionable_bucket_count=0
   likely_duplicate_filename_count=0
   active_legacy_bucket_hits=0
   unexpected_local_workspace_children=0
@@ -822,6 +873,7 @@ reset_workspace_metrics() {
   stale_branch_rows=""
   open_pr_rows=""
   : > "$ZONE_ROWS_FILE"
+  : > "$TRASH_BUCKET_ROWS_FILE"
 }
 
 emit_registry_problems() {
@@ -940,6 +992,14 @@ emit_workspace_hygiene_section() {
   echo "- non_local_prefix_direct_children=$non_local_prefix_direct_children"
   echo "- trash_soft_purge_pending_files=$trash_soft_purge_pending_files"
   echo "- trash_soft_purge_threshold_days=$trash_soft_purge_threshold_days"
+  echo "- trash_root_buckets=$trash_root_bucket_count"
+  echo "- trash_actionable_buckets=$trash_actionable_bucket_count"
+  echo "- trash_action_threshold_files=$TRASH_BUCKET_ACTION_FILE_THRESHOLD"
+  while IFS='|' read -r rel_path file_count dir_count stale_files has_git action; do
+    [[ -z "$rel_path" ]] && continue
+    [[ "$action" == "review_for_local_purge" ]] || continue
+    echo "- trash_bucket=$rel_path action=$action files=$file_count dirs=$dir_count stale_files=$stale_files has_git=$has_git"
+  done < "$TRASH_BUCKET_ROWS_FILE"
 }
 
 emit_queue_health_section() {
@@ -1014,8 +1074,22 @@ emit_cleanup_next_action() {
   local include_local_workspace="$3"
 
   print_section "Next action"
-  if [[ "$tier" == "T1" || "$tier" == "T2" ]]; then
-    echo "- Run T3 cleanup for authoritative repo parity."
+  if [[ "$tier" == "T1" ]]; then
+    if [[ "$include_local_workspace" -eq 1 && "$(quick_gate_status)" != "STOP_OK" ]]; then
+      echo "- Run T2 cleanup for local-workspace enforcement decisions."
+    fi
+    echo "- Run T3 cleanup only when you need authoritative repo parity."
+    if [[ "$include_local_workspace" -eq 1 ]]; then
+      echo "- Use 'only repos' or 'no local workspace' if you want to suppress local-workspace checks for the next manual run."
+    fi
+    return 0
+  fi
+
+  if [[ "$tier" == "T2" ]]; then
+    if [[ "$include_local_workspace" -eq 1 && "$(medium_gate_status)" != "STOP_OK" ]]; then
+      echo "- Would you like to execute safe local-workspace cleanup now? Scope would be local-workspace only; repo parity would remain report-only."
+    fi
+    echo "- Run T3 cleanup only when you need authoritative repo parity."
     if [[ "$include_local_workspace" -eq 1 ]]; then
       echo "- Use 'only repos' or 'no local workspace' if you want to suppress local-workspace checks for the next manual run."
     fi
@@ -1025,6 +1099,9 @@ emit_cleanup_next_action() {
   if [[ "$result" == "PORCELAIN" ]]; then
     echo "- No cleanup action required."
   else
+    if [[ "$include_local_workspace" -eq 1 && "$(quick_gate_status)" != "STOP_OK" ]]; then
+      echo "- Would you like to execute safe local-workspace cleanup now? Scope would be local-workspace only; repo parity would remain report-only."
+    fi
     echo "- Cleanup remains fractured; review the failing repo or workspace findings above and remediate until T3 passes."
   fi
 }
@@ -1129,7 +1206,7 @@ run_cleanup_tier() {
   emit_cleanup_report "$tier" "$include_local_workspace" "$require_fresh"
 
   if [[ "$tier" == "T1" ]]; then
-    [[ "$(quick_gate_status)" == "STOP_OK" ]] && return 0 || return 10
+    return 0
   fi
   if [[ "$tier" == "T2" ]]; then
     [[ "$(medium_gate_status)" == "STOP_OK" ]] && return 0 || return 20
