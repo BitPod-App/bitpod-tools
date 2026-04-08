@@ -763,7 +763,7 @@ collect_repo_temporal_candidates() {
         repo_temporal_candidate_files=$((repo_temporal_candidate_files + 1))
         echo "$repo|$rel_metadata|$tier|report_only|is_temporal=true with cleanup_status ready/purge/delete requires repo-aware review" >> "$REPO_TEMPORAL_ROWS_FILE"
       fi
-    done < <(find "$abs_path" \( -path '*/.git' -o -path '*/.git/*' -o -path '*/node_modules' -o -path '*/node_modules/*' \) -prune -o -type f \( -name '*.json' -o -name '*.toml' -o -name '*.yaml' -o -name '*.yml' -o -name '*.md' \) -print 2>/dev/null)
+    done < <(find "$abs_path" \( -path '*/.git' -o -path '*/.git/*' -o -path '*/node_modules' -o -path '*/node_modules/*' \) -prune -o -type f \( -name '*.json' -o -name '*.toml' -o -name '*.yaml' -o -name '*.yml' \) -print 2>/dev/null)
   done < "$REGISTRY_FILE"
 }
 
