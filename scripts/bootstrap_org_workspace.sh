@@ -103,6 +103,29 @@ EOF
 project_root_markers = []
 model_instructions_file = "AGENTS.md"
 EOF
+
+  cat > "$ROOT/.codex/AGENTS.md" <<'EOF'
+<!-- GENERATED LOCAL BOOTSTRAP FILE. -->
+<!-- PURPOSE: satisfy Codex project-thread root instruction lookup -->
+<!-- CANONICAL SOURCE OF POLICY: BitPod-App/bitpod-docs main -->
+
+# Root AGENTS
+
+NAME: Root AGENTS Router
+STATUS: Active
+SOURCE_OF_TRUTH: `bitpod-docs/AGENTS.md`
+LOCAL_STATUS: active local umbrella router
+
+Read and obey these in order:
+
+1. `$WORKSPACE/bitpod-docs/policies/taylored-policy.md`
+2. `$WORKSPACE/bitpod-docs/policies/taylored-policy-rules.md`
+3. `$WORKSPACE/bitpod-docs/policies/truthfulness-and-verification-policy.md`
+4. `$WORKSPACE/bitpod-docs/policies/file-creation-and-artifact-placement-policy.md`
+5. repo `AGENTS.md`, if present
+
+Edit canon in `bitpod-docs`, not here.
+EOF
 }
 
 clone_missing_repos() {
@@ -151,6 +174,7 @@ PY
 
 validate_workspace() {
   [[ -f "$ROOT/AGENTS.md" ]] || { echo "missing root AGENTS.md" >&2; exit 1; }
+  [[ -f "$ROOT/.codex/AGENTS.md" ]] || { echo "missing .codex/AGENTS.md" >&2; exit 1; }
   [[ -f "$ROOT/.codex/org-workspace.toml" ]] || { echo "missing org-workspace.toml" >&2; exit 1; }
   [[ -f "$ROOT/.codex/environments/environment.toml" ]] || { echo "missing environment.toml" >&2; exit 1; }
   [[ -f "$ROOT/bitpod-docs/policies/taylored-policy.md" ]] || { echo "missing taylored-policy.md" >&2; exit 1; }
