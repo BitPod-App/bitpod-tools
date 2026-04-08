@@ -1,22 +1,21 @@
 <!-- GENERATED FILE. DO NOT EDIT HERE. -->
-<!-- CANONICAL SOURCE: bitpod-docs/process/taylored-policy.md -->
+<!-- CANONICAL SOURCE: bitpod-docs/policies/taylored-policy.md -->
 <!-- MIRROR ROLE: repo packet mirror -->
 # Taylored Work Policy
 
-CANONICAL SOURCE: `bitpod-docs/process/taylored-policy.md`
-LOCAL ROOT MIRROR: `$WORKSPACE/taylored-policy.md` bootstrap mirror only
-EDIT SURFACE: edit this file first; generated mirrors must not become parallel canon
+CANONICAL SOURCE: `bitpod-docs/policies/taylored-policy.md`
+EDIT SURFACE: edit this file first
 
 NAME: Taylored Work Policy
 STATUS: Active
-DATE: 2026-03-24
-VERSION: 2.0
+DATE: 2026-04-05
+VERSION: 2.1
 OWNER: Workspace / Product Development
-DESCRIPTION: Canonical repo-backed global work-policy contract for local umbrella bootstrap and cloud-visible repo distribution.
-SCOPE: Workspace-wide authority, portability, and artifact governance.
-ENTRYPOINT: repo-root `AGENTS.md` files and generated bootstrap mirrors.
-DEPENDENCIES: `AGENTS.md`, `taylored-policy-rules.md`, shared process docs.
-OVERRIDE_POLICY: Repo `AGENTS.md` may declare explicit rule exceptions listed in the registry.
+DESCRIPTION: Canonical repo-backed global work-policy contract for the BitPod-App workspace.
+SCOPE: Workspace-wide authority, portability, minimal root contract, and artifact governance.
+ENTRYPOINT: repo-root `AGENTS.md` files and root umbrella `AGENTS.md`.
+DEPENDENCIES: `AGENTS.md`, `taylored-policy-rules.md`, `policy-registry.toml`, shared process docs.
+OVERRIDE_POLICY: Repo `AGENTS.md` may declare explicit rule exceptions listed in the root policy rules.
 
 STATUS:
 
@@ -38,19 +37,23 @@ TOKENS:
 CANONICAL POLICY SURFACES:
 
 - `bitpod-docs/AGENTS.md` = canonical repo-backed policy entrypoint
-- `bitpod-docs/process/taylored-policy.md` = canonical global work-policy contract
-- `bitpod-docs/process/taylored-policy-rules.md` = canonical prohibition list
+- `bitpod-docs/policies/taylored-policy.md` = canonical global work-policy contract
+- `bitpod-docs/policies/taylored-policy-rules.md` = canonical prohibition list
+- `bitpod-docs/policies/policy-registry.toml` = canonical authority-status registry
 
-COMPATIBILITY SURFACES:
+ACTIVE ROOT SURFACES:
 
-- `$WORKSPACE/AGENTS.md` = local umbrella bootstrap mirror only
-- `$WORKSPACE/taylored-policy.md` = local umbrella bootstrap mirror only
-- `$WORKSPACE/taylored-policy-rules.md` = local umbrella bootstrap mirror only
+- `$WORKSPACE/AGENTS.md` = local umbrella router only
+- `$WORKSPACE/.codex/org-workspace.toml` = workspace metadata only
+- `$WORKSPACE/.codex/environments/environment.toml` = minimal environment metadata only
+- `$WORKSPACE/.codex/config.toml` = compatibility-only if Codex still requires an explicit instruction pointer
 
-FALLBACK FILE NAMES:
+RETIRED ROOT SURFACES:
 
-- lowercase `agents.md` may exist as a compatibility fallback only
-- lowercase files are never canonical when uppercase files exist
+- `$WORKSPACE/taylored-policy.md`
+- `$WORKSPACE/taylored-policy-rules.md`
+- `$WORKSPACE/policy.md`
+- `$WORKSPACE/.codex/policy.md`
 
 DEFAULT MODEL:
 
@@ -61,28 +64,37 @@ DEFAULT MODEL:
 
 DISCOVERY MODEL:
 
-- local umbrella bootstrap may start from `$WORKSPACE/AGENTS.md`
+- local umbrella sessions may start from `$WORKSPACE/AGENTS.md`
 - cloud and repo-local Codex runs must discover policy from files that exist inside the actual repo
-- do not rely on umbrella-root-only files for cloud-visible behavior
+- do not rely on retired umbrella-root mirror files for cloud-visible behavior
 
 READ ORDER:
 
 1. repo-root `AGENTS.md` in the active repo
-2. local packet or canonical policy files referenced by that repo-root `AGENTS.md`
+2. local repo packet or canonical policy files referenced by that repo-root `AGENTS.md`
 3. repo-specific nested `AGENTS.md` or `AGENTS.override.md`, if present
 4. task-specific canonical docs explicitly pointed to by the active instruction chain
+
+For local umbrella-root sessions:
+
+1. root `AGENTS.md`
+2. `bitpod-docs/policies/taylored-policy.md`
+3. `bitpod-docs/policies/taylored-policy-rules.md`
+4. `bitpod-docs/policies/truthfulness-and-verification-policy.md`
+5. `bitpod-docs/policies/file-creation-and-artifact-placement-policy.md`
 
 AUTHORITY MAP:
 
 - repo-root `AGENTS.md` = active runtime entry routing inside each repo
-- `bitpod-docs/process/taylored-policy.md` = global guardrails and authority model
-- `bitpod-docs/process/taylored-policy-rules.md` = prohibition IDs, enforcement state, alertability, and exception eligibility
+- `bitpod-docs/policies/taylored-policy.md` = global guardrails and authority model
+- `bitpod-docs/policies/taylored-policy-rules.md` = prohibition IDs, enforcement state, alertability, and exception eligibility
+- `bitpod-docs/policies/policy-registry.toml` = active versus compat versus legacy authority status
 - repo `AGENTS.md` = repo-specific execution instructions, workflow guidance, model defaults, and canonical doc pointers
 - repo `README.md` = orientation and navigation only
 - shared process docs = detailed semantics, naming, lifecycle, audit behavior, and packet contracts
 
 WORKFLOW POINTER:
-
+D
 - for cross-repo Linear issue-update semantics, treat `update Linear` as `make the issue materially more truthful`
 - that default preserves existing assignee/delegate by default and does not include assigning/delegating issues to Codex or mentioning `@Codex`; those actions are explicit cloud-task delegation only
 - the canonical detailed rule surface for that behavior is `$WORKSPACE/bitpod-tools/linear/docs/process/linear_operating_guide_v3.md`
@@ -112,7 +124,7 @@ KEEP IN GLOBAL POLICY CANON:
 - portability boundaries
 - root/local lifecycle guardrails
 - the structure that governs how the root policy rules are applied
-- packet and mirror discipline for cloud-visible repo distribution
+- registry and packet discipline for cloud-visible repo distribution
 
 KEEP IN REPO `AGENTS.md`:
 
@@ -168,22 +180,23 @@ SECRETS:
 
 PORTABILITY:
 
-- Taylor01 portability should rely primarily on repo-root `AGENTS.md`, `bitpod-docs/process/taylored-policy.md`, `bitpod-docs/process/taylored-policy-rules.md`, and shared canonical docs
+- Taylor01 portability should rely primarily on repo-root `AGENTS.md`, `bitpod-docs/policies/taylored-policy.md`, `bitpod-docs/policies/taylored-policy-rules.md`, and shared canonical docs
 - GitHub-native files are used only for GitHub-native behavior
 - `.github` repo may hold governance docs or automation, but it is not the sole runtime instruction source
 
-PACKET AND MIRROR RULE:
+PACKET RULE:
 
 - canonical policy is edited in `bitpod-docs`
-- distributed repo packets and local root bootstrap files are generated from canon
-- mirrored files must declare canonical source and `DO NOT EDIT HERE`
+- distributed repo packets are generated from canon
+- root runtime depends only on root `AGENTS.md`, not on root mirrored policy files
 - generated runtime packets must not become silent parallel canon
 
 ROOT REFERENCES:
 
-- `$WORKSPACE/bitpod-docs/process/taylored-policy-rules.md`
+- `$WORKSPACE/bitpod-docs/policies/taylored-policy-rules.md`
+- `$WORKSPACE/bitpod-docs/policies/policy-registry.toml`
 - `$WORKSPACE/bitpod-docs/process/read-first-protocol.md`
-- `$WORKSPACE/bitpod-docs/process/truthfulness-and-verification-policy.md`
+- `$WORKSPACE/bitpod-docs/policies/truthfulness-and-verification-policy.md`
 - `$WORKSPACE/bitpod-docs/process/codex-global-policy-packet-contract.md`
 
 TRUTHFULNESS DISCLOSURE RULE:
