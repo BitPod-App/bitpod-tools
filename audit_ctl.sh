@@ -756,8 +756,8 @@ collect_repo_temporal_candidates() {
     local metadata_path
     while IFS= read -r metadata_path; do
       [[ -z "$metadata_path" ]] && continue
-      if rg -q 'is_temporal[[:space:]]*[:=][[:space:]]*true' "$metadata_path" 2>/dev/null &&
-         rg -q 'cleanup_status[[:space:]]*[:=][[:space:]]*"?((ready)|(purge)|(delete)|(deleted))"?' "$metadata_path" 2>/dev/null; then
+      if grep -Eq 'is_temporal[[:space:]]*[:=][[:space:]]*true' "$metadata_path" 2>/dev/null &&
+         grep -Eq 'cleanup_status[[:space:]]*[:=][[:space:]]*"?((ready)|(purge)|(delete)|(deleted))"?' "$metadata_path" 2>/dev/null; then
         local rel_metadata="${metadata_path#"$ROOT/"}"
         repo_temporal_candidate_count=$((repo_temporal_candidate_count + 1))
         repo_temporal_candidate_files=$((repo_temporal_candidate_files + 1))
@@ -789,7 +789,7 @@ collect_branch_residue() {
       [[ -z "$branch" ]] && continue
       stale_local_branch_count=$((stale_local_branch_count + 1))
       echo "$repo|local|$branch" >> "$STALE_BRANCH_ROWS_FILE"
-    done < <(git -C "$abs_path" for-each-ref refs/heads --format='%(refname:short)' | rg '^codex/' || true)
+    done < <(git -C "$abs_path" for-each-ref refs/heads --format='%(refname:short)' | grep -E '^codex/' || true)
 
     while IFS= read -r branch; do
       [[ -z "$branch" ]] && continue
