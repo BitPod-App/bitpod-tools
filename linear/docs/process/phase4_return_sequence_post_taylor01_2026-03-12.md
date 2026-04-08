@@ -1,116 +1,126 @@
-# Phase 4 Return Sequence Post-Taylor01 — 2026-03-12
+# Bootstrap Return Sequence Post-Taylor01 — Active Minimum-Floor-First Mirror
 
-Status: Active
-Primary issue: [BIT-95 — Define bootstrap closure gates for Taylor-real, minimum-team-ready, Discord acceptance, and startup-ready](https://linear.app/bitpod-app/issue/BIT-95/define-bootstrap-closure-gates-for-taylor-real-minimum-team-ready)
+Status: Active Bootstrap-side sequence mirror
+Primary issues:
+- [BIT-104 — Execute Mac Mini execution-HQ bootstrap for NemoClaw runtime](https://linear.app/bitpod-app/issue/BIT-104/execute-mac-mini-execution-hq-bootstrap-for-nemoclaw-runtime)
+- [BIT-113 — Phase 3 evidence pack and HQ go/no-go](https://linear.app/bitpod-app/issue/BIT-113/phase-3-evidence-pack-and-hq-gono-go)
 Related issues:
+- [BIT-198 — Plan: Taylor01 runtime boundary and Claw-direction architecture](https://linear.app/bitpod-app/issue/BIT-198/plan-taylor01-runtime-boundary-and-claw-direction-architecture)
+- [BIT-214 — Taylor01: lock minimum real-Taylor runtime contract](https://linear.app/bitpod-app/issue/BIT-214/taylor01-lock-minimum-real-taylor-runtime-contract)
+- [BIT-215 — Taylor01: decide Claw v1 scope and boundary](https://linear.app/bitpod-app/issue/BIT-215/taylor01-decide-claw-v1-scope-and-boundary)
+- [BIT-205 — Define Taylor01 operator intake and supporting surface adapters](https://linear.app/bitpod-app/issue/BIT-205/define-taylor01-operator-intake-and-supporting-surface-adapters)
+- [BIT-115 — Prove personal-computer -> OpenClaw HQ conversational/dispatch loop](https://linear.app/bitpod-app/issue/BIT-115/prove-personal-computer-openclaw-hq-conversationaldispatch-loop)
 - [BIT-97 — Prove Taylor as a real AI agent in any live operator surface](https://linear.app/bitpod-app/issue/BIT-97/prove-taylor-as-a-real-ai-agent-in-any-live-operator-surface)
-- [BIT-99 — Embody first specialist as a real AI agent/runtime beyond lane or skill proxy](https://linear.app/bitpod-app/issue/BIT-99/embody-first-specialist-as-a-real-ai-agentruntime-beyond-lane-or-skill)
-- [BIT-98 — Prove real multi-agent team loop with Taylor plus embodied specialist agent(s)](https://linear.app/bitpod-app/issue/BIT-98/prove-real-multi-agent-team-loop-with-taylor-plus-embodied-specialist)
-- [BIT-86 — Real Discord acceptance for team session contract and bridge command surface](https://linear.app/bitpod-app/issue/BIT-86/real-discord-acceptance-for-team-session-contract-and-bridge-command)
-- [BIT-94 — Preserve Vera QA runtime behaviors from Zulip-era implementation for dedicated agent path](https://linear.app/bitpod-app/issue/BIT-94/preserve-vera-qa-runtime-behaviors-from-zulip-era-implementation-for)
-- [BIT-96 — Stand up Taylor Discord conversational intake path for real agent acceptance](https://linear.app/bitpod-app/issue/BIT-96/stand-up-taylor-discord-conversational-intake-path-for-real-agent)
-- [BIT-100 — Define AI-agent portability boundary and repo extraction strategy](https://linear.app/bitpod-app/issue/BIT-100/define-ai-agent-portability-boundary-and-repo-extraction-strategy)
+- [BIT-216 — Taylor01: decide capability container direction beyond current `SKILL.md`](https://linear.app/bitpod-app/issue/BIT-216/taylor01-decide-capability-container-direction-beyond-current-skillmd)
+- [BIT-217 — Taylor01: classify current artifacts by durability and overlay status](https://linear.app/bitpod-app/issue/BIT-217/taylor01-classify-current-artifacts-by-durability-and-overlay-status)
+- [BIT-218 — Taylor01: define future dedicated repo extraction trigger for Claw](https://linear.app/bitpod-app/issue/BIT-218/taylor01-define-future-dedicated-repo-extraction-trigger-for-claw)
+- [BIT-235 — Plan: Taylor01-HQ org-agnostic local environment and bootstrap boundary](https://linear.app/bitpod-app/issue/BIT-235/plan-taylor01-hq-org-agnostic-local-environment-and-bootstrap-boundary)
 
 ## Purpose
 
-Return the active bootstrap focus to the pre-Taylor01 near-term Phase 4 execution gates while preserving the new Taylor01 portability rules as operating constraints rather than as the main workstream.
+Mirror the active Taylor01 Claw minimum-floor-first plan into the Bootstrap
+lane so Bootstrap proof work does not drift ahead of:
+
+- truthful Phase 3 closeout
+- the minimum Taylor01 architecture floor
+- the locked ownership split between Bootstrap reality and Taylor01 architecture
+
+This document is the Bootstrap-side execution mirror of the active Taylor01
+plan. It is not a second architecture owner.
+
+## Locked ownership
+
+- Bootstrap proves reality and execution evidence.
+- Taylor01 owns durable Claw architecture.
+- [BIT-198 — Plan: Taylor01 runtime boundary and Claw-direction architecture](https://linear.app/bitpod-app/issue/BIT-198/plan-taylor01-runtime-boundary-and-claw-direction-architecture)
+  is the single architecture owner.
 
 ## Verified starting point
 
-- [PR #50 — [BIT-100] Implement Taylor01 co-equal product boundary BIT-100](https://github.com/BitPod-App/bitpod-tools/pull/50) is merged.
-- [PR #49 — [BIT-96][BIT-97] Normalize Taylor-real vs Discord acceptance BIT-96 BIT-97](https://github.com/BitPod-App/bitpod-tools/pull/49) is merged.
-- Taylor01 now exists as a separate project and policy boundary, but it is no longer the primary active execution lane.
-- Phase 4 is still not complete.
-- The stronger Phase 4 existence gates now on `main` are:
-  - Taylor embodied AI agent
-  - first specialist embodied AI agent
-  - real multi-agent team loop
-  - at least one accepted operator surface
+- [BitPod-App/bitpod-tools PR #50 — [BIT-100] Implement Taylor01 co-equal product boundary BIT-100](https://github.com/BitPod-App/bitpod-tools/pull/50)
+  is merged.
+- [BitPod-App/bitpod-tools PR #49 — [BIT-96][BIT-97] Normalize Taylor-real vs Discord acceptance BIT-96 BIT-97](https://github.com/BitPod-App/bitpod-tools/pull/49)
+  is merged.
+- `bitpod-tools` remains the BitPod doctrine and proving-ground repo.
+- `bitpod-taylor-runtime` remains the runtime and embodiment repo.
+- `taylor01-skills` remains the portable substrate repo.
+- Bootstrap Phase 3 is not yet truthfully closed.
+- Bootstrap Phase 4 proof work remains open and must use the Taylor01 minimum
+  floor as a constraint rather than becoming a parallel architecture lane.
 
-## Return-to-execution sequence
+## Active execution order
 
-### 1. Immediate active lane: Taylor-real
+### 1. Close Bootstrap Phase 3 truthfully
 
-Make [BIT-97 — Prove Taylor as a real AI agent in any live operator surface](https://linear.app/bitpod-app/issue/BIT-97/prove-taylor-as-a-real-ai-agent-in-any-live-operator-surface) the immediate active gate.
+Use [BIT-104 — Execute Mac Mini execution-HQ bootstrap for NemoClaw runtime](https://linear.app/bitpod-app/issue/BIT-104/execute-mac-mini-execution-hq-bootstrap-for-nemoclaw-runtime)
+plus [BIT-113 — Phase 3 evidence pack and HQ go/no-go](https://linear.app/bitpod-app/issue/BIT-113/phase-3-evidence-pack-and-hq-gono-go)
+as the active Bootstrap closeout pair.
+
+Required focus:
+
+- reconcile current `taylor01` execution-account and Mini runtime truth
+- assemble evidence from the existing Phase 3 spine
+- disposition [BIT-49 — Lock down personal GitHub account to human-only access (remove AI/runtime paths)](https://linear.app/bitpod-app/issue/BIT-49/lock-down-personal-github-account-to-human-only-access-remove)
+  and [BIT-74 — Execute post-bootstrap local scope hardening window after migration closeout](https://linear.app/bitpod-app/issue/BIT-74/execute-post-bootstrap-local-scope-hardening-window-after-migration)
+  truthfully rather than by default escalation
+- record the explicit go/no-go verdict before claiming Phase 3 is done
+
+### 2. Lock the minimum Taylor01 architecture floor
+
+Do this under Taylor01 before treating Bootstrap proof tickets as the primary
+active architecture lane:
+
+- [BIT-214 — Taylor01: lock minimum real-Taylor runtime contract](https://linear.app/bitpod-app/issue/BIT-214/taylor01-lock-minimum-real-taylor-runtime-contract)
+- [BIT-215 — Taylor01: decide Claw v1 scope and boundary](https://linear.app/bitpod-app/issue/BIT-215/taylor01-decide-claw-v1-scope-and-boundary)
+- [BIT-205 — Define Taylor01 operator intake and supporting surface adapters](https://linear.app/bitpod-app/issue/BIT-205/define-taylor01-operator-intake-and-supporting-surface-adapters)
 
 Rule:
 
-- do not wait for Discord if another surface can prove or fail Taylor-real faster
-- prove or falsify Taylor-real first in the fastest honest live surface available
+- Bootstrap proof work may inform these items, but it must not redefine them
+  silently.
 
-Why first:
+### 3. Run the first honest proof lane
 
-- Taylor-real is a direct missing truth gate
-- current evidence still proves only Taylor operational orchestration, not embodied agent reality to CJ
+After the Phase 3 closeout pair and minimum floor are strong enough, run:
 
-### 2. First specialist embodiment: Vera path
+- [BIT-115 — Prove personal-computer -> OpenClaw HQ conversational/dispatch loop](https://linear.app/bitpod-app/issue/BIT-115/prove-personal-computer-openclaw-hq-conversationaldispatch-loop)
+- [BIT-97 — Prove Taylor as a real AI agent in any live operator surface](https://linear.app/bitpod-app/issue/BIT-97/prove-taylor-as-a-real-ai-agent-in-any-live-operator-surface)
 
-Use Vera as the recommended first specialist embodiment path.
+Escalation rule:
 
-Primary lane:
+- activate [BIT-101 — Implement Taylor as a portable embodied AI agent/runtime beyond deterministic bot flows](https://linear.app/bitpod-app/issue/BIT-101/implement-taylor-as-a-portable-embodied-ai-agentruntime-beyond)
+  only if the current runtime cannot satisfy those proofs honestly
 
+### 4. Use proof results to refine later Taylor01 lanes
+
+Keep these as proof-informed refinement, not proof blockers:
+
+- [BIT-216 — Taylor01: decide capability container direction beyond current `SKILL.md`](https://linear.app/bitpod-app/issue/BIT-216/taylor01-decide-capability-container-direction-beyond-current-skillmd)
+- [BIT-217 — Taylor01: classify current artifacts by durability and overlay status](https://linear.app/bitpod-app/issue/BIT-217/taylor01-classify-current-artifacts-by-durability-and-overlay-status)
+- [BIT-218 — Taylor01: define future dedicated repo extraction trigger for Claw](https://linear.app/bitpod-app/issue/BIT-218/taylor01-define-future-dedicated-repo-extraction-trigger-for-claw)
+- [BIT-235 — Plan: Taylor01-HQ org-agnostic local environment and bootstrap boundary](https://linear.app/bitpod-app/issue/BIT-235/plan-taylor01-hq-org-agnostic-local-environment-and-bootstrap-boundary)
+
+### 5. Keep later embodiment gates deferred
+
+Do not pull these forward before the proof lane is strong enough:
+
+- [BIT-173 — Final legacy secret removal and 1Password cutover gate before AI agent operability](https://linear.app/bitpod-app/issue/BIT-173/final-legacy-secret-removal-and-1password-cutover-gate-before-ai-agent)
+- [BIT-98 — Prove real multi-agent team loop with Taylor plus embodied specialist agent(s)](https://linear.app/bitpod-app/issue/BIT-98/prove-real-multi-agent-team-loop-with-taylor-plus-embodied-specialist)
 - [BIT-99 — Embody first specialist as a real AI agent/runtime beyond lane or skill proxy](https://linear.app/bitpod-app/issue/BIT-99/embody-first-specialist-as-a-real-ai-agentruntime-beyond-lane-or-skill)
 
-Support lane:
+## Bootstrap interpretation rules
 
-- [BIT-94 — Preserve Vera QA runtime behaviors from Zulip-era implementation for dedicated agent path](https://linear.app/bitpod-app/issue/BIT-94/preserve-vera-qa-runtime-behaviors-from-zulip-era-implementation-for)
+- do not let Bootstrap proof tickets become a second Claw architecture owner
+- do not treat Discord or another supporting adapter as the architecture owner
+- do not let later Taylor01 refinement tickets block the first honest proof pass
+- do not treat current `SKILL.md` overlays as final Claw identity
 
-Why Vera first:
+## Supporting Taylor01 constraints
 
-- current QA lane already exists and is real at a lane level
-- Vera has preserved skill/runtime continuity that engineering specialist lanes do not yet have as strongly
-- Zulip-era behavior inventory makes Vera the fastest plausible path to first specialist embodiment
+Use these as active execution constraints while working Bootstrap:
 
-### 3. Real team proof
-
-After Taylor-real and first specialist embodiment, prove:
-
-- [BIT-98 — Prove real multi-agent team loop with Taylor plus embodied specialist agent(s)](https://linear.app/bitpod-app/issue/BIT-98/prove-real-multi-agent-team-loop-with-taylor-plus-embodied-specialist)
-
-Recommended first proof shape:
-
-- Taylor delegates bounded QA-relevant work to embodied Vera
-- Vera returns result artifact or verdict
-- Taylor uses the returned output to synthesize or close the work
-
-This is the first honest team-existence proof.
-
-### 4. Discord acceptance after the above
-
-Keep [BIT-86 — Real Discord acceptance for team session contract and bridge command surface](https://linear.app/bitpod-app/issue/BIT-86/real-discord-acceptance-for-team-session-contract-and-bridge-command) active, but treat it as the session-surface gate after the stronger agent/team existence gates are materially underway.
-
-Discord-specific intake/runtime path remains:
-
-- [BIT-96 — Stand up Taylor Discord conversational intake path for real agent acceptance](https://linear.app/bitpod-app/issue/BIT-96/stand-up-taylor-discord-conversational-intake-path-for-real-agent)
-
-Rule:
-
-- do not let Discord block Taylor-real if another live surface can answer the question first
-- use Discord to close the session-surface proof once the underlying agent reality is closer to true
-
-## Taylor01 constraint while executing
-
-Use the Taylor01 rules as constraints, not as the main workstream:
-
-- solve portability now by default when reasonable
-- if not now, use explicit temporary bypass
-- keep bypasses short-lived and reviewable
-- do not turn temporary coupling into vague long-lived backlog
-
-Relevant artifacts:
-
+- `linear/docs/process/taylor01_runtime_minimum_v1.md`
+- `linear/docs/process/claw_v1_boundary_model_v1.md`
+- `linear/docs/process/openclaw_operator_intake_dispatch_contract_v1.md`
 - `linear/docs/process/taylor01_portability_review_gate_v1.md`
 - `linear/docs/process/taylor01_active_bypass_register_v1.md`
-
-## Recommended issue states
-
-Historical note:
-
-- These recommendations were written before the current `Ready` rename. Read any older `Todo` references in this file as `Ready`.
-
-- [BIT-95 — Define bootstrap closure gates for Taylor-real, minimum-team-ready, Discord acceptance, and startup-ready](https://linear.app/bitpod-app/issue/BIT-95/define-bootstrap-closure-gates-for-taylor-real-minimum-team-ready) -> `Done`
-- [BIT-97 — Prove Taylor as a real AI agent in any live operator surface](https://linear.app/bitpod-app/issue/BIT-97/prove-taylor-as-a-real-ai-agent-in-any-live-operator-surface) -> `In Progress`
-- [BIT-94 — Preserve Vera QA runtime behaviors from Zulip-era implementation for dedicated agent path](https://linear.app/bitpod-app/issue/BIT-94/preserve-vera-qa-runtime-behaviors-from-zulip-era-implementation-for) -> `Ready`
-- [BIT-99 — Embody first specialist as a real AI agent/runtime beyond lane or skill proxy](https://linear.app/bitpod-app/issue/BIT-99/embody-first-specialist-as-a-real-ai-agentruntime-beyond-lane-or-skill) -> `Ready`
-- [BIT-98 — Prove real multi-agent team loop with Taylor plus embodied specialist agent(s)](https://linear.app/bitpod-app/issue/BIT-98/prove-real-multi-agent-team-loop-with-taylor-plus-embodied-specialist) -> `Ready`
-- [BIT-86 — Real Discord acceptance for team session contract and bridge command surface](https://linear.app/bitpod-app/issue/BIT-86/real-discord-acceptance-for-team-session-contract-and-bridge-command) -> remain `In Progress`

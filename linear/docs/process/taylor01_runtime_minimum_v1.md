@@ -1,8 +1,9 @@
 # Taylor01 Runtime Minimum v1
 
-Status: Working baseline
-Primary issue: [BIT-198 — Plan: Taylor01 runtime boundary and Claw-direction architecture](https://linear.app/bitpod-app/issue/BIT-198/plan-taylor01-runtime-boundary-and-claw-direction-architecture)
+Status: Active minimum-floor baseline
+Primary issue: [BIT-214 — Taylor01: lock minimum real-Taylor runtime contract](https://linear.app/bitpod-app/issue/BIT-214/taylor01-lock-minimum-real-taylor-runtime-contract)
 Related issues:
+- [BIT-198 — Plan: Taylor01 runtime boundary and Claw-direction architecture](https://linear.app/bitpod-app/issue/BIT-198/plan-taylor01-runtime-boundary-and-claw-direction-architecture)
 - [BIT-97 — Prove Taylor as a real AI agent in any live operator surface](https://linear.app/bitpod-app/issue/BIT-97/prove-taylor-as-a-real-ai-agent-in-any-live-operator-surface)
 - [BIT-115 — Prove personal-computer -> OpenClaw HQ conversational/dispatch loop](https://linear.app/bitpod-app/issue/BIT-115/prove-personal-computer-openclaw-hq-conversationaldispatch-loop)
 - [BIT-114 — Define OpenClaw-native operator intake and dispatch surface](https://linear.app/bitpod-app/issue/BIT-114/define-openclaw-native-operator-intake-and-dispatch-surface)
@@ -56,6 +57,18 @@ To count as "real Taylor," all must be true:
    verb loop
 5. durable outcomes can be written back to repo or issue truth surfaces
 
+## Pass/fail gate
+
+Record the floor as:
+
+- `TAYLOR_RUNTIME_MINIMUM_V1=true` only when all five required runtime surfaces
+  above are true
+- `TAYLOR_RUNTIME_MINIMUM_V1=false` if any required surface fails or cannot be
+  verified honestly
+
+If the verdict is false, Taylor-real or Claw-runtime claims must downgrade with
+the failing condition named explicitly.
+
 ## Required boundaries
 
 ### Execution boundary
@@ -103,6 +116,21 @@ The runtime minimum is satisfied only when both are true:
 
 The runtime minimum is therefore necessary but not sufficient for full Claw v1
 closure.
+
+## Constraint on active proof tickets
+
+### For [BIT-97 — Prove Taylor as a real AI agent in any live operator surface](https://linear.app/bitpod-app/issue/BIT-97/prove-taylor-as-a-real-ai-agent-in-any-live-operator-surface)
+
+- BIT-97 must not pass from local `SKILL.md`, Codex chat, or command-only
+  overlay behavior by itself
+- the proving surface must be backed by a runtime that satisfies this floor
+
+### For [BIT-115 — Prove personal-computer -> OpenClaw HQ conversational/dispatch loop](https://linear.app/bitpod-app/issue/BIT-115/prove-personal-computer-openclaw-hq-conversationaldispatch-loop)
+
+- BIT-115 must prove the control-console to HQ-runtime split rather than a
+  local MacBook shortcut
+- the proof must materialize durable outcomes back to repo or issue truth
+  surfaces, not only a transport thread
 
 ## Transitional allowances
 

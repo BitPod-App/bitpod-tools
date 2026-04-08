@@ -1,8 +1,9 @@
 # Claw v1 Boundary Model v1
 
-Status: Working baseline
-Primary issue: [BIT-198 — Plan: Taylor01 runtime boundary and Claw-direction architecture](https://linear.app/bitpod-app/issue/BIT-198/plan-taylor01-runtime-boundary-and-claw-direction-architecture)
+Status: Active minimum-floor baseline
+Primary issue: [BIT-215 — Taylor01: decide Claw v1 scope and boundary](https://linear.app/bitpod-app/issue/BIT-215/taylor01-decide-claw-v1-scope-and-boundary)
 Related issues:
+- [BIT-198 — Plan: Taylor01 runtime boundary and Claw-direction architecture](https://linear.app/bitpod-app/issue/BIT-198/plan-taylor01-runtime-boundary-and-claw-direction-architecture)
 - [BIT-114 — Define OpenClaw-native operator intake and dispatch surface](https://linear.app/bitpod-app/issue/BIT-114/define-openclaw-native-operator-intake-and-dispatch-surface)
 - [BIT-115 — Prove personal-computer -> OpenClaw HQ conversational/dispatch loop](https://linear.app/bitpod-app/issue/BIT-115/prove-personal-computer-openclaw-hq-conversationaldispatch-loop)
 - [BIT-205 — Define Taylor01 operator intake and supporting surface adapters](https://linear.app/bitpod-app/issue/BIT-205/define-taylor01-operator-intake-and-supporting-surface-adapters)
@@ -85,6 +86,15 @@ So the current relationship is:
 
 - `bitpod-taylor-runtime`
   - owns the live runtime substrate and runtime proof lane
+
+## Relationship to current OpenClaw doctrine in `bitpod-tools`
+
+- `bitpod-tools` remains the owning doctrine surface for the current
+  proving-ground operator contract
+- [BIT-114 — Define OpenClaw-native operator intake and dispatch surface](https://linear.app/bitpod-app/issue/BIT-114/define-openclaw-native-operator-intake-and-dispatch-surface)
+  stays the practical OpenClaw-side contract owner for the current proof lane
+- this boundary model constrains that doctrine from the Taylor01 side without
+  replacing it as the Bootstrap proving-ground operator contract
 
 ## Required non-goals
 
