@@ -302,6 +302,36 @@ test_stale_branch_contracts() {
   git -C "$WORKSPACE_ROOT/alpha" branch -D codex/stale-branch >/dev/null
 }
 
+test_open_pr_remote_branch_is_not_stale() {
+  local fake_bin="$TEST_ROOT/fake_bin"
+  mkdir -p "$fake_bin"
+
+  git -C "$WORKSPACE_ROOT/alpha" checkout -b codex/open-pr >/dev/null
+  git -C "$WORKSPACE_ROOT/alpha" push origin codex/open-pr >/dev/null
+  git -C "$WORKSPACE_ROOT/alpha" checkout main >/dev/null
+  git -C "$WORKSPACE_ROOT/alpha" branch -D codex/open-pr >/dev/null
+
+  cat > "$fake_bin/gh" <<'EOF'
+#!/usr/bin/env bash
+if [[ "$*" == *"BitPod-App/alpha"* ]]; then
+  printf '%s\n' '[{"number":7,"headRefName":"codex/open-pr","url":"https://example.test/pr/7"}]'
+else
+  printf '%s\n' '[]'
+fi
+EOF
+  chmod +x "$fake_bin/gh"
+
+  local pr_output
+  pr_output="$(run_audit_capture_with_path "$PERFECT_REGISTRY_FILE" "run T3 audit only repos" "$fake_bin")"
+  assert_contains "$pr_output" "- result=PORCELAIN"
+  assert_contains "$pr_output" "- overall=VERIFIED"
+  assert_contains "$pr_output" "- stale_remote_codex_branches=0"
+  assert_contains "$pr_output" "- open_pull_requests=1"
+  assert_contains "$pr_output" "- open_pr=alpha number=7 head=codex/open-pr url=https://example.test/pr/7"
+
+  git -C "$WORKSPACE_ROOT/alpha" push origin --delete codex/open-pr >/dev/null
+}
+
 test_parity_pulse_contracts() {
   local pulse_output
   pulse_output="$(run_audit_capture "$REGISTRY_FILE" "__parity_pulse__ event=post-commit fresh")"
@@ -477,6 +507,7 @@ setup_workspace
 test_refresh_repo_registry
 test_cleanup_contracts
 test_stale_branch_contracts
+test_open_pr_remote_branch_is_not_stale
 test_parity_pulse_contracts
 test_hook_installer
 test_scheduled_cleanup_helper

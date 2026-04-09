@@ -93,6 +93,7 @@ contract_optional_paths=""
 contract_disabled_paths=""
 contract_allowed_direct_children=""
 contract_profile_loaded=0
+FETCH_OPEN_PR_JSON=""
 
 normalize() {
   tr '[:upper:]' '[:lower:]'
@@ -214,6 +215,46 @@ path_list_contains() {
       return 0
     fi
   done <<< "$list"
+  return 1
+}
+
+fetch_open_pr_json() {
+  local repo="$1"
+  local pr_json=""
+  FETCH_OPEN_PR_JSON=""
+
+  if command -v gh >/dev/null 2>&1; then
+    if pr_json="$(run_with_timeout "$NETWORK_TIMEOUT_SECONDS" gh pr list -R "BitPod-App/$repo" --state open --limit 100 --json number,headRefName,url 2>/dev/null)"; then
+      FETCH_OPEN_PR_JSON="$pr_json"
+      return 0
+    else
+      local pr_status=$?
+      if [[ "$pr_status" -eq 124 ]]; then
+        append_network_probe_failure "repo_audit" "$repo" "gh_pr_list" "timed out after ${NETWORK_TIMEOUT_SECONDS}s"
+      fi
+      return 1
+    fi
+  fi
+
+  if command -v curl >/dev/null 2>&1; then
+    local api_url="https://api.github.com/repos/BitPod-App/$repo/pulls?state=open&per_page=100"
+    local auth_args=()
+    if [[ -n "${GITHUB_TOKEN:-}" ]]; then
+      auth_args=(-H "Authorization: Bearer $GITHUB_TOKEN")
+    fi
+    if pr_json="$(run_with_timeout "$NETWORK_TIMEOUT_SECONDS" curl -fsSL -H "Accept: application/vnd.github+json" "${auth_args[@]}" "$api_url" 2>/dev/null)"; then
+      FETCH_OPEN_PR_JSON="$pr_json"
+      return 0
+    else
+      local curl_status=$?
+      if [[ "$curl_status" -eq 124 ]]; then
+        append_network_probe_failure "repo_audit" "$repo" "github_api_pulls" "timed out after ${NETWORK_TIMEOUT_SECONDS}s"
+      fi
+      return 1
+    fi
+  fi
+
+  append_network_probe_failure "repo_audit" "$repo" "open_pr_probe" "gh and curl unavailable"
   return 1
 }
 
@@ -785,6 +826,32 @@ collect_branch_residue() {
     local abs_path="$ROOT/$rel_path"
     [[ -d "$abs_path/.git" ]] || continue
 
+    local pr_json="" open_pr_heads=""
+    if fetch_open_pr_json "$repo"; then
+      pr_json="$FETCH_OPEN_PR_JSON"
+      if [[ -n "$pr_json" && "$pr_json" != "[]" ]]; then
+        while IFS='|' read -r number head_ref url; do
+          [[ -z "$number" ]] && continue
+          open_pr_count=$((open_pr_count + 1))
+          open_pr_heads+="$head_ref"$'\n'
+          echo "$repo|$number|$head_ref|$url" >> "$OPEN_PR_ROWS_FILE"
+        done < <(printf '%s' "$pr_json" | python3 -c 'import json,sys
+try:
+    data=json.load(sys.stdin)
+except Exception:
+    data=[]
+if isinstance(data, dict):
+    data = []
+for item in data:
+    head = item.get("headRefName")
+    if not head:
+        head = ((item.get("head") or {}).get("ref")) or ""
+    url = item.get("url") or item.get("html_url") or ""
+    number = item.get("number") or ""
+    print(f"{number}|{head}|{url}")')
+      fi
+    fi
+
     while IFS= read -r branch; do
       [[ -z "$branch" ]] && continue
       stale_local_branch_count=$((stale_local_branch_count + 1))
@@ -793,35 +860,13 @@ collect_branch_residue() {
 
     while IFS= read -r branch; do
       [[ -z "$branch" ]] && continue
+      local head_ref="${branch#origin/}"
+      if path_list_contains "$open_pr_heads" "$head_ref"; then
+        continue
+      fi
       stale_remote_branch_count=$((stale_remote_branch_count + 1))
       echo "$repo|remote|$branch" >> "$STALE_BRANCH_ROWS_FILE"
     done < <(git -C "$abs_path" for-each-ref refs/remotes/origin/codex --format='%(refname:short)' || true)
-
-    if command -v gh >/dev/null 2>&1; then
-      local pr_json=""
-      if pr_json="$(run_with_timeout "$NETWORK_TIMEOUT_SECONDS" gh pr list -R "BitPod-App/$repo" --state open --limit 100 --json number,headRefName,url 2>/dev/null)"; then
-        :
-      else
-        pr_status=$?
-        if [[ "$pr_status" -eq 124 ]]; then
-          append_network_probe_failure "repo_audit" "$repo" "gh_pr_list" "timed out after ${NETWORK_TIMEOUT_SECONDS}s"
-        fi
-        pr_json=""
-      fi
-      if [[ -n "$pr_json" && "$pr_json" != "[]" ]]; then
-        while IFS= read -r row; do
-          [[ -z "$row" ]] && continue
-          open_pr_count=$((open_pr_count + 1))
-          echo "$repo|$row" >> "$OPEN_PR_ROWS_FILE"
-        done < <(printf '%s' "$pr_json" | python3 -c 'import json,sys
-try:
-    data=json.load(sys.stdin)
-except Exception:
-    data=[]
-for item in data:
-    print("{}|{}|{}".format(item.get("number"), item.get("headRefName"), item.get("url")))')
-      fi
-    fi
   done < "$REGISTRY_FILE"
 
   [[ -f "$STALE_BRANCH_ROWS_FILE" ]] && stale_branch_rows="$(cat "$STALE_BRANCH_ROWS_FILE")"
@@ -961,8 +1006,7 @@ cleanup_overall_result() {
         "$registry_problem_count" -eq 0 &&
         "$network_probe_fail_count" -eq 0 &&
         "$stale_local_branch_count" -eq 0 &&
-        "$stale_remote_branch_count" -eq 0 &&
-        "$open_pr_count" -eq 0 ]]; then
+        "$stale_remote_branch_count" -eq 0 ]]; then
     echo "PORCELAIN"
   else
     echo "FRACTURED"
@@ -976,8 +1020,7 @@ cleanup_overall_verification() {
           "$registry_problem_count" -eq 0 &&
           "$network_probe_fail_count" -eq 0 &&
           "$stale_local_branch_count" -eq 0 &&
-          "$stale_remote_branch_count" -eq 0 &&
-          "$open_pr_count" -eq 0 ]]; then
+          "$stale_remote_branch_count" -eq 0 ]]; then
       echo "VERIFIED"
     else
       echo "NOT VERIFIED"
@@ -996,8 +1039,8 @@ cleanup_verification_detail() {
       echo "Repo registry problems prevented a fully verified cleanup pass."
     elif [[ "$network_probe_fail_count" -gt 0 ]]; then
       echo "One or more bounded network probes timed out, so cleanup truth could not be fully verified."
-    elif [[ "$stale_local_branch_count" -gt 0 || "$stale_remote_branch_count" -gt 0 || "$open_pr_count" -gt 0 ]]; then
-      echo "Stale codex branches or open pull requests prevented a fully verified cleanup pass."
+    elif [[ "$stale_local_branch_count" -gt 0 || "$stale_remote_branch_count" -gt 0 ]]; then
+      echo "Stale codex branches prevented a fully verified cleanup pass."
     else
       echo "Fresh all-repo parity verification completed in this run."
     fi
