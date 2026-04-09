@@ -238,11 +238,13 @@ fetch_open_pr_json() {
 
   if command -v curl >/dev/null 2>&1; then
     local api_url="https://api.github.com/repos/BitPod-App/$repo/pulls?state=open&per_page=100"
-    local auth_args=()
+    local -a curl_cmd
+    curl_cmd=(curl -fsSL -H "Accept: application/vnd.github+json")
     if [[ -n "${GITHUB_TOKEN:-}" ]]; then
-      auth_args=(-H "Authorization: Bearer $GITHUB_TOKEN")
+      curl_cmd+=(-H "Authorization: Bearer $GITHUB_TOKEN")
     fi
-    if pr_json="$(run_with_timeout "$NETWORK_TIMEOUT_SECONDS" curl -fsSL -H "Accept: application/vnd.github+json" "${auth_args[@]}" "$api_url" 2>/dev/null)"; then
+    curl_cmd+=("$api_url")
+    if pr_json="$(run_with_timeout "$NETWORK_TIMEOUT_SECONDS" "${curl_cmd[@]}" 2>/dev/null)"; then
       FETCH_OPEN_PR_JSON="$pr_json"
       return 0
     else
