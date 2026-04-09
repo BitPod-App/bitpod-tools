@@ -5,6 +5,28 @@ SCRIPT_DIR="$(cd -- "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DEFAULT="$(cd -- "$SCRIPT_DIR/../.." && pwd)"
 ROOT="${BITPOD_APP_ROOT:-${WORKSPACE:-$ROOT_DEFAULT}}"
 
+canonicalize_root_path() {
+  local root="$1"
+  local parent base canonical
+  parent="$(dirname "$root")"
+  base="$(basename "$root")"
+  canonical="$parent/BitPod-App"
+
+  if [[ "$base" != "BitPod-App" && -e "$canonical" ]]; then
+    local root_inode canonical_inode
+    root_inode="$(ls -id "$root" | awk '{print $1}')"
+    canonical_inode="$(ls -id "$canonical" | awk '{print $1}')"
+    if [[ "$root_inode" == "$canonical_inode" ]]; then
+      echo "$canonical"
+      return 0
+    fi
+  fi
+
+  echo "$root"
+}
+
+ROOT="$(canonicalize_root_path "$ROOT")"
+
 check_path() {
   local label="$1"
   local path="$2"
