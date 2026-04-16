@@ -52,12 +52,14 @@ while [[ $# -gt 0 ]]; do
 done
 
 check_bridge() {
-  local code
-  code="$(curl -s -m 2 -o /dev/null -w "%{http_code}" \
-    -X POST "$BRIDGE_URL" \
-    -H "Content-Type: application/json" \
-    -d '{"task_type":"general","message":"ping","context":[],"constraints":{"json_only":true,"max_tokens":10},"meta":{}}' 2>/dev/null || true)"
-  [[ "$code" != "000" ]]
+  local health_url code
+  if [[ "$BRIDGE_URL" == */ask ]]; then
+    health_url="${BRIDGE_URL%/ask}/health"
+  else
+    health_url="${BRIDGE_URL%/}/health"
+  fi
+  code="$(curl -s -m 2 -o /dev/null -w "%{http_code}" "$health_url" 2>/dev/null || true)"
+  [[ "$code" == "200" ]]
 }
 
 bridge_host() {

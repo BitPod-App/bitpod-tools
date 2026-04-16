@@ -40,6 +40,7 @@ CANONICAL POLICY SURFACES:
 - `bitpod-docs/policies/taylored-policy.md` = canonical global work-policy contract
 - `bitpod-docs/policies/taylored-policy-rules.md` = canonical prohibition list
 - `bitpod-docs/policies/policy-registry.toml` = canonical authority-status registry
+- `bitpod-docs/policies/truthfulness-policy.md` = canonical 3-tier truthfulness policy entrypoint
 
 ACTIVE ROOT SURFACES:
 
@@ -80,8 +81,9 @@ For local umbrella-root sessions:
 1. root `AGENTS.md`
 2. `bitpod-docs/policies/taylored-policy.md`
 3. `bitpod-docs/policies/taylored-policy-rules.md`
-4. `bitpod-docs/policies/truthfulness-and-verification-policy.md`
-5. `bitpod-docs/policies/file-creation-and-artifact-placement-policy.md`
+4. `bitpod-docs/policies/truthfulness-policy.md`
+5. `bitpod-docs/policies/truthfulness-and-verification-policy.md`
+6. `bitpod-docs/policies/file-creation-and-artifact-placement-policy.md`
 
 AUTHORITY MAP:
 
@@ -196,8 +198,20 @@ ROOT REFERENCES:
 - `$WORKSPACE/bitpod-docs/policies/taylored-policy-rules.md`
 - `$WORKSPACE/bitpod-docs/policies/policy-registry.toml`
 - `$WORKSPACE/bitpod-docs/process/read-first-protocol.md`
+- `$WORKSPACE/bitpod-docs/policies/truthfulness-policy.md`
 - `$WORKSPACE/bitpod-docs/policies/truthfulness-and-verification-policy.md`
 - `$WORKSPACE/bitpod-docs/process/codex-global-policy-packet-contract.md`
+
+TRUTHFULNESS POLICY:
+
+- the canonical truthfulness family entrypoint is `$WORKSPACE/bitpod-docs/policies/truthfulness-policy.md`
+- truthfulness is governed as a 3-tier lifecycle:
+  1. `Verification Protocol` = always-on claim discipline to reduce unjustified certainty
+  2. `Truth Recovery Protocol` = incident-mode direct truth surfacing once a prior claim is materially undermined
+  3. `Trust Recovery Protocol` = post-incident corrective action, operator-inclusive learning, and protocol hardening
+- agents must follow the active tier and required handoff rules
+- do not compress verification, truth recovery, and trust recovery into one undifferentiated behavior surface
+- this add-on truthfulness-policy lane does not replace or rewrite the earlier Taylor01 runtime/mind architecture lane
 
 TRUTHFULNESS DISCLOSURE RULE:
 

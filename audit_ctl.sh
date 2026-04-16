@@ -105,6 +105,14 @@ has_phrase() {
   [[ "$haystack" == *"$needle"* ]]
 }
 
+has_tier_language() {
+  local q="$1"
+  has_phrase "$q" "t1" || has_phrase "$q" "t2" || has_phrase "$q" "t3" || \
+  has_phrase "$q" "tier 1" || has_phrase "$q" "tier 2" || has_phrase "$q" "tier 3" || \
+  has_phrase "$q" "v1" || has_phrase "$q" "v2" || has_phrase "$q" "v3" || \
+  has_phrase "$q" "quick" || has_phrase "$q" "medium" || has_phrase "$q" "full"
+}
+
 print_header() {
   echo "Audit Control | $1"
   echo "Timestamp: $NOW"
@@ -113,6 +121,15 @@ print_header() {
 print_section() {
   echo
   echo "$1"
+}
+
+cleanup_trash_title() {
+  local mode="${1:-adhoc}"
+  if [[ "$mode" == "weekly" ]]; then
+    echo "Weekly Local Trash-to-Purge Cleanup"
+  else
+    echo "Local Trash-to-Purge Cleanup"
+  fi
 }
 
 render_bool() {
@@ -1254,7 +1271,7 @@ emit_workspace_hygiene_section() {
   while IFS='|' read -r rel_path file_count dir_count stale_files has_git action; do
     [[ -z "$rel_path" ]] && continue
     [[ "$action" == "review_for_local_purge" ]] || continue
-    echo "- trash_bucket=$rel_path action=$action files=$file_count dirs=$dir_count stale_files=$stale_files has_git=$has_git"
+    echo "- trash_bucket=$rel_path action=$action files=$file_count directories=$dir_count stale_files=$stale_files has_git=$has_git"
   done < "$TRASH_BUCKET_ROWS_FILE"
 }
 
@@ -1296,7 +1313,7 @@ emit_cleanup_plan_section() {
   echo "- os_trash_permission_enabled=$( [[ "$LOCAL_PURGE_OS_TRASH_ALLOWED" == "1" ]] && echo YES || echo NO )"
   while IFS='|' read -r finding_id scope action path destination reason policy_rule file_count dir_count execution_allowed requires_tier requires_permission; do
     [[ -z "$finding_id" ]] && continue
-    echo "- finding_id=$finding_id scope=$scope action=$action path=$path destination=${destination:-none} reason=\"$reason\" policy_rule=$policy_rule files=$file_count dirs=$dir_count execution_allowed=$execution_allowed requires_tier=$requires_tier requires_permission=$requires_permission"
+    echo "- finding_id=$finding_id scope=$scope action=$action path=$path destination=${destination:-none} reason=\"$reason\" policy_rule=$policy_rule files=$file_count directories=$dir_count execution_allowed=$execution_allowed requires_tier=$requires_tier requires_permission=$requires_permission"
   done < "$CLEANUP_PLAN_ROWS_FILE"
 }
 
@@ -1581,28 +1598,21 @@ run_cleanup_auto() {
   local include_local_workspace="$1"
   local force_full="$2"
 
-  local t1_status=0
-  if run_cleanup_tier "T1" "$include_local_workspace" 0 >/dev/null 2>&1; then
-    t1_status=0
-  else
-    t1_status=$?
-  fi
-  if [[ "$t1_status" -eq 0 && "$force_full" -eq 0 ]]; then
+  # Run T1 first and only escalate when quick gate says local-workspace is not clean enough.
+  run_cleanup_tier "T1" "$include_local_workspace" 0 >/dev/null 2>&1 || true
+  if [[ "$force_full" -eq 0 && "$(quick_gate_status)" == "STOP_OK" ]]; then
     run_cleanup_tier "T1" "$include_local_workspace" 0
     return 0
   fi
 
-  local t2_status=0
-  if run_cleanup_tier "T2" "$include_local_workspace" 0 >/dev/null 2>&1; then
-    t2_status=0
-  else
-    t2_status=$?
-  fi
-  if [[ "$t2_status" -eq 0 && "$force_full" -eq 0 ]]; then
+  # Escalate to T2 only when T1 quick gate failed, then stop if medium gate is good.
+  run_cleanup_tier "T2" "$include_local_workspace" 0 >/dev/null 2>&1 || true
+  if [[ "$force_full" -eq 0 && "$(medium_gate_status)" == "STOP_OK" ]]; then
     run_cleanup_tier "T2" "$include_local_workspace" 0
     return 0
   fi
 
+  # Escalate to T3 only when lower tiers still signal unresolved findings, or force_full is requested.
   run_cleanup_tier "T3" "$include_local_workspace" 0
 }
 
@@ -1617,6 +1627,228 @@ run_parity_pulse() {
   collect_registry_problems
   summarize_repo_rows
   emit_pulse_report "$require_fresh" "$event_name"
+}
+
+run_cleanup_trash_execute() {
+  local mode="${1:-adhoc}"
+  local lane_title
+  lane_title="$(cleanup_trash_title "$mode")"
+  local src_root="$ROOT/local-workspace/local-trash-delete/local-working-files"
+  local dst_root="$ROOT/local-workspace/local-trash-delete/local-purge/local-working-files"
+  local cutoff_epoch
+  cutoff_epoch="$(python3 - <<'PY'
+from datetime import datetime, timezone, timedelta
+print(int((datetime.now(timezone.utc) - timedelta(days=30)).timestamp()))
+PY
+)"
+
+  print_header "$lane_title"
+
+  if [[ ! -d "$src_root" ]]; then
+    print_section "Result"
+    echo "- scope=local-trash-delete/local-working-files -> local-trash-delete/local-purge/local-working-files"
+    echo "- status=NO-OP"
+    echo "- detail=source path missing: $src_root"
+    return 0
+  fi
+
+  mkdir -p "$dst_root"
+
+  local tmp_files="$TMP_DIR/cleanup_trash_eligible_files.txt"
+  local tmp_dirs="$TMP_DIR/cleanup_trash_eligible_directories.txt"
+  local tmp_effective_dirs="$TMP_DIR/cleanup_trash_effective_directories.txt"
+  local tmp_effective_files="$TMP_DIR/cleanup_trash_effective_files.txt"
+  local tmp_skipped="$TMP_DIR/cleanup_trash_skipped.txt"
+  local tmp_moved="$TMP_DIR/cleanup_trash_moved.txt"
+  : > "$tmp_files"
+  : > "$tmp_dirs"
+  : > "$tmp_effective_dirs"
+  : > "$tmp_effective_files"
+  : > "$tmp_skipped"
+  : > "$tmp_moved"
+
+  # Phase 1: collect eligible files/directories older than 30 days.
+  while IFS= read -r -d '' f; do
+    [[ -z "$f" ]] && continue
+    local mtime
+    mtime="$(stat -f %m "$f" 2>/dev/null || true)"
+    [[ -z "$mtime" ]] && continue
+    if [[ "$mtime" -lt "$cutoff_epoch" ]]; then
+      printf '%s\n' "$f" >> "$tmp_files"
+    fi
+  done < <(find "$src_root" -type f -print0 2>/dev/null)
+
+  while IFS= read -r -d '' d; do
+    [[ -z "$d" ]] && continue
+    [[ "$d" == "$src_root" ]] && continue
+    local mtime
+    mtime="$(stat -f %m "$d" 2>/dev/null || true)"
+    [[ -z "$mtime" ]] && continue
+    if [[ "$mtime" -lt "$cutoff_epoch" ]]; then
+      printf '%s\n' "$d" >> "$tmp_dirs"
+    fi
+  done < <(find "$src_root" -mindepth 1 -type d -print0 2>/dev/null)
+
+  # Phase 2: build effective directory set (no nested double-move roots).
+  sort -r "$tmp_dirs" | while IFS= read -r d; do
+    [[ -z "$d" ]] && continue
+    local skip=0
+    while IFS= read -r already; do
+      [[ -z "$already" ]] && continue
+      if [[ "$d" == "$already"*"/"* ]]; then
+        skip=1
+        break
+      fi
+    done < "$tmp_effective_dirs"
+    [[ "$skip" -eq 1 ]] && continue
+    printf '%s\n' "$d" >> "$tmp_effective_dirs"
+  done
+
+  # Phase 3: effective files = eligible files not under an effective moved directory.
+  while IFS= read -r f; do
+    [[ -z "$f" ]] && continue
+    local covered=0
+    while IFS= read -r d; do
+      [[ -z "$d" ]] && continue
+      if [[ "$f" == "$d/"* ]]; then
+        covered=1
+        break
+      fi
+    done < "$tmp_effective_dirs"
+    [[ "$covered" -eq 1 ]] && continue
+    printf '%s\n' "$f" >> "$tmp_effective_files"
+  done < "$tmp_files"
+
+  local before_files before_directories before_items
+  before_files="$(wc -l < "$tmp_effective_files" | tr -d ' ')"
+  before_directories="$(wc -l < "$tmp_effective_dirs" | tr -d ' ')"
+  before_items=$((before_files + before_directories))
+
+  # Execute directories first.
+  while IFS= read -r d; do
+    [[ -z "$d" ]] && continue
+    local rel="${d#"$src_root"/}"
+    local dest="$dst_root/$rel"
+    if [[ -e "$dest" ]]; then
+      printf 'path=%s reason=%s\n' "$d" "destination_conflict_rename_prohibited" >> "$tmp_skipped"
+      continue
+    fi
+    mkdir -p "$(dirname "$dest")"
+    if mv "$d" "$dest" 2>/dev/null; then
+      printf 'from=%s to=%s type=directory\n' "$d" "$dest" >> "$tmp_moved"
+    else
+      printf 'path=%s reason=%s\n' "$d" "move_error" >> "$tmp_skipped"
+    fi
+  done < "$tmp_effective_dirs"
+
+  # Execute files.
+  while IFS= read -r f; do
+    [[ -z "$f" ]] && continue
+    local rel="${f#"$src_root"/}"
+    local dest="$dst_root/$rel"
+    if [[ -e "$dest" ]]; then
+      printf 'path=%s reason=%s\n' "$f" "destination_conflict_rename_prohibited" >> "$tmp_skipped"
+      continue
+    fi
+    mkdir -p "$(dirname "$dest")"
+    if mv "$f" "$dest" 2>/dev/null; then
+      printf 'from=%s to=%s type=file\n' "$f" "$dest" >> "$tmp_moved"
+    else
+      printf 'path=%s reason=%s\n' "$f" "move_error" >> "$tmp_skipped"
+    fi
+  done < "$tmp_effective_files"
+
+  # Recompute effective post-execution eligible counts.
+  : > "$tmp_files"
+  : > "$tmp_dirs"
+  : > "$tmp_effective_dirs"
+  : > "$tmp_effective_files"
+
+  while IFS= read -r -d '' f; do
+    [[ -z "$f" ]] && continue
+    local mtime
+    mtime="$(stat -f %m "$f" 2>/dev/null || true)"
+    [[ -z "$mtime" ]] && continue
+    if [[ "$mtime" -lt "$cutoff_epoch" ]]; then
+      printf '%s\n' "$f" >> "$tmp_files"
+    fi
+  done < <(find "$src_root" -type f -print0 2>/dev/null)
+
+  while IFS= read -r -d '' d; do
+    [[ -z "$d" ]] && continue
+    [[ "$d" == "$src_root" ]] && continue
+    local mtime
+    mtime="$(stat -f %m "$d" 2>/dev/null || true)"
+    [[ -z "$mtime" ]] && continue
+    if [[ "$mtime" -lt "$cutoff_epoch" ]]; then
+      printf '%s\n' "$d" >> "$tmp_dirs"
+    fi
+  done < <(find "$src_root" -mindepth 1 -type d -print0 2>/dev/null)
+
+  sort -r "$tmp_dirs" | while IFS= read -r d; do
+    [[ -z "$d" ]] && continue
+    local skip=0
+    while IFS= read -r already; do
+      [[ -z "$already" ]] && continue
+      if [[ "$d" == "$already"*"/"* ]]; then
+        skip=1
+        break
+      fi
+    done < "$tmp_effective_dirs"
+    [[ "$skip" -eq 1 ]] && continue
+    printf '%s\n' "$d" >> "$tmp_effective_dirs"
+  done
+
+  while IFS= read -r f; do
+    [[ -z "$f" ]] && continue
+    local covered=0
+    while IFS= read -r d; do
+      [[ -z "$d" ]] && continue
+      if [[ "$f" == "$d/"* ]]; then
+        covered=1
+        break
+      fi
+    done < "$tmp_effective_dirs"
+    [[ "$covered" -eq 1 ]] && continue
+    printf '%s\n' "$f" >> "$tmp_effective_files"
+  done < "$tmp_files"
+
+  local after_files after_directories after_items moved_files moved_directories moved_items skipped_count rename_count final_status
+  after_files="$(wc -l < "$tmp_effective_files" | tr -d ' ')"
+  after_directories="$(wc -l < "$tmp_effective_dirs" | tr -d ' ')"
+  after_items=$((after_files + after_directories))
+  moved_files="$(grep -c 'type=file' "$tmp_moved" || true)"
+  moved_directories="$(grep -c 'type=directory' "$tmp_moved" || true)"
+  moved_items=$((moved_files + moved_directories))
+  skipped_count="$(wc -l < "$tmp_skipped" | tr -d ' ')"
+  rename_count=0
+  final_status="no-op"
+  if [[ "$moved_items" -gt 0 ]]; then
+    final_status="mutated"
+  fi
+
+  print_section "Before $lane_title"
+  echo "- eligible_files_count=$before_files"
+  echo "- eligible_directories_count=$before_directories"
+
+  print_section "After Execution"
+  echo "- eligible_files_count=$after_files"
+  echo "- eligible_directories_count=$after_directories"
+  echo "- final_status=$final_status"
+  echo "- moved_files_count=$moved_files"
+  echo "- moved_directories_count=$moved_directories"
+  echo "- skipped_count=$skipped_count"
+  if [[ "$skipped_count" -gt 0 ]]; then
+    local skipped_reasons
+    skipped_reasons="$(awk -F'reason=' '{print $2}' "$tmp_skipped" | sort | uniq | paste -sd ';' -)"
+    echo "- skipped_reasons=${skipped_reasons:-unknown}"
+  else
+    echo "- skipped_reasons=none"
+  fi
+  echo "- rename_count=$rename_count"
+  if [[ "$rename_count" -gt 0 ]]; then
+    echo "- BUG=rename_count_should_be_zero"
+  fi
 }
 
 main() {
@@ -1634,6 +1866,23 @@ main() {
     maybe_event="$(printf '%s\n' "$raw" | sed -n 's/.*event=\([^ ]*\).*/\1/p')"
     [[ -n "$maybe_event" ]] && pulse_event="$maybe_event"
     run_parity_pulse "$pulse_fresh" "$pulse_event"
+    exit 0
+  fi
+
+  # Explicit ad hoc trash cleanup lane:
+  # if command includes both cleanup + trash and no tier-language tokens,
+  # run the narrow trash->purge execution path (always execute, never report-only).
+  if has_phrase "$q" "__cleanup_trash_weekly__"; then
+    run_cleanup_trash_execute "weekly"
+    exit 0
+  fi
+
+  if has_phrase "$q" "cleanup" && has_phrase "$q" "trash" && ! has_tier_language "$q"; then
+    if has_phrase "$q" "weekly"; then
+      run_cleanup_trash_execute "weekly"
+    else
+      run_cleanup_trash_execute "adhoc"
+    fi
     exit 0
   fi
 

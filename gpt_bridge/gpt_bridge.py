@@ -261,6 +261,19 @@ class BridgeHandler(BaseHTTPRequestHandler):
         )
         self._write_json(HTTPStatus.OK, response_payload)
 
+    def do_GET(self) -> None:
+        if self.path == "/health":
+            self._write_json(
+                HTTPStatus.OK,
+                {
+                    "status": "ok",
+                    "service": "gpt-bridge",
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                },
+            )
+            return
+        self._write_json(HTTPStatus.NOT_FOUND, {"error": "Not found"})
+
 
 def resolve_model(gpt_request: GPTRequest, config: BridgeConfig) -> str:
     override_model = gpt_request.constraints.get("model")
