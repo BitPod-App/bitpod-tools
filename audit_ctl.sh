@@ -132,6 +132,39 @@ cleanup_trash_title() {
   fi
 }
 
+versioned_destination_path() {
+  local desired="$1"
+  local item_type="${2:-file}"
+  local parent base stem ext candidate
+  local n=1
+
+  if [[ ! -e "$desired" ]]; then
+    echo "$desired"
+    return 0
+  fi
+
+  parent="$(dirname "$desired")"
+  base="$(basename "$desired")"
+  ext=""
+  stem="$base"
+
+  if [[ "$item_type" == "file" && "$base" == *.* && "$base" != .* ]]; then
+    stem="${base%.*}"
+    ext=".${base##*.}"
+  fi
+
+  while [[ "$n" -le 5000 ]]; do
+    candidate="$parent/${stem} (${n})${ext}"
+    if [[ ! -e "$candidate" ]]; then
+      echo "$candidate"
+      return 0
+    fi
+    n=$((n + 1))
+  done
+
+  return 1
+}
+
 render_bool() {
   if [[ "$1" -eq 1 ]]; then
     echo "YES"
@@ -1730,8 +1763,13 @@ PY
     local rel="${d#"$src_root"/}"
     local dest="$dst_root/$rel"
     if [[ -e "$dest" ]]; then
-      printf 'path=%s reason=%s\n' "$d" "destination_conflict_rename_prohibited" >> "$tmp_skipped"
-      continue
+      local versioned_dest
+      if versioned_dest="$(versioned_destination_path "$dest" "directory")"; then
+        dest="$versioned_dest"
+      else
+        printf 'path=%s reason=%s\n' "$d" "destination_conflict_rename_resolution_failed" >> "$tmp_skipped"
+        continue
+      fi
     fi
     mkdir -p "$(dirname "$dest")"
     if mv "$d" "$dest" 2>/dev/null; then
@@ -1747,8 +1785,13 @@ PY
     local rel="${f#"$src_root"/}"
     local dest="$dst_root/$rel"
     if [[ -e "$dest" ]]; then
-      printf 'path=%s reason=%s\n' "$f" "destination_conflict_rename_prohibited" >> "$tmp_skipped"
-      continue
+      local versioned_dest
+      if versioned_dest="$(versioned_destination_path "$dest" "file")"; then
+        dest="$versioned_dest"
+      else
+        printf 'path=%s reason=%s\n' "$f" "destination_conflict_rename_resolution_failed" >> "$tmp_skipped"
+        continue
+      fi
     fi
     mkdir -p "$(dirname "$dest")"
     if mv "$f" "$dest" 2>/dev/null; then
@@ -1813,7 +1856,7 @@ PY
     printf '%s\n' "$f" >> "$tmp_effective_files"
   done < "$tmp_files"
 
-  local after_files after_directories after_items moved_files moved_directories moved_items skipped_count rename_count final_status
+  local after_files after_directories after_items moved_files moved_directories moved_items skipped_count collision_rename_count final_status
   after_files="$(wc -l < "$tmp_effective_files" | tr -d ' ')"
   after_directories="$(wc -l < "$tmp_effective_dirs" | tr -d ' ')"
   after_items=$((after_files + after_directories))
@@ -1821,7 +1864,7 @@ PY
   moved_directories="$(grep -c 'type=directory' "$tmp_moved" || true)"
   moved_items=$((moved_files + moved_directories))
   skipped_count="$(wc -l < "$tmp_skipped" | tr -d ' ')"
-  rename_count=0
+  collision_rename_count="$(awk -F'to=' '/^from=/{print $2}' "$tmp_moved" | awk -F'/' '{print $NF}' | grep -Ec ' \([0-9]+\)(\.[^./]+)?$' || true)"
   final_status="no-op"
   if [[ "$moved_items" -gt 0 ]]; then
     final_status="mutated"
@@ -1845,10 +1888,7 @@ PY
   else
     echo "- skipped_reasons=none"
   fi
-  echo "- rename_count=$rename_count"
-  if [[ "$rename_count" -gt 0 ]]; then
-    echo "- BUG=rename_count_should_be_zero"
-  fi
+  echo "- collision_rename_count=$collision_rename_count"
 }
 
 main() {
