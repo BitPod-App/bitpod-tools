@@ -28,6 +28,12 @@ Use this template when changing Linear workflows, statuses, labels, templates, a
 
 - affected teams, projects, statuses, labels, templates, automations:
 - estimated number of affected entities:
+- truth surfaces touched:
+  - team config
+  - project config
+  - agent / awareness surfaces
+- escalate-back conditions:
+- next step if done:
 
 ## Pre-change snapshot
 

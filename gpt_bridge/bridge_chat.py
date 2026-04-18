@@ -31,6 +31,14 @@ TAYLOR_SYSTEM_PROMPT = (
     "Be direct, concrete, and honest. Keep replies short but useful. Ask at most one clarifying "
     "question only when it prevents an error."
 )
+VERA_SYSTEM_PROMPT = (
+    "You are Vera, BitPod's QA Specialist. Identity: exceptional QA software engineer, concise, "
+    "skeptical, evidence-first, blunt-but-fair, minimal small talk, not timid. Primary role: decide "
+    "QA truthfully and explain verification reasoning clearly. Default posture: regression-first, "
+    "tries to break features, severity-realistic, proposes only the smallest verifiable next step "
+    "when blocked. Hard boundaries: no scope changes, no priority decisions, no implementation "
+    "ownership, no fake pass. If evidence is insufficient, say so directly instead of implying a pass."
+)
 LOCAL_CODEX_SKILLS_ROOT = WORKSPACE_ROOT / "local-workspace" / "local-codex" / "skills"
 TAYLOR_SKILL_REFERENCES_ROOT = LOCAL_CODEX_SKILLS_ROOT / "taylor" / "references"
 DEFAULT_TAYLOR_REFERENCE_FILES = (
@@ -38,6 +46,10 @@ DEFAULT_TAYLOR_REFERENCE_FILES = (
     TAYLOR_SKILL_REFERENCES_ROOT / "personal-preferences-interactions.md",
     TAYLOR_SKILL_REFERENCES_ROOT / "app-mission-vision.md",
     TAYLOR_SKILL_REFERENCES_ROOT / "key-memories-and-examples.md",
+)
+DEFAULT_VERA_REFERENCE_FILES = (
+    WORKSPACE_ROOT / "bitpod-tools" / "linear" / "docs" / "process" / "vera_qa_lane_contract_v1.md",
+    WORKSPACE_ROOT / "bitpod-tools" / "linear" / "docs" / "process" / "vera_runtime_minimum_v1.md",
 )
 MAX_REFERENCE_CHARS = 6000
 
@@ -145,7 +157,7 @@ def _strip_actor_mentions(text: str, actor: str) -> str:
 
 def _relay_actor_for_mentions(mentions: list[str]) -> str | None:
     for mention in mentions:
-        if mention in {"taylor", "gpt"}:
+        if mention in {"taylor", "gpt", "vera"}:
             return mention
     return None
 
@@ -1084,6 +1096,8 @@ def _send_to_gpt(
     reference_context = ""
     if reply_actor == "taylor":
         reference_context = _load_reference_context(DEFAULT_TAYLOR_REFERENCE_FILES, MAX_REFERENCE_CHARS)
+    elif reply_actor == "vera":
+        reference_context = _load_reference_context(DEFAULT_VERA_REFERENCE_FILES, MAX_REFERENCE_CHARS)
     context_text = "\n\n".join(
         chunk for chunk in [memory_context, reference_context] if chunk
     ) or None
@@ -1315,11 +1329,15 @@ def run_team(args: argparse.Namespace) -> int:
     preface_status = (
         "Bridge GPT | @taylor mention detected, routing to Taylor..."
         if relay_actor == "taylor"
+        else "Bridge GPT | @vera mention detected, routing to Vera..."
+        if relay_actor == "vera"
         else "Bridge GPT | @gpt mention detected, relaying..."
     )
     meta_overrides = {"route_actor": relay_actor}
     if relay_actor == "taylor":
         meta_overrides["system_prompt"] = TAYLOR_SYSTEM_PROMPT
+    elif relay_actor == "vera":
+        meta_overrides["system_prompt"] = VERA_SYSTEM_PROMPT
 
     return _send_to_gpt(
         log_file=log_file,
@@ -1396,6 +1414,7 @@ def run_options(args: argparse.Namespace) -> int:
     print("Bridge GPT | ~codex <message> (@direct message to Codex, quick short replies)")
     print("Bridge GPT | ~cj <message> (@mentions CJ in team chat, may reply eventually, extremely elaborately)")
     print("Bridge GPT | ~taylor <message> (@direct message to Taylor in team chat, longer replies)")
+    print("Bridge GPT | ~vera <message> (@direct message to Vera in team chat, QA voice / evidence-first)")
     print(f"Bridge GPT | active session: {session}")
     return 0
 
@@ -1551,7 +1570,7 @@ def run_chat(args: argparse.Namespace) -> int:
                     show_raw=False,
                 )
             )
-        if tcmd in {"gpt", "codex", "cj", "taylor", "decide"}:
+        if tcmd in {"gpt", "codex", "cj", "taylor", "vera", "decide"}:
             if not trest:
                 print(f"Bridge GPT | Usage: ~{tcmd} <message>")
                 return 2
@@ -1603,6 +1622,11 @@ def run_chat(args: argparse.Namespace) -> int:
         if cmd == "/decide":
             return run_team(_chat_team_args(args, f"@gpt [DECIDE] {rest}"))
         return run_team(_chat_team_args(args, f"@gpt {rest}"))
+    if cmd == "/vera":
+        if not rest:
+            print("Bridge GPT | Usage: /vera <message>")
+            return 2
+        return run_team(_chat_team_args(args, f"@vera {rest}"))
     if cmd == "/codex":
         if not rest:
             print("Bridge GPT | Usage: /codex <message>")

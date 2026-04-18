@@ -61,6 +61,17 @@ class EngineTests(unittest.TestCase):
         actions = self.bot.on_linear_ready_gate(issue)
         self.assertTrue(any(a.kind == "set_label" and a.payload["value"] == "needs-estimate" for a in actions))
 
+    def test_ready_gate_accepts_emoji_type_label(self):
+        issue = {
+            "identifier": "BIT-45",
+            "status": "Ready",
+            "labels": ["⭐️ Feature"],
+            "estimate": 3,
+            "description": "Objective\nScope\nRequired outputs\nVerification plan\nRollback note\nAcceptance / closure criteria",
+        }
+        actions = self.bot.on_linear_ready_gate(issue)
+        self.assertEqual(actions, [])
+
     def test_ready_gate_plan_parent_requires_estimate(self):
         issue = {
             "identifier": "BIT-45",
@@ -102,14 +113,14 @@ class EngineTests(unittest.TestCase):
         self.assertEqual(actions[0].payload["value"], "qa-passed")
         self.assertEqual(actions[1].payload["status"], "Delivered")
 
-    def test_linear_comment_passed_non_acceptance_work_goes_to_done(self):
+    def test_linear_comment_passed_non_acceptance_work_goes_to_delivered(self):
         actions = self.bot.on_linear_comment(
             "BIT-45",
             "QA_RESULT=PASSED\nok",
             "https://pr",
             issue_labels=["Chore"],
         )
-        self.assertEqual(actions[1].payload["status"], "Done")
+        self.assertEqual(actions[1].payload["status"], "Delivered")
 
     def test_linear_comment_skipped_sets_skip_gate(self):
         actions = self.bot.on_linear_comment(
@@ -133,8 +144,10 @@ class EngineTests(unittest.TestCase):
         self.assertEqual(actions[1].system, "linear")
 
     def test_acceptance_rejected(self):
-        actions = self.bot.on_linear_acceptance_gate_change("BIT-45", "pm-rejected", "https://pr")
+        actions = self.bot.on_linear_acceptance_gate_change("BIT-45", "pm-rejected", "https://pr", "missing acceptance criteria")
         self.assertEqual(actions[0].payload["status"], "In Progress")
+        self.assertEqual(actions[1].kind, "comment")
+        self.assertIn("missing acceptance criteria", actions[1].payload["body"])
 
     def test_acceptance_accepted(self):
         actions = self.bot.on_linear_acceptance_gate_change("BIT-45", "pm-accepted", "https://pr")
@@ -142,34 +155,62 @@ class EngineTests(unittest.TestCase):
 
     def test_acceptance_skipped(self):
         actions = self.bot.on_linear_acceptance_gate_change("BIT-45", "pm-skipped", "https://pr")
-        self.assertEqual(actions[0].payload["status"], "Done")
+        self.assertEqual(actions[0].payload["status"], "Accepted")
 
     def test_merge_gate_fail_closed_for_feature_without_acceptance_gate(self):
-        issue = {"identifier": "BIT-45", "labels": ["Feature", "qa-passed"]}
+        issue = {"identifier": "BIT-45", "labels": ["Feature", "qa-passed"], "status": "Delivered"}
         actions = self.bot.on_github_pr_merged(issue, "https://pr", "sha")
         self.assertEqual(len(actions), 1)
         self.assertEqual(actions[0].kind, "comment")
-        self.assertIn("workflow gates are incomplete", actions[0].payload["body"])
+        self.assertIn("missing pm-accepted/pm-skipped", actions[0].payload["body"])
+        self.assertIn("status is not Accepted", actions[0].payload["body"])
 
     def test_merge_gate_pass_for_feature_with_acceptance_gate_sets_done(self):
-        issue = {"identifier": "BIT-45", "labels": ["Feature", "qa-passed", "pm-accepted"]}
+        issue = {"identifier": "BIT-45", "labels": ["Feature", "qa-passed", "pm-accepted"], "status": "Accepted"}
         actions = self.bot.on_github_pr_merged(issue, "https://pr", "sha")
         self.assertEqual(actions[0].kind, "set_status")
         self.assertEqual(actions[0].payload["status"], "Done")
         self.assertEqual(actions[1].kind, "comment")
         self.assertIn("Merged recorded", actions[1].payload["body"])
 
-    def test_merge_gate_pass_for_chore_with_qa_gate_only(self):
-        issue = {"identifier": "BIT-45", "labels": ["Chore", "qa-passed"]}
+    def test_merge_gate_pass_for_chore_with_pm_skip(self):
+        issue = {"identifier": "BIT-45", "labels": ["Chore", "qa-passed", "pm-skipped"], "status": "Accepted"}
+        actions = self.bot.on_github_pr_merged(issue, "https://pr", "sha")
+        self.assertEqual(actions[0].kind, "set_status")
+        self.assertEqual(actions[0].payload["status"], "Done")
+        self.assertEqual(actions[1].kind, "comment")
+        self.assertIn("Merged recorded", actions[1].payload["body"])
+
+    def test_merge_gate_accepts_emoji_type_label(self):
+        issue = {"identifier": "BIT-45", "labels": ["⚙️ Chore", "qa-passed", "pm-accepted"], "status": "Accepted"}
+        actions = self.bot.on_github_pr_merged(issue, "https://pr", "sha")
+        self.assertEqual(actions[0].kind, "set_status")
+        self.assertEqual(actions[0].payload["status"], "Done")
+
+    def test_merge_gate_fail_closed_for_release(self):
+        issue = {"identifier": "BIT-45", "labels": ["Release", "qa-passed", "pm-accepted"], "status": "Accepted"}
         actions = self.bot.on_github_pr_merged(issue, "https://pr", "sha")
         self.assertEqual(actions[0].kind, "comment")
-        self.assertIn("Merged recorded", actions[0].payload["body"])
+        self.assertIn("Release issues do not auto-close", actions[0].payload["body"])
 
-    def test_aging_scan(self):
+    def test_merge_gate_fail_closed_when_blocked(self):
+        issue = {"identifier": "BIT-45", "labels": ["Feature", "qa-passed", "pm-accepted", "blocked"], "status": "Accepted"}
+        actions = self.bot.on_github_pr_merged(issue, "https://pr", "sha")
+        self.assertEqual(actions[0].kind, "comment")
+        self.assertIn("issue is blocked", actions[0].payload["body"])
+
+    def test_aging_scan_backlog_to_icebox(self):
         now = datetime(2026, 3, 4, tzinfo=timezone.utc)
         issues = [{"identifier": "BIT-1", "status": "Backlog", "updatedAt": "2026-01-01T00:00:00Z"}]
         actions = self.bot.daily_aging_scan(issues, now=now)
         self.assertTrue(any(a.kind == "set_status" and a.payload["status"] == "Icebox 🧊" for a in actions))
+
+    def test_aging_scan_icebox_to_stale_with_reopen_comment(self):
+        now = datetime(2026, 3, 4, tzinfo=timezone.utc)
+        issues = [{"identifier": "BIT-2", "status": "Icebox 🧊", "updatedAt": "2026-01-01T00:00:00Z"}]
+        actions = self.bot.daily_aging_scan(issues, now=now)
+        self.assertTrue(any(a.kind == "set_status" and a.payload["status"] == "Stale" for a in actions))
+        self.assertTrue(any(a.kind == "comment" and "can be reopened later" in a.payload["body"] for a in actions))
 
 
 if __name__ == "__main__":

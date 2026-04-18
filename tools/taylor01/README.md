@@ -14,7 +14,12 @@ Subdirectories:
 - `policy/` for workspace and operating norms
 - `adapters/` for third-party tool contracts and implementations
 
+Active example:
+
+- `core/agents/vera/` is the canonical portable home for Vera's first-class QA agent definition
+- `adapters/openai/vera/` contains OpenAI-native execution adapters
+- `adapters/openclaw/vera/` contains the secondary OpenClaw mapping layer
+
 Do not migrate content here casually.
 
 Only move artifacts when their Taylor01 ownership is clear enough to reduce coupling rather than create confusion.
-

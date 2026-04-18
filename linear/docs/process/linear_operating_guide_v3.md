@@ -3,7 +3,7 @@
 Version: v3
 Status: Active
 Owner: Product Development (Codex + Taylor)
-Last updated: 2026-03-24
+Last updated: 2026-04-15
 Primary issue: [BIT-22 — Versioned Linear operating guide for agents (with rollback path)](https://linear.app/bitpod-app/issue/BIT-22/versioned-linear-operating-guide-for-agents-with-rollback-path)
 Supersedes: `linear_operating_guide_v2.md` as the active guide
 
@@ -12,6 +12,13 @@ Supersedes: `linear_operating_guide_v2.md` as the active guide
 Define the canonical way agents use Linear for execution tracking, evidence logging, safe status transitions, Taylor01 portability review, and reversible admin/process changes.
 
 This guide is the active BitPod-specific Linear overlay, not the final Taylor capability model.
+
+Maintenance update — 2026-04-15:
+
+- align workflow/admin/guidance mutations with Control Tower validation rather than treating thread completion as sufficient
+- preserve current live workflow names that are already wired into code, tests, and prompts
+- treat current Vera-style QA as a truthful substitute surface, not proof of embodied independent Vera authority
+- keep GitHub-driven Linear truth, but fail closed when merge, QA, PM, or blocker truth is incomplete
 
 ## Scope
 
@@ -23,6 +30,11 @@ This guide is the active BitPod-specific Linear overlay, not the final Taylor ca
 - high-impact Linear admin/process change control
 
 ## Operating rules
+
+0. Control Tower validation boundary
+- Control Tower owns lane validation, sequencing, blocker truth, stale-lane retirement, truth-surface synchronization, and final recommendation packets.
+- Workflow/admin/guidance changes touching live Linear truth surfaces are guarded lanes, not ad hoc tweaks.
+- No risky workflow/admin mutation is complete until the change proposal, snapshot, rollback note, and post-change validation package exists and is validated.
 
 1. Evidence-first claims
 - Completion claims must include commands or UI proof and artifact path(s).
@@ -86,6 +98,7 @@ This guide is the active BitPod-specific Linear overlay, not the final Taylor ca
 9. Linear admin change control
 - Workflow, schema, template, automation, or other meaningful admin changes must follow `linear_admin_change_control_v1.md`.
 - Destructive or high-blast changes require a written proposal, a snapshot, and a rollback note before execution.
+- Live truth-surface changes also require Control Tower validation of the evidence package before they count as complete.
 
 10. Taylor01 portability gate
 - Any relevant issue must include a Taylor01 Portability Check block.
@@ -102,6 +115,19 @@ This guide is the active BitPod-specific Linear overlay, not the final Taylor ca
 - Keep Linear small and legible.
 - Close stale tickets, merge duplicates, and normalize missing acceptance criteria before adding more structure.
 - Prefer fewer labels unless a new label clearly solves repeated friction.
+
+12. QA and PM truth must be honest
+- Do not imply “Vera QA” unless a real independent Vera-capable surface exists for that run.
+- Current substitute QA surfaces must label themselves honestly.
+- If required QA is missing, the truthful state is blocked by missing QA, not implied pass.
+- CJ waiver is waiver, not QA.
+
+13. GitHub truth is allowed, but fail closed
+- Objective GitHub events may update Linear when the event is real and the gate state is valid.
+- PR open/draft may move work to `In Progress`.
+- Review-ready PR state may move work to `In Review`.
+- Merge to `main` may move work from `Accepted` to `Done` only when QA, PM, blocker, and release truth are already satisfied.
+- Otherwise, the engine must leave a correction comment and stop short of closure.
 
 ## Required issue evidence format
 
@@ -124,9 +150,17 @@ This guide is the active BitPod-specific Linear overlay, not the final Taylor ca
 
 ## Current workspace status model
 
-- Active statuses observed: `Icebox 🧊`, `Backlog`, `Ready`, `In Progress`, `In Review`, `Delivered`, `Accepted`, `Done`, `Canceled`, `Duplicate`, `Obsolete`, `Won't Do`.
+- Active statuses observed: `Icebox 🧊`, `Backlog`, `Ready`, `In Progress`, `In Review`, `Delivered`, `Accepted`, `Done`, `Canceled`, `Duplicate`, `Obsolete`, `Won't Do`, `Stale`.
 - Canonical status, label, board, gate, and automation semantics now live in `linear_operating_model_v1.md`.
 - Legacy lifecycle labels and older review label groups are transitional residue and should not be expanded.
+
+Near-term canonical interpretation:
+
+- `In Review` remains the current Product Development review gate
+- `Delivered` remains PM gate
+- `Accepted` remains the PM-accepted checkpoint before `Done`
+- `Stale` is the primary inactivity-close status
+- `Obsolete` remains legacy/edge-case and is not the primary inactivity sink
 
 ## Version to config mapping (v3)
 
@@ -146,6 +180,7 @@ Artifacts:
 - `taylor01_portability_review_gate_v1.md`
 - `linear_admin_change_control_v1.md`
 - `linear_change_proposal_template_v1.md`
+- `linear_process_v1_1_control_tower_change_proposal_2026-04-15.md`
 - `linear_link_reference_policy_v1.md`
 - `capability_state_truth_label_incident_protocol_v1.md`
 

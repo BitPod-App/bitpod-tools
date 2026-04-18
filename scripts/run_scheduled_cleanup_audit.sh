@@ -5,10 +5,12 @@ SCRIPT_DIR="$(cd -- "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DEFAULT="$(cd -- "$SCRIPT_DIR/../.." && pwd)"
 ROOT="${BITPOD_APP_ROOT:-${WORKSPACE:-$ROOT_DEFAULT}}"
 AUDIT_CTL="$ROOT/bitpod-tools/audit_ctl.sh"
+RETENTION_CTL="$ROOT/bitpod-tools/scripts/enforce_local_cleanup_retention.sh"
 STATE_DIR="$ROOT/local-workspace/local-working-files/local-cleanup-audit"
 STATE_FILE="$STATE_DIR/scheduled_cleanup_state.env"
 LATEST_REPORT="$STATE_DIR/latest_scheduled_cleanup.md"
 LINEAR_PAYLOAD="$STATE_DIR/latest_linear_escalation.md"
+RETENTION_REPORT="$STATE_DIR/latest_retention_enforcement.md"
 TIMESTAMP="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
 date_plus_14_days() {
@@ -46,6 +48,58 @@ else
   run_exit=$?
 fi
 
+local_workspace_profile="${BITPOD_LOCAL_WORKSPACE_PROFILE:-personal_machine_full}"
+retention_mode="${BITPOD_SCHEDULED_RETENTION_MODE:-auto}"
+retention_note=""
+retention_output=""
+retention_exit=0
+retention_execute=0
+
+if [[ "$retention_mode" == "auto" ]]; then
+  if [[ "$local_workspace_profile" == "taylor01_execution_hq_lean" ]]; then
+    retention_execute=1
+  fi
+elif [[ "$retention_mode" == "execute" ]]; then
+  retention_execute=1
+elif [[ "$retention_mode" == "off" ]]; then
+  retention_note="retention enforcement skipped (mode=off)"
+fi
+
+if [[ -z "$retention_note" ]]; then
+  if [[ -x "$RETENTION_CTL" ]]; then
+    if [[ "$retention_execute" -eq 1 ]]; then
+      if retention_output="$(BITPOD_APP_ROOT="$ROOT" "$RETENTION_CTL" --execute)"; then
+        retention_exit=0
+      else
+        retention_exit=$?
+      fi
+      retention_note="retention enforcement mode=execute profile=$local_workspace_profile"
+    else
+      if retention_output="$(BITPOD_APP_ROOT="$ROOT" "$RETENTION_CTL")"; then
+        retention_exit=0
+      else
+        retention_exit=$?
+      fi
+      retention_note="retention enforcement mode=report profile=$local_workspace_profile"
+    fi
+  else
+    retention_note="retention enforcement script missing or not executable: $RETENTION_CTL"
+  fi
+fi
+
+{
+  echo "# Scheduled Retention Enforcement"
+  echo
+  echo "- timestamp: $TIMESTAMP"
+  echo "- profile: $local_workspace_profile"
+  echo "- mode: $retention_mode"
+  echo "- execute: $( [[ "$retention_execute" -eq 1 ]] && echo yes || echo no )"
+  echo "- exit_code: $retention_exit"
+  echo "- note: $retention_note"
+  echo
+  printf '%s\n' "$retention_output"
+} > "$RETENTION_REPORT"
+
 {
   echo "# Scheduled Cleanup Audit"
   echo
@@ -53,6 +107,8 @@ fi
   echo "- mode: scheduled-report-only"
   echo "- command: run T3 audit"
   echo "- exit_code: $run_exit"
+  echo "- retention_report: $RETENTION_REPORT"
+  echo "- retention_note: $retention_note"
   echo
   printf '%s\n' "$report"
 } > "$LATEST_REPORT"

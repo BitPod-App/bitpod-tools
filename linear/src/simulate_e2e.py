@@ -71,7 +71,7 @@ def main() -> int:
     }
     step4 = rt.run_linear_event(acceptance)
 
-    # 5) PR merged -> record merge only; gate state already drove status
+    # 5) PR merged -> Done only if merge-readiness gates were already satisfied
     merged = {
         "action": "closed",
         "pull_request": {
@@ -82,6 +82,7 @@ def main() -> int:
         },
         "linear_issue": {
             "identifier": issue_key,
+            "status": "Accepted",
             "labels": ["Feature", "qa-passed", "pm-accepted"],
         },
     }

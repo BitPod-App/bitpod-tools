@@ -104,10 +104,11 @@ Implemented in engine/service:
   - daily aging scan payload handler
 - Gating behavior:
   - execution gate (`Issue Type` + exact-one type + estimate + required headings)
-  - status-first review flow (`In Review` without pending review labels)
-  - QA gates drive `In Review` -> `Delivered` or `Done`
-  - PM review labels drive `Delivered` -> `Accepted` or `Done`
-  - merged PRs fail closed when gates are incomplete
+  - status-first review flow (`In Review` remains the live review gate name)
+  - QA gates drive `In Review` -> `Delivered`
+  - PM review labels drive `Delivered` -> `Accepted`
+  - merged PRs fail closed when merge-readiness truth is incomplete
+  - backlog aging drives `Backlog` -> `Icebox 🧊` -> `Stale`
   - Dry-run default and simulation runner
 
 ## Preferred workflow note
@@ -117,10 +118,10 @@ The canonical operating model is:
 - engineering moves work into `In Review`
 - pending QA is expressed by the status itself
 - `qa-passed`, `qa-failed`, and `qa-skipped` are result labels only
-- acceptance-required work moves from `In Review` to `Delivered`
+- review-cleared work moves from `In Review` to `Delivered`
 - `pm-accepted`, `pm-rejected`, and `pm-skipped` are result labels only
-- non-acceptance work can move directly from `In Review` to `Done`
-- acceptance-required work moves from `Delivered` to `Accepted`, then to `Done`
+- work moves from `Delivered` to `Accepted`, then to `Done`
+- merge to `main` only closes work when `Accepted` and the rest of merge-readiness truth is already satisfied
 
 ## Status model note (important)
 
@@ -198,7 +199,7 @@ python3 linear/scripts/create_linear_issues_from_seed.py
 - PR ready for review -> `In Review`
 - QA comment token parse (`QA_RESULT=PASSED`) -> `Delivered`
 - PM review signal (`pm-accepted`) -> `Accepted`
-- PR merged -> final closure to `Done` plus merge record comment for acceptance-required work
+- PR merged -> final closure to `Done` plus merge record comment when merge-readiness truth is satisfied
 
 ## Discord operator preflight
 

@@ -23,10 +23,18 @@ Maintenance update — 2026-03-22:
 - make field truth maintenance explicit for status/state, links, ownership, project membership, and explicit dependency links
 - keep the BIT-35 workflow reconfiguration spec as target behavior while clarifying native-vs-custom automation limits
 
+Maintenance update — 2026-04-15:
+- align risky workflow/admin/guidance changes with Control Tower validation and artifact-first completion
+- preserve current live workflow names while tightening semantics around `In Review`, `Delivered`, `Accepted`, and `Done`
+- make GitHub-driven status changes explicitly fail closed on missing QA, PM, blocker, or release truth
+- make `Stale` the primary inactivity-close status and leave `Obsolete` as legacy/edge-case
+- align Vera-style QA guidance so it does not overclaim independent embodied QA authority
+
 Linked artifacts:
 - `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/linear_operating_guide_v3.md`
 - `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/linear_admin_change_control_v1.md`
 - `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/linear_change_proposal_template_v1.md`
+- `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/linear_process_v1_1_control_tower_change_proposal_2026-04-15.md`
 
 Rollback target:
 - `v2`

@@ -64,6 +64,7 @@ class E2EFlowTests(unittest.TestCase):
             },
             "linear_issue": {
                 "identifier": "BIT-45",
+                "status": "Accepted",
                 "labels": ["Feature", "qa-passed", "pm-accepted"],
             },
         }

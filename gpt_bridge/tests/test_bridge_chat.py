@@ -83,5 +83,30 @@ class BridgeChatRouteTests(unittest.TestCase):
         self.assertNotIn("system_prompt", captured["meta"])
         self.assertIn("gpt: Generic GPT reply.", stdout.getvalue())
 
+    def test_vera_mention_routes_with_vera_persona(self):
+        captured: dict[str, object] = {}
+        vera_ref = Path(self.tmpdir.name) / "vera-reference.md"
+        vera_ref.write_text("Vera QA contract context", encoding="utf-8")
+
+        def _fake_run_ask_once(**kwargs: object) -> dict[str, object]:
+            captured.update(kwargs)
+            return {"answer": {"json": {"reply": "QA says not ready yet."}}}
+
+        stdout = io.StringIO()
+        with (
+            patch.object(bridge_chat, "DEFAULT_VERA_REFERENCE_FILES", (vera_ref,)),
+            patch.object(bridge_chat, "_run_ask_once", side_effect=_fake_run_ask_once),
+            patch.object(bridge_chat, "_set_active_session", return_value=None),
+            contextlib.redirect_stdout(stdout),
+        ):
+            rc = bridge_chat.run_team(self._args("@vera check this handoff"))
+
+        self.assertEqual(rc, 0)
+        self.assertEqual(captured["message"], "check this handoff")
+        self.assertEqual(captured["meta"]["route_actor"], "vera")
+        self.assertIn("You are Vera, BitPod's QA Specialist", captured["meta"]["system_prompt"])
+        self.assertIn("[Reference: vera-reference.md]", captured["context_text"])
+        self.assertIn("vera: QA says not ready yet.", stdout.getvalue())
+
 if __name__ == "__main__":
     unittest.main()
