@@ -11,6 +11,7 @@ HTTP bridge so Codex workflows can call GPT directly (local or remote-managed en
 - `gpt_bridge_mcp.py`: MCP stdio server exposing a tool that forwards to `/ask`
 - `bridge_chat.py`: shared chat-log relay (`send`, `post`, `tail`)
 - `bridge_chat.sh`: shell wrapper for `bridge_chat.py`
+- `vera_qa.py`: thin Vera QA runtime that writes `verification_report.md` + `manifest.json`
 - `bridge_ctl.sh`: bridge lifecycle controls (`start`, `status`, `stop`)
 - `config.example.env`: env var reference
 - `logs/`: JSONL request/response logs (`logs/bridge.jsonl`)
@@ -57,6 +58,7 @@ CHAT (Codex chat):
 
 - `~session <topic>`
 - `~gpt <message>`
+- `~vera <message>`
 - `~sync` (manual pull; most new GPT messages are now auto-pulled on your next chat command)
 - `~end`
 
@@ -144,6 +146,23 @@ Per-request override:
 ```bash
 ./ask_gpt.sh --model gpt-5.2-codex "review this patch"
 ```
+
+Vera QA defaults to `gpt-5.2` unless overridden:
+
+```bash
+python3 vera_qa.py /path/to/handoff.json --output-dir /tmp/vera-run
+```
+
+The handoff JSON should include at minimum:
+
+- `target` or `system_under_test`
+- `critical_acceptance_criteria` (array)
+- optional `issue_url`, `pr_url`, `commands_or_surfaces`, `known_risks`, `changed_files`, `evidence_paths`
+
+Outputs:
+
+- `verification_report.md`
+- `manifest.json`
 
 ## Run service
 

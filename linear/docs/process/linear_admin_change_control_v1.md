@@ -25,6 +25,8 @@ Use this document for Linear changes that affect:
 
 If a Linear change has meaningful blast radius, it must be reversible, evidenced, and explicitly approved at the right level before execution.
 
+If the change touches a live truth surface that Control Tower also governs, the change is not complete until Control Tower validates the artifact/evidence package.
+
 ## Default mode
 
 - mode: `high_autonomy_with_audit`
@@ -94,6 +96,7 @@ Blocked unless CJ explicitly approves:
 3. Blocked flows remain resolvable.
 4. PM, QA, and engineering ownership fields still work.
 5. No orphaned status transitions were introduced.
+6. Control Tower truth surfaces remain synchronized or the divergence is explicitly logged.
 
 ## Lockdown trigger
 

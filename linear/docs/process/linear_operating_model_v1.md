@@ -11,6 +11,13 @@ Build a full, opinionated Linear operating model that is heavily influenced by P
 
 The active v1 model remains the structural baseline: statuses, gate-driven movement, one shared board, blocker semantics, cycle cadence, estimate discipline, and the role of `Update Linear` remain canonical where still correct. This document rewrites that baseline into one complete operating doctrine.
 
+Maintenance update — 2026-04-15:
+
+- align risky workflow/admin/guidance changes under Control Tower validation and Taylor01 reliability guardrails
+- preserve current live status and label names that are already wired into code, tests, prompts, and agent guidance
+- keep GitHub-driven Linear truth, but fail closed when QA, PM, blocker, or merge-readiness truth is incomplete
+- treat the current Vera-style QA surface as a truthful substitute surface, not proof of embodied independent Vera authority
+
 Pivotal's discipline still matters:
 
 - small scoped work
@@ -53,6 +60,38 @@ Define one complete Linear operating model for a team that wants:
 - minimal but useful planning hierarchy
 - automation-backed enforcement
 - a Pivotal-style operating feel without pretending AI teams work like 2015 human-only scrum teams
+
+## Authority boundary
+
+Control Tower owns:
+
+- lane creation
+- lane validation
+- sequencing
+- blocker truth
+- stale-lane retirement
+- truth-surface synchronization
+- final recommendation packets
+
+Taylor01 / Product Development Linear doctrine owns:
+
+- workflow semantics
+- team-level admin config proposal
+- issue/project template proposal
+- status/label/automation truth model
+
+`Update Linear` and enforcement lanes own:
+
+- fail-closed mutation behavior
+- merge-readiness checks
+- gate-evidence enforcement
+- skip-policy enforcement
+
+Practical rule:
+
+- no risky workflow/admin mutation is complete until the artifact and evidence package is validated through the Control Tower lane
+- thread completion is not task completion
+- any workflow/guidance rename or config change touching a live truth surface is a guarded lane, not an ad hoc tweak
 
 ## Core philosophy
 
@@ -103,43 +142,44 @@ Projects should not be used for ordinary features or as a second backlog.
 
 | Stage | Status | Short description |
 |---|---|---|
-| Cold | `Icebox 🧊` | Stale work under reconsideration, delete, cancel, or obsolete review |
+| Cold | `Icebox 🧊` | Parked for later; unlikely to be done soon |
 | Intake | `Backlog` | Default landing place for real work that is not yet execution-ready |
 | Ready lane | `Ready` | Fully shaped and allowed to start |
 | Execution | `In Progress` | Active implementation or execution |
-| QA gate | `In Review` | Active QA / technical review stage |
-| PM gate | `Delivered` | QA-cleared work waiting for PM acceptance or rejection |
-| Accepted end-state | `Accepted` | Explicitly accepted outcome; ready for final operational closure if needed |
+| Review gate | `In Review` | Current Product Development review gate; QA is the default meaning today |
+| PM gate | `Delivered` | Review-cleared work waiting for PM acceptance or rejection |
+| Accepted end-state | `Accepted` | PM accepted; work approved |
 | Done end-state | `Done` | Fully complete and closed |
-| Canceled | `Canceled` | Intentionally stopped |
+| Canceled | `Canceled` | Intentionally stopped without stronger semantic claim |
 | Canceled | `Duplicate` | Superseded by canonical work elsewhere |
-| Canceled | `Obsolete` | Context changed; no longer relevant |
 | Canceled | `Won't Do` | Explicitly understood and intentionally not implemented |
+| Canceled | `Stale` | Auto-closed for inactivity; can be reopened later |
+| Legacy edge-case | `Obsolete` | Context changed; no longer relevant; do not use as the primary inactivity sink |
 
 ### Path map
 
 Standard path:
 `Backlog -> Ready -> In Progress -> In Review -> Delivered -> Accepted -> Done`
 
-Short path for explicit low-risk exceptions:
-`Backlog -> Ready -> In Progress -> In Review -> Done`
-
 Rejection loops:
 `In Review --qa-failed--> In Progress`
 `Delivered --pm-rejected--> In Progress`
 
 Aging path:
-`Backlog --untouched--> Icebox 🧊`
+`Backlog --30d inactive--> Icebox 🧊 --30d inactive--> Stale`
 
 ### Status rules
 
 - Default issue status is `Backlog`
 - `Ready` is the only canonical execution-ready status
 - `Accepted` and `Done` are both real and are not duplicates
-- `Accepted` is not terminal for the standard path; it is the accepted checkpoint before final closure in `Done`
+- `Accepted` means PM accepted; work is approved
+- `Done` means the issue is fully complete and closed
 - `Icebox 🧊` is not a default intake lane
+- `Stale` is the default inactivity-close status
+- `Obsolete` is a legacy edge-case status and not the primary inactivity sink
 - no emoji issue statuses except `Icebox 🧊`
-- assume work generally requires acceptance, with a few explicit low-risk exceptions such as tiny dependency-update chores or tiny low-risk bug fixes
+- assume work generally requires both QA-result truth and PM-result truth before merge-driven closure
 
 ## One shared board
 
@@ -286,7 +326,7 @@ Use labels mainly as automation triggers. Labels should only stay on tickets whi
 
 ### Canonical label groups
 
-Use exactly four single-select label groups with short descriptions:
+Use exactly four single-select label groups with short descriptions in the current live model:
 
 - `Issue Type`
 - `Blocked By`
@@ -326,6 +366,12 @@ Rules:
 - keep blocker naming professional
 - `needs-other` requires a comment
 
+Near-term direction:
+
+- prefer native Linear dependencies whenever one issue blocks another
+- do not expand the blocker taxonomy
+- future cleanup should converge toward native dependencies plus one generic `blocked` signal for non-ticket blockers
+
 ### `QA Review`
 
 Description: `QA result used to unlock work out of In Review`
@@ -344,12 +390,13 @@ Description: `PM result used to unlock work out of Delivered`
 
 ### Gate rule summary
 
-- `In Review` means QA stage
+- `In Review` remains the current Product Development review gate
 - `Delivered` means PM acceptance / rejection stage
 - labels trigger automation
 - stale gate labels must be cleared on re-entry to the relevant status
 - labels should not linger after they stop being semantically useful
 - there are no pending QA or PM labels
+- current Vera-style QA prompts and review skills must describe themselves truthfully as substitute surfaces unless a stronger independent runtime exists
 
 ## Blockers vs native Linear dependencies
 
@@ -380,13 +427,13 @@ Do not use blocker labels as a lazy substitute for proper issue-to-issue blockin
 | Current | Trigger | Evidence | Next |
 |---|---|---|---|
 | `In Progress` | ready for QA | execution evidence | `In Review` |
-| `In Review` | `qa-passed` | QA artifact | `Delivered` or `Done` |
+| `In Review` | `qa-passed` | QA artifact | `Delivered` |
 | `In Review` | `qa-failed` | QA artifact | `In Progress` |
-| `In Review` | `qa-skipped` | skip authorization + reason | `Delivered` or `Done` |
+| `In Review` | `qa-skipped` | skip authorization + reason | `Delivered` |
 | `Delivered` | `pm-accepted` | acceptance artifact | `Accepted` |
-| `Delivered` | `pm-rejected` | rejection artifact | `In Progress` |
-| `Delivered` | `pm-skipped` | skip authorization + reason | `Done` |
-| `Accepted` | final closure step | closure evidence if needed | `Done` |
+| `Delivered` | `pm-rejected` | rejection artifact + reason | `In Progress` |
+| `Delivered` | `pm-skipped` | skip authorization + reason | `Accepted` |
+| `Accepted` | merge to `main` with merge-ready truth satisfied | merge evidence | `Done` |
 
 ### Skip controls
 
@@ -397,6 +444,12 @@ Skips should be allowed through skills, either:
 - or as global toggles
 
 These are policy controls, not excuses for workflow sloppiness.
+
+Near-term skip rules:
+
+- `qa-skipped` is allowed for clearly non-technical or QA-inappropriate Product Development work, especially `Design`
+- `pm-skipped` is allowed only for conservative low-risk cases with explicit reason artifact
+- `pm-skipped` must not bypass blocker truth, release truth, or merge-readiness truth
 
 ## Delegation
 
@@ -436,6 +489,7 @@ Keep them short. One sentence or less.
 - status-transition enforcement
 - delegated PM logic
 - rejection comments
+- blocker-aware merge refusal
 - mutation refusal when requirements are missing
 - persistence of short-lived structured operational memory if that layer exists
 
@@ -453,6 +507,7 @@ Its job is to make the ticket more truthful and fail closed when required truth-
 - refuse moves that skip required evidence or required fields
 - enforce type and estimate requirements before `Ready` and `In Progress`
 - enforce gate artifacts before `qa-*` and `pm-*` labels
+- leave explicit correction comments when merge, close, or skip truth is incomplete
 - never silently apply partial truth updates
 - leave an explicit correction comment when a mutation is rejected
 
@@ -474,3 +529,14 @@ Projects are for big, long-term bodies of work. Do not use them for:
 - things that should just be Plans
 
 Prefer using the Project itself rather than creating project-label sprawl.
+
+Project rule:
+
+- projects are coordination containers, not execution workflows
+- workspace project statuses should stay coarse and non-competing with the team issue workflow
+- do not mirror `In Review`, `Delivered`, `Accepted`, or other team issue states into project status design
+
+Near-term template direction:
+
+- prefer Product Development team issue templates for issue-shaping patterns
+- use workspace project templates sparingly for coarse project scaffolding such as `PD - Standard Project` and `PD - Release Train`

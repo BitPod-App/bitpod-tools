@@ -73,6 +73,7 @@ class BotRuntime:
                 issue_key=event.get("issue_key", ""),
                 gate_value=event.get("pm_value", "") or event.get("gate_value", ""),
                 pr_url=event.get("pr_url", ""),
+                reason=event.get("reason", ""),
             )
         elif kind == "daily_aging_scan":
             out = self.engine.daily_aging_scan(event.get("issues", []))
