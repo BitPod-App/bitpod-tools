@@ -3,7 +3,7 @@
 Version: v3
 Status: Active
 Owner: Product Development (Codex + Taylor)
-Last updated: 2026-04-15
+Last updated: 2026-04-28
 Primary issue: [BIT-22 — Versioned Linear operating guide for agents (with rollback path)](https://linear.app/bitpod-app/issue/BIT-22/versioned-linear-operating-guide-for-agents-with-rollback-path)
 Supersedes: `linear_operating_guide_v2.md` as the active guide
 
@@ -19,6 +19,13 @@ Maintenance update — 2026-04-15:
 - preserve current live workflow names that are already wired into code, tests, and prompts
 - treat current Vera-style QA as a truthful substitute surface, not proof of embodied independent Vera authority
 - keep GitHub-driven Linear truth, but fail closed when merge, QA, PM, or blocker truth is incomplete
+
+Maintenance update — 2026-04-28:
+
+- add a PR-to-Linear closeout guardrail so recent work cannot drift into ad hoc project/status/linking cleanup
+- require a small mapping table before merge, retroactive cleanup, or broad Linear normalization
+- make bidirectional GitHub PR and Linear issue links part of completion evidence
+- make project-scope classification explicit, especially for shared infrastructure that does not belong in product/model projects
 
 ## Scope
 
@@ -129,6 +136,19 @@ Maintenance update — 2026-04-15:
 - Merge to `main` may move work from `Accepted` to `Done` only when QA, PM, blocker, and release truth are already satisfied.
 - Otherwise, the engine must leave a correction comment and stop short of closure.
 
+14. PR-to-Linear closeout guardrail
+- Before merge, retroactive linking, or Linear normalization, create a small mapping table with: GitHub PR, Linear issue(s), owning project, status class, required labels, and expected bidirectional links.
+- Status class must be explicit:
+  - PR-backed implementation: `Done` only after merge/evidence is real.
+  - Docs/design/audit: `Accepted` when reviewed/accepted but not an implementation closure.
+  - Future/unstarted work: `Backlog` or `Icebox 🧊`; do not add completion labels.
+- Finalized items should carry only the minimal meaningful labels for that lane, usually the domain label plus `qa-skipped` and `pm-accepted` when QA/PM were explicitly waived/accepted.
+- Project membership must match scope. Shared infrastructure, Project Sources, or process work must not be filed under a product/model project unless that project explicitly owns the infra work.
+- Each GitHub PR should have one clean Linear-link comment. Update the existing comment instead of adding duplicates.
+- Each relevant Linear issue should have the GitHub PR link attached and one clean comment using the canonical reference format from `linear_link_reference_policy_v1.md`.
+- If a required field cannot be changed through available tooling, record the blocker explicitly instead of claiming the closeout is complete.
+- A closeout is incomplete until the mapping table, reciprocal links, project hygiene, status checks, and label checks are all verified.
+
 ## Required issue evidence format
 
 - What was changed
@@ -136,6 +156,7 @@ Maintenance update — 2026-04-15:
 - Artifact path(s)
 - Pass/fail outcome
 - Transition reason
+- PR-to-Linear mapping / closeout check when a GitHub PR or Linear normalization is involved
 - Taylor01 Portability Check (when relevant)
 
 ## Active portability fields
@@ -169,6 +190,7 @@ This version corresponds to:
 - evidence-first completion protocol from `v2`
 - Taylor01 portability review gate from `taylor01_portability_review_gate_v1.md`
 - active issue evidence contract from `linear_issue_template_evidence_contract_v2.md`
+- PR-to-Linear closeout guardrail added to `linear_operating_guide_v3.md` on 2026-04-28
 - Linear admin/process change-control from `linear_admin_change_control_v1.md`
 - proposal workflow from `linear_change_proposal_template_v1.md`
 

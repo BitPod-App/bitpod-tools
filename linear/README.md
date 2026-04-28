@@ -29,7 +29,19 @@ This folder contains the Linear tool surface plus the process canon that governs
 - `./docs/process/interim_ai_technical_qa_cj_acceptance_policy_v1.md`
 - `./docs/process/linear_admin_change_control_v1.md`
 - `./docs/process/linear_change_proposal_template_v1.md`
+- `./docs/process/linear_link_reference_policy_v1.md`
+- `./docs/process/linear_issue_template_evidence_contract_v2.md`
 - `./docs/process/linear_operating_guide_changelog.md`
+
+## PR-to-Linear closeout enforcement
+
+Before merge closeout, retroactive linking, or Linear normalization, read:
+
+1. `./docs/process/linear_operating_guide_v3.md` rule 14
+2. `./docs/process/linear_link_reference_policy_v1.md`
+3. `./docs/process/linear_issue_template_evidence_contract_v2.md`
+
+A closeout is not complete until the PR-to-Linear mapping, reciprocal links, project scope, status class, and labels have been verified or an explicit tooling blocker has been recorded.
 
 ## Supporting SOP and references
 

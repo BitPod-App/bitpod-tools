@@ -30,6 +30,12 @@ Maintenance update — 2026-04-15:
 - make `Stale` the primary inactivity-close status and leave `Obsolete` as legacy/edge-case
 - align Vera-style QA guidance so it does not overclaim independent embodied QA authority
 
+Maintenance update — 2026-04-28:
+- add PR-to-Linear closeout guardrails for merge closeout, retroactive linking, and Linear normalization
+- require a mapping table covering PRs, Linear issues, project scope, status class, labels, and bidirectional links
+- require single clean retroactive-link comments instead of duplicate or shorthand-only comments
+- make project-scope cleanup fail closed when available tooling cannot remove a wrong project assignment
+
 Linked artifacts:
 - `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/linear_operating_guide_v3.md`
 - `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/linear_admin_change_control_v1.md`
