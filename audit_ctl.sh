@@ -1851,8 +1851,8 @@ run_cleanup_trash_execute() {
   local mode="${1:-adhoc}"
   local lane_title
   lane_title="$(cleanup_trash_title "$mode")"
-  local src_root="$ROOT/local-workspace/local-working-files/local-trash-delete"
-  local dst_root="$ROOT/local-trash-delete/local-purge"
+  local src_root="$ROOT/local-workspace/local-working-files"
+  local dst_root="$ROOT/local-workspace/local-trash-delete/local-purge"
   local cutoff_epoch
   cutoff_epoch="$(python3 - <<'PY'
 from datetime import datetime, timezone, timedelta
@@ -1861,10 +1861,12 @@ PY
 )"
 
   print_header "$lane_title"
+  print_section "Scope"
+  echo "- scope=local-workspace/local-working-files -> local-workspace/local-trash-delete/local-purge"
 
   if [[ ! -d "$src_root" ]]; then
     print_section "Result"
-    echo "- scope=local-workspace/local-working-files/local-trash-delete -> local-trash-delete/local-purge"
+    echo "- scope=local-workspace/local-working-files -> local-workspace/local-trash-delete/local-purge"
     echo "- status=NO-OP"
     echo "- detail=source path missing: $src_root"
     return 0

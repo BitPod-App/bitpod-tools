@@ -233,7 +233,7 @@ EOF
 # repo|relative_path|pulse_enabled|cleanup_enabled|thread_visible|verified|notes
 alpha|alpha|1|1|1|1|verified
 beta|beta|1|1|1|1|verified
-bitpod-tools|bitpod-tools|1|1|1|1|verified
+test-bitpod-tools|bitpod-tools|1|1|1|1|verified
 delta|delta|1|1|1|1|verified
 demo-repository|demo-repository|1|1|1|1|verified
 gamma|gamma|1|1|1|1|verified
@@ -243,7 +243,7 @@ EOF
 # repo|relative_path|pulse_enabled|cleanup_enabled|thread_visible|verified|notes
 alpha|alpha|1|1|1|1|verified
 beta|beta|1|1|1|1|verified
-bitpod-tools|bitpod-tools|1|1|1|1|verified
+test-bitpod-tools|bitpod-tools|1|1|1|1|verified
 delta|delta|1|1|1|1|verified
 demo-repository|demo-repository|1|1|1|1|verified
 gamma|gamma|1|1|1|1|verified
@@ -587,6 +587,27 @@ test_t1_safe_local_workspace_execute_moves_to_local_purge() {
   rm -rf "$WORKSPACE_ROOT/local-workspace/local-trash-delete/local-purge/local-execute-residue"
 }
 
+test_weekly_cleanup_moves_from_local_working_files_to_local_purge() {
+  local weekly_root="$TEST_ROOT/weekly-cleanup-root"
+  local src_dir="$weekly_root/local-workspace/local-working-files/weekly-trash-source"
+  local dst_file="$weekly_root/local-workspace/local-trash-delete/local-purge/weekly-trash-source/file.txt"
+
+  mkdir -p "$src_dir"
+  printf 'weekly residue\n' > "$src_dir/file.txt"
+  touch -t 202001010000 "$src_dir/file.txt"
+
+  local weekly_output
+  weekly_output="$(BITPOD_APP_ROOT="$weekly_root" "$AUDIT_CTL" "__cleanup_trash_weekly__")"
+
+  assert_contains "$weekly_output" "Audit Control | Weekly Local Trash-to-Purge Cleanup"
+  assert_contains "$weekly_output" "- scope=local-workspace/local-working-files -> local-workspace/local-trash-delete/local-purge"
+  assert_contains "$weekly_output" "- final_status=mutated"
+  assert_file_missing "$src_dir/file.txt"
+  assert_file_exists "$dst_file"
+
+  rm -rf "$weekly_root"
+}
+
 test_bounded_network_probes() {
   make_workspace_fully_clean
   local fake_bin="$TEST_ROOT/fake-bin"
@@ -627,6 +648,7 @@ test_scheduled_cleanup_helper
 test_contract_derived_local_workspace_guardrails
 test_local_trash_bucket_actionability_is_t1_t2_visible
 test_t1_safe_local_workspace_execute_moves_to_local_purge
+test_weekly_cleanup_moves_from_local_working_files_to_local_purge
 test_bounded_network_probes
 
 echo "PASS: test_audit_tools.sh"
