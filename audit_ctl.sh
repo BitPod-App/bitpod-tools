@@ -18,6 +18,11 @@ TRASH_BUCKET_ROWS_FILE="$TMP_DIR/trash_bucket_rows.txt"
 CLEANUP_PLAN_ROWS_FILE="$TMP_DIR/cleanup_plan_rows.txt"
 DUPLICATE_ROWS_FILE="$TMP_DIR/duplicate_rows.txt"
 REPO_TEMPORAL_ROWS_FILE="$TMP_DIR/repo_temporal_rows.txt"
+TOP_LEVEL_FINDINGS_FILE="$TMP_DIR/top_level_findings.txt"
+TOP_LEVEL_GIT_ROWS_FILE="$TMP_DIR/top_level_git_rows.txt"
+MANIFEST_WARNING_ROWS_FILE="$TMP_DIR/manifest_warning_rows.txt"
+TMP_REGISTRY_ACTIVE_RELS="$TMP_DIR/registry_active_rels.txt"
+TMP_REPO_PATHS="$TMP_DIR/repo_paths.txt"
 TMP_CANON_NAMES="$TMP_DIR/canon_names.txt"
 TMP_LOCAL_NAMES="$TMP_DIR/local_names.txt"
 TMP_IN_SHA="$TMP_DIR/in_sha.txt"
@@ -26,6 +31,7 @@ STALE_BRANCH_ROWS_FILE="$TMP_DIR/stale_branch_rows.txt"
 OPEN_PR_ROWS_FILE="$TMP_DIR/open_pr_rows.txt"
 
 NETWORK_TIMEOUT_SECONDS="${BITPOD_AUDIT_NETWORK_TIMEOUT_SECONDS:-15}"
+EXECUTION_APPROVAL_PROMPT="Do you want me to execute and move the identified eligible items to the approved trash/disposal lane, yes or no?"
 TRASH_BUCKET_ACTION_FILE_THRESHOLD="${BITPOD_TRASH_BUCKET_ACTION_FILE_THRESHOLD:-100}"
 LOCAL_TRASH_PURGE_DAYS="${BITPOD_LOCAL_TRASH_PURGE_DAYS:-30}"
 LOCAL_PURGE_OS_TRASH_DAYS="${BITPOD_LOCAL_PURGE_OS_TRASH_DAYS:-30}"
@@ -70,6 +76,10 @@ cleanup_plan_row_count=0
 local_purge_os_trash_candidate_files=0
 repo_temporal_candidate_count=0
 repo_temporal_candidate_files=0
+top_level_git_repo_count=0
+top_level_blocking_issue_count=0
+top_level_clutter_file_count=0
+manifest_warning_count=0
 likely_duplicate_filename_count=0
 active_legacy_bucket_hits=0
 unexpected_local_workspace_children=0
@@ -318,10 +328,29 @@ assert_registry_ready() {
   return 0
 }
 
+is_git_worktree_root() {
+  local path="$1"
+  local inside top path_physical top_physical
+
+  [[ -d "$path" ]] || return 1
+  inside="$(git -C "$path" rev-parse --is-inside-work-tree 2>/dev/null)" || return 1
+  [[ "$inside" == "true" ]] || return 1
+  top="$(git -C "$path" rev-parse --show-toplevel 2>/dev/null)" || return 1
+  path_physical="$(cd "$path" && pwd -P)" || return 1
+  top_physical="$(cd "$top" && pwd -P)" || return 1
+  [[ "$path_physical" == "$top_physical" ]]
+}
+
 collect_repo_paths() {
   local feature="$1"
+  local include_top_level_truth="${2:-0}"
   local rows=0
   : > "$REGISTRY_PROBLEMS_FILE"
+  : > "$TOP_LEVEL_FINDINGS_FILE"
+  : > "$TOP_LEVEL_GIT_ROWS_FILE"
+  : > "$MANIFEST_WARNING_ROWS_FILE"
+  : > "$TMP_REGISTRY_ACTIVE_RELS"
+  : > "$TMP_REPO_PATHS"
 
   while IFS='|' read -r repo rel_path pulse_enabled cleanup_enabled thread_visible verified notes; do
     [[ -z "${repo// }" ]] && continue
@@ -342,21 +371,141 @@ collect_repo_paths() {
     fi
 
     local abs_path="$ROOT/$rel_path"
+    printf '%s\n' "$rel_path" >> "$TMP_REGISTRY_ACTIVE_RELS"
     if [[ ! -d "$abs_path" ]]; then
       echo "$repo|MISSING_PATH|$rel_path" >> "$REGISTRY_PROBLEMS_FILE"
       continue
     fi
-    if [[ ! -d "$abs_path/.git" ]]; then
+    if ! is_git_worktree_root "$abs_path"; then
       echo "$repo|NOT_GIT_REPO|$rel_path" >> "$REGISTRY_PROBLEMS_FILE"
       continue
     fi
 
-    printf '%s\n' "$abs_path"
+    printf '%s\n' "$abs_path" >> "$TMP_REPO_PATHS"
   done < "$REGISTRY_FILE"
+
+  if [[ "$include_top_level_truth" -eq 1 ]]; then
+    collect_top_level_workspace_truth
+  fi
 
   if [[ "$rows" -eq 0 ]]; then
     echo "__EMPTY_REGISTRY__"
+    return 0
   fi
+
+  sort -u "$TMP_REPO_PATHS"
+}
+
+is_allowed_top_level_folder() {
+  case "$1" in
+    .codex|local-workspace)
+      return 0
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+is_allowed_top_level_file() {
+  case "$1" in
+    AGENTS.md)
+      return 0
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+append_top_level_finding() {
+  local problem="$1"
+  local path="$2"
+  local detail="$3"
+  local blocking="$4"
+
+  if [[ "$blocking" == "true" ]]; then
+    top_level_blocking_issue_count=$((top_level_blocking_issue_count + 1))
+  else
+    top_level_clutter_file_count=$((top_level_clutter_file_count + 1))
+  fi
+
+  printf '%s|%s|%s|%s\n' "$problem" "$path" "$detail" "$blocking" >> "$TOP_LEVEL_FINDINGS_FILE"
+}
+
+collect_manifest_warnings() {
+  local manifest_path="$ROOT/bitpod-docs/process/global-agent-policy-distribution-manifest.json"
+  [[ -f "$manifest_path" ]] || return 0
+
+  python3 - "$manifest_path" "$TOP_LEVEL_GIT_ROWS_FILE" <<'PY' | while IFS='|' read -r problem repo detail; do
+import json
+import sys
+from pathlib import Path
+
+manifest = Path(sys.argv[1])
+git_rows = Path(sys.argv[2])
+
+try:
+    data = json.loads(manifest.read_text())
+except Exception as exc:
+    print(f"MANIFEST_PARSE_FAILED|{manifest}|{exc}")
+    raise SystemExit(0)
+
+active = set(data.get("activeRepos", []))
+local = set()
+if git_rows.exists():
+    for line in git_rows.read_text().splitlines():
+        if not line.strip():
+            continue
+        local.add(line.split("|", 1)[0])
+
+for repo in sorted(local - active):
+    print(f"MANIFEST_OMITS_TOP_LEVEL_GIT_REPO|{repo}|top-level git repo is absent from global-agent-policy-distribution-manifest.json")
+for repo in sorted(active - local):
+    print(f"MANIFEST_ACTIVE_REPO_MISSING_LOCAL_GIT|{repo}|manifest activeRepos entry is not a current top-level git repo")
+PY
+    [[ -z "$problem" ]] && continue
+    manifest_warning_count=$((manifest_warning_count + 1))
+    printf '%s|%s|%s\n' "$problem" "$repo" "$detail" >> "$MANIFEST_WARNING_ROWS_FILE"
+  done
+}
+
+collect_top_level_workspace_truth() {
+  top_level_git_repo_count=0
+  top_level_blocking_issue_count=0
+  top_level_clutter_file_count=0
+  manifest_warning_count=0
+
+  local path name rel_path
+  while IFS= read -r -d '' path; do
+    name="${path##*/}"
+    rel_path="${path#"$ROOT/"}"
+
+    if [[ -L "$path" ]]; then
+      append_top_level_finding "PROHIBITED_TOP_LEVEL_SYMLINK" "$rel_path" "direct workspace symlink is not a real top-level repo or approved local-workspace lane" "true"
+    elif [[ -d "$path" ]]; then
+      if is_git_worktree_root "$path"; then
+        top_level_git_repo_count=$((top_level_git_repo_count + 1))
+        printf '%s|%s\n' "$rel_path" "$path" >> "$TOP_LEVEL_GIT_ROWS_FILE"
+        if ! grep -Fxq -- "$rel_path" "$TMP_REGISTRY_ACTIVE_RELS"; then
+          echo "$rel_path|UNREGISTERED_TOP_LEVEL_GIT_REPO|$rel_path" >> "$REGISTRY_PROBLEMS_FILE"
+          printf '%s\n' "$path" >> "$TMP_REPO_PATHS"
+        fi
+      elif ! is_allowed_top_level_folder "$name"; then
+        append_top_level_finding "PROHIBITED_TOP_LEVEL_FOLDER" "$rel_path" "direct workspace child is not an allowed repo, bootstrap folder, or local-workspace lane" "true"
+      fi
+    elif [[ -f "$path" ]]; then
+      if is_allowed_top_level_file "$name"; then
+        continue
+      elif [[ "$name" == ".DS_Store" ]]; then
+        append_top_level_finding "TOP_LEVEL_FINDER_METADATA" "$rel_path" "Finder metadata is clutter, not workspace structure" "false"
+      else
+        append_top_level_finding "PROHIBITED_TOP_LEVEL_FILE" "$rel_path" "direct workspace file is not an allowed root bootstrap file" "true"
+      fi
+    fi
+  done < <(find "$ROOT" -maxdepth 1 -mindepth 1 -print0 2>/dev/null)
+
+  collect_manifest_warnings
 }
 
 repo_sync_eval() {
@@ -446,7 +595,7 @@ build_repo_rows() {
   local feature="$1"
   local require_fresh="$2"
   local paths_output
-  paths_output="$(collect_repo_paths "$feature")"
+  paths_output="$(collect_repo_paths "$feature" "$require_fresh")"
 
   if [[ "$paths_output" == "__EMPTY_REGISTRY__" ]]; then
     echo "[audit_ctl] repo registry has no active rows: $REGISTRY_FILE" >&2
@@ -528,6 +677,16 @@ collect_registry_problems() {
   if [[ -f "$REGISTRY_PROBLEMS_FILE" ]]; then
     registry_problem_count="$(wc -l < "$REGISTRY_PROBLEMS_FILE" | tr -d ' ')"
     registry_problem_lines="$(cat "$REGISTRY_PROBLEMS_FILE")"
+  fi
+  if [[ -f "$TOP_LEVEL_GIT_ROWS_FILE" ]]; then
+    top_level_git_repo_count="$(wc -l < "$TOP_LEVEL_GIT_ROWS_FILE" | tr -d ' ')"
+  fi
+  if [[ -f "$TOP_LEVEL_FINDINGS_FILE" ]]; then
+    top_level_blocking_issue_count="$(awk -F'|' '$4=="true"{n++} END{print n+0}' "$TOP_LEVEL_FINDINGS_FILE")"
+    top_level_clutter_file_count="$(awk -F'|' '$4!="true"{n++} END{print n+0}' "$TOP_LEVEL_FINDINGS_FILE")"
+  fi
+  if [[ -f "$MANIFEST_WARNING_ROWS_FILE" ]]; then
+    manifest_warning_count="$(wc -l < "$MANIFEST_WARNING_ROWS_FILE" | tr -d ' ')"
   fi
 }
 
@@ -1056,6 +1215,8 @@ cleanup_overall_result() {
         "$code2" -eq 0 &&
         "$local_pass" == "PASS" &&
         "$registry_problem_count" -eq 0 &&
+        "$top_level_blocking_issue_count" -eq 0 &&
+        "$manifest_warning_count" -eq 0 &&
         "$network_probe_fail_count" -eq 0 &&
         "$stale_local_branch_count" -eq 0 &&
         "$stale_remote_branch_count" -eq 0 ]]; then
@@ -1070,6 +1231,8 @@ cleanup_overall_verification() {
   if [[ "$tier" == "T3" ]]; then
     if [[ "$code2" -eq 0 &&
           "$registry_problem_count" -eq 0 &&
+          "$top_level_blocking_issue_count" -eq 0 &&
+          "$manifest_warning_count" -eq 0 &&
           "$network_probe_fail_count" -eq 0 &&
           "$stale_local_branch_count" -eq 0 &&
           "$stale_remote_branch_count" -eq 0 ]]; then
@@ -1089,10 +1252,14 @@ cleanup_verification_detail() {
       echo "Fresh all-repo parity was attempted, but one or more repos could not be verified cleanly."
     elif [[ "$registry_problem_count" -gt 0 ]]; then
       echo "Repo registry problems prevented a fully verified cleanup pass."
+    elif [[ "$top_level_blocking_issue_count" -gt 0 ]]; then
+      echo "Top-level workspace findings prevented a clean T3 pass."
     elif [[ "$network_probe_fail_count" -gt 0 ]]; then
       echo "One or more bounded network probes timed out, so cleanup truth could not be fully verified."
     elif [[ "$stale_local_branch_count" -gt 0 || "$stale_remote_branch_count" -gt 0 ]]; then
       echo "Stale codex branches prevented a fully verified cleanup pass."
+    elif [[ "$manifest_warning_count" -gt 0 ]]; then
+      echo "Stale manifest disagreement was detected; cleanup truth was verified from real workspace state, but stale cleanup inputs remain."
     else
       echo "Fresh all-repo parity verification completed in this run."
     fi
@@ -1147,6 +1314,10 @@ reset_workspace_metrics() {
   local_purge_os_trash_candidate_files=0
   repo_temporal_candidate_count=0
   repo_temporal_candidate_files=0
+  top_level_git_repo_count=0
+  top_level_blocking_issue_count=0
+  top_level_clutter_file_count=0
+  manifest_warning_count=0
   likely_duplicate_filename_count=0
   active_legacy_bucket_hits=0
   unexpected_local_workspace_children=0
@@ -1170,6 +1341,11 @@ reset_workspace_metrics() {
   : > "$CLEANUP_PLAN_ROWS_FILE"
   : > "$DUPLICATE_ROWS_FILE"
   : > "$REPO_TEMPORAL_ROWS_FILE"
+  : > "$TOP_LEVEL_FINDINGS_FILE"
+  : > "$TOP_LEVEL_GIT_ROWS_FILE"
+  : > "$MANIFEST_WARNING_ROWS_FILE"
+  : > "$TMP_REGISTRY_ACTIVE_RELS"
+  : > "$TMP_REPO_PATHS"
 }
 
 emit_registry_problems() {
@@ -1183,6 +1359,25 @@ emit_registry_problems() {
     [[ -z "$repo" ]] && continue
     echo "- registry_problem=$repo problem=$problem detail=$detail"
   done <<< "$registry_problem_lines"
+}
+
+emit_top_level_truth_section() {
+  local tier="$1"
+
+  [[ "$tier" == "T3" ]] || return 0
+
+  echo "- top_level_git_repos=$top_level_git_repo_count"
+  echo "- top_level_blocking_findings=$top_level_blocking_issue_count"
+  echo "- top_level_clutter_findings=$top_level_clutter_file_count"
+  while IFS='|' read -r problem path detail blocking; do
+    [[ -z "$problem" ]] && continue
+    echo "- top_level_finding=$problem path=$path blocking=$blocking detail=\"$detail\""
+  done < "$TOP_LEVEL_FINDINGS_FILE"
+  echo "- stale_manifest_warnings=$manifest_warning_count"
+  while IFS='|' read -r problem repo detail; do
+    [[ -z "$problem" ]] && continue
+    echo "- stale_manifest_warning=$problem repo=$repo detail=\"$detail\""
+  done < "$MANIFEST_WARNING_ROWS_FILE"
 }
 
 emit_parity_summary_section() {
@@ -1356,6 +1551,7 @@ emit_tier_specific_section() {
 
   print_section "Tier-specific checks"
   emit_registry_problems
+  emit_top_level_truth_section "$tier"
   echo "- network_probe_failures=$network_probe_fail_count"
   while IFS='|' read -r surface repo operation detail; do
     [[ -z "$surface" ]] && continue
@@ -1416,7 +1612,8 @@ emit_cleanup_next_action() {
   print_section "Next action"
   if [[ "$tier" == "T1" ]]; then
     if [[ "$include_local_workspace" -eq 1 && "$cleanup_plan_execution_allowed_count" -gt 0 ]]; then
-      echo "- Would you like to execute safe local-workspace cleanup now? Scope would be local-workspace only and based on the Cleanup plan section above."
+      echo "- $EXECUTION_APPROVAL_PROMPT"
+      echo "- Scope would be local-workspace only and based on the Cleanup plan section above."
       echo "- To execute: run T1 cleanup execute local-workspace"
     fi
     echo "- Run T2 cleanup when you also want inferred repo clutter signals."
@@ -1429,7 +1626,8 @@ emit_cleanup_next_action() {
 
   if [[ "$tier" == "T2" ]]; then
     if [[ "$include_local_workspace" -eq 1 && "$cleanup_plan_execution_allowed_count" -gt 0 ]]; then
-      echo "- Would you like to execute safe local-workspace cleanup now? Scope would be local-workspace only; repo parity would remain report-only."
+      echo "- $EXECUTION_APPROVAL_PROMPT"
+      echo "- Scope would be local-workspace only; repo parity would remain report-only."
       echo "- To execute: run T2 cleanup execute local-workspace"
     fi
     if [[ "$repo_temporal_candidate_count" -gt 0 ]]; then
@@ -1446,7 +1644,8 @@ emit_cleanup_next_action() {
     echo "- No cleanup action required."
   else
     if [[ "$include_local_workspace" -eq 1 && "$cleanup_plan_execution_allowed_count" -gt 0 ]]; then
-      echo "- Would you like to execute safe local-workspace cleanup now? Scope would be local-workspace only; repo parity would remain report-only."
+      echo "- $EXECUTION_APPROVAL_PROMPT"
+      echo "- Scope would be local-workspace only; repo parity would remain report-only."
       echo "- To execute: run T3 cleanup execute local-workspace"
     fi
     echo "- Cleanup remains fractured; review the failing repo or workspace findings above and remediate until T3 passes."
@@ -1666,8 +1865,8 @@ run_cleanup_trash_execute() {
   local mode="${1:-adhoc}"
   local lane_title
   lane_title="$(cleanup_trash_title "$mode")"
-  local src_root="$ROOT/local-workspace/local-trash-delete/local-working-files"
-  local dst_root="$ROOT/local-workspace/local-trash-delete/local-purge/local-working-files"
+  local src_root="$ROOT/local-workspace/local-working-files"
+  local dst_root="$ROOT/local-workspace/local-trash-delete/local-purge"
   local cutoff_epoch
   cutoff_epoch="$(python3 - <<'PY'
 from datetime import datetime, timezone, timedelta
@@ -1676,10 +1875,12 @@ PY
 )"
 
   print_header "$lane_title"
+  print_section "Scope"
+  echo "- scope=local-workspace/local-working-files -> local-workspace/local-trash-delete/local-purge"
 
   if [[ ! -d "$src_root" ]]; then
     print_section "Result"
-    echo "- scope=local-trash-delete/local-working-files -> local-trash-delete/local-purge/local-working-files"
+    echo "- scope=local-workspace/local-working-files -> local-workspace/local-trash-delete/local-purge"
     echo "- status=NO-OP"
     echo "- detail=source path missing: $src_root"
     return 0

@@ -18,7 +18,7 @@ REGISTRY_FILE="$CONFIG_ROOT/repo_registry.tsv"
 PERFECT_REGISTRY_FILE="$CONFIG_ROOT/repo_registry_perfect.tsv"
 HOOK_REGISTRY_FILE="$CONFIG_ROOT/repo_registry_hooks.tsv"
 ZONE_POLICY_FILE="$CONFIG_ROOT/cleanup_zones_policy.tsv"
-CONTRACT_FILE="$WORKSPACE_ROOT/bitpod-docs/process/local-workspace-skeleton-contract.toml"
+CONTRACT_FILE="$TEST_ROOT/local-workspace-skeleton-contract.toml"
 
 fail() {
   echo "FAIL: $1" >&2
@@ -53,6 +53,50 @@ assert_equals() {
   [[ "$expected" == "$actual" ]] || fail "expected '$expected' but got '$actual'"
 }
 
+DIRTY_BETA_STASHED=0
+DELTA_OLD_SHA=""
+GAMMA_REMOTE_ADDED=0
+
+make_workspace_fully_clean() {
+  DIRTY_BETA_STASHED=0
+  DELTA_OLD_SHA="$(git -C "$WORKSPACE_ROOT/delta" rev-parse HEAD)"
+  GAMMA_REMOTE_ADDED=0
+
+  if [[ -n "$(git -C "$WORKSPACE_ROOT/beta" status --porcelain)" ]]; then
+    git -C "$WORKSPACE_ROOT/beta" stash push -u -m audit-test-dirty >/dev/null
+    DIRTY_BETA_STASHED=1
+  fi
+
+  git -C "$WORKSPACE_ROOT/delta" pull --ff-only >/dev/null
+
+  if ! git -C "$WORKSPACE_ROOT/gamma" remote get-url origin >/dev/null 2>&1; then
+    git init --bare "$REMOTE_ROOT/gamma.git" >/dev/null
+    git -C "$WORKSPACE_ROOT/gamma" remote add origin "$REMOTE_ROOT/gamma.git"
+    git -C "$WORKSPACE_ROOT/gamma" push -u origin main >/dev/null
+    git -C "$REMOTE_ROOT/gamma.git" symbolic-ref HEAD refs/heads/main >/dev/null
+    GAMMA_REMOTE_ADDED=1
+  fi
+}
+
+restore_dirty_workspace_shape() {
+  if [[ -n "$DELTA_OLD_SHA" ]]; then
+    git -C "$WORKSPACE_ROOT/delta" reset --hard "$DELTA_OLD_SHA" >/dev/null
+  fi
+
+  if [[ "$GAMMA_REMOTE_ADDED" -eq 1 ]]; then
+    git -C "$WORKSPACE_ROOT/gamma" remote remove origin >/dev/null
+    rm -rf "$REMOTE_ROOT/gamma.git"
+  fi
+
+  if [[ "$DIRTY_BETA_STASHED" -eq 1 ]]; then
+    git -C "$WORKSPACE_ROOT/beta" stash pop >/dev/null
+  fi
+
+  DIRTY_BETA_STASHED=0
+  DELTA_OLD_SHA=""
+  GAMMA_REMOTE_ADDED=0
+}
+
 git_commit_all() {
   local repo_path="$1"
   local message="$2"
@@ -73,6 +117,26 @@ create_tracked_repo() {
   git -C "$repo_path" remote add origin "$remote_path"
   git -C "$repo_path" push -u origin main >/dev/null
   git -C "$remote_path" symbolic-ref HEAD refs/heads/main >/dev/null
+}
+
+create_linked_worktree_repo() {
+  local name="$1"
+  local source_path="$TEST_ROOT/${name}_source"
+  local repo_path="$WORKSPACE_ROOT/$name"
+  local remote_path="$REMOTE_ROOT/$name.git"
+  local branch_name="${name}-worktree"
+
+  git init -b main "$source_path" >/dev/null
+  echo "$name" > "$source_path/README.md"
+  git_commit_all "$source_path" "initial"
+
+  git init --bare "$remote_path" >/dev/null
+  git -C "$source_path" remote add origin "$remote_path"
+  git -C "$source_path" push -u origin main >/dev/null
+  git -C "$remote_path" symbolic-ref HEAD refs/heads/main >/dev/null
+
+  git -C "$source_path" worktree add -b "$branch_name" "$repo_path" origin/main >/dev/null
+  git -C "$repo_path" branch --set-upstream-to=origin/main "$branch_name" >/dev/null
 }
 
 advance_remote() {
@@ -189,6 +253,7 @@ EOF
 # repo|relative_path|pulse_enabled|cleanup_enabled|thread_visible|verified|notes
 alpha|alpha|1|1|1|1|verified
 beta|beta|1|1|1|1|verified
+test-bitpod-tools|bitpod-tools|1|1|1|1|verified
 delta|delta|1|1|1|1|verified
 demo-repository|demo-repository|1|1|1|1|verified
 gamma|gamma|1|1|1|1|verified
@@ -197,7 +262,11 @@ EOF
   cat > "$PERFECT_REGISTRY_FILE" <<'EOF'
 # repo|relative_path|pulse_enabled|cleanup_enabled|thread_visible|verified|notes
 alpha|alpha|1|1|1|1|verified
+beta|beta|1|1|1|1|verified
+test-bitpod-tools|bitpod-tools|1|1|1|1|verified
+delta|delta|1|1|1|1|verified
 demo-repository|demo-repository|1|1|1|1|verified
+gamma|gamma|1|1|1|1|verified
 EOF
 
   cat > "$HOOK_REGISTRY_FILE" <<'EOF'
@@ -206,6 +275,8 @@ alpha|alpha|1|1|1|1|verified
 beta|beta|0|1|1|1|verified but pulse disabled
 gamma|gamma|1|1|1|0|verification pending
 EOF
+
+  create_tracked_repo "bitpod-tools"
 }
 
 test_refresh_repo_registry() {
@@ -269,7 +340,9 @@ test_cleanup_contracts() {
   assert_contains "$t3_output" "Cleanup remains fractured"
 
   local porcelain_output
+  make_workspace_fully_clean
   porcelain_output="$(run_audit_capture "$PERFECT_REGISTRY_FILE" "run T3 audit only repos")"
+  restore_dirty_workspace_shape
   assert_contains "$porcelain_output" "- result=PORCELAIN"
   assert_contains "$porcelain_output" "- overall=VERIFIED"
   assert_contains "$porcelain_output" "- stale_local_codex_branches=0"
@@ -279,6 +352,7 @@ test_cleanup_contracts() {
 }
 
 test_stale_branch_contracts() {
+  make_workspace_fully_clean
   git -C "$WORKSPACE_ROOT/alpha" checkout -b codex/stale-branch >/dev/null
   git -C "$WORKSPACE_ROOT/alpha" checkout main >/dev/null
   git -C "$WORKSPACE_ROOT/alpha" push origin codex/stale-branch >/dev/null
@@ -300,9 +374,11 @@ test_stale_branch_contracts() {
 
   git -C "$WORKSPACE_ROOT/alpha" push origin --delete codex/stale-branch >/dev/null
   git -C "$WORKSPACE_ROOT/alpha" branch -D codex/stale-branch >/dev/null
+  restore_dirty_workspace_shape
 }
 
 test_open_pr_remote_branch_is_not_stale() {
+  make_workspace_fully_clean
   local fake_bin="$TEST_ROOT/fake_bin"
   mkdir -p "$fake_bin"
 
@@ -330,6 +406,99 @@ EOF
   assert_contains "$pr_output" "- open_pr=alpha number=7 head=codex/open-pr url=https://example.test/pr/7"
 
   git -C "$WORKSPACE_ROOT/alpha" push origin --delete codex/open-pr >/dev/null
+  restore_dirty_workspace_shape
+}
+
+test_top_level_workspace_truth_contracts() {
+  make_workspace_fully_clean
+  create_tracked_repo "zeta"
+  create_linked_worktree_repo "eta"
+  create_linked_worktree_repo "theta"
+  local worktree_registry="$TEST_ROOT/perfect_registry_with_worktree.tsv"
+  cp "$PERFECT_REGISTRY_FILE" "$worktree_registry"
+  echo "theta|theta|1|1|1|1|verified linked worktree" >> "$worktree_registry"
+  mkdir -p "$WORKSPACE_ROOT/T01-Agents"
+  ln -s alpha "$WORKSPACE_ROOT/taylor01-skills"
+  printf 'stray\n' > "$WORKSPACE_ROOT/stray-root.txt"
+  mkdir -p "$WORKSPACE_ROOT/bitpod-docs/process"
+  cat > "$WORKSPACE_ROOT/bitpod-docs/process/global-agent-policy-distribution-manifest.json" <<'EOF'
+{
+  "activeRepos": [
+    "alpha",
+    "beta",
+    "delta",
+    "demo-repository",
+    "gamma",
+    "ghost-repo"
+  ]
+}
+EOF
+
+  local truth_output=""
+  local truth_status=0
+  if truth_output="$(run_audit_capture "$worktree_registry" "run T3 audit only repos")"; then
+    truth_status=0
+  else
+    truth_status=$?
+  fi
+
+  [[ "$truth_status" -eq 30 ]] || fail "expected top-level truth T3 exit status 30, got $truth_status"
+  assert_contains "$truth_output" "- result=FRACTURED"
+  assert_contains "$truth_output" "- registry_problem=zeta problem=UNREGISTERED_TOP_LEVEL_GIT_REPO detail=zeta"
+  assert_contains "$truth_output" "- registry_problem=eta problem=UNREGISTERED_TOP_LEVEL_GIT_REPO detail=eta"
+  assert_not_contains "$truth_output" "registry_problem=theta problem=NOT_GIT_REPO"
+  assert_contains "$truth_output" "- top_level_finding=PROHIBITED_TOP_LEVEL_FOLDER path=T01-Agents blocking=true"
+  assert_contains "$truth_output" "- top_level_finding=PROHIBITED_TOP_LEVEL_SYMLINK path=taylor01-skills blocking=true"
+  assert_contains "$truth_output" "- top_level_finding=PROHIBITED_TOP_LEVEL_FILE path=stray-root.txt blocking=true"
+  assert_not_contains "$truth_output" "- top_level_finding=PROHIBITED_TOP_LEVEL_FOLDER path=eta"
+  assert_not_contains "$truth_output" "- top_level_finding=PROHIBITED_TOP_LEVEL_FOLDER path=theta"
+  assert_contains "$truth_output" "- stale_manifest_warning=MANIFEST_OMITS_TOP_LEVEL_GIT_REPO repo=zeta"
+  assert_contains "$truth_output" "- stale_manifest_warning=MANIFEST_OMITS_TOP_LEVEL_GIT_REPO repo=eta"
+  assert_contains "$truth_output" "- stale_manifest_warning=MANIFEST_ACTIVE_REPO_MISSING_LOCAL_GIT repo=ghost-repo"
+
+  git -C "$TEST_ROOT/eta_source" worktree remove --force "$WORKSPACE_ROOT/eta" >/dev/null
+  git -C "$TEST_ROOT/theta_source" worktree remove --force "$WORKSPACE_ROOT/theta" >/dev/null
+  rm -rf "$WORKSPACE_ROOT/zeta" "$REMOTE_ROOT/zeta.git" "$REMOTE_ROOT/eta.git" "$REMOTE_ROOT/theta.git" "$WORKSPACE_ROOT/T01-Agents" "$WORKSPACE_ROOT/taylor01-skills" "$WORKSPACE_ROOT/stray-root.txt" "$WORKSPACE_ROOT/bitpod-docs"
+  restore_dirty_workspace_shape
+}
+
+test_manifest_drift_is_not_verified() {
+  make_workspace_fully_clean
+  create_tracked_repo "bitpod-docs"
+  local manifest_registry="$TEST_ROOT/perfect_registry_with_manifest_repo.tsv"
+  cp "$PERFECT_REGISTRY_FILE" "$manifest_registry"
+  echo "bitpod-docs|bitpod-docs|1|1|1|1|verified manifest repo" >> "$manifest_registry"
+  mkdir -p "$WORKSPACE_ROOT/bitpod-docs/process"
+  cat > "$WORKSPACE_ROOT/bitpod-docs/process/global-agent-policy-distribution-manifest.json" <<'EOF'
+{
+  "activeRepos": [
+    "alpha",
+    "bitpod-docs",
+    "bitpod-tools",
+    "delta",
+    "demo-repository",
+    "gamma"
+  ]
+}
+EOF
+
+  local manifest_output=""
+  local manifest_status=0
+  if manifest_output="$(run_audit_capture "$manifest_registry" "run T3 audit only repos")"; then
+    manifest_status=0
+  else
+    manifest_status=$?
+  fi
+
+  [[ "$manifest_status" -eq 30 ]] || fail "expected manifest drift T3 exit status 30, got $manifest_status"
+  assert_contains "$manifest_output" "- result=FRACTURED"
+  assert_contains "$manifest_output" "- overall=NOT VERIFIED"
+  assert_contains "$manifest_output" "- registry_problems=0"
+  assert_contains "$manifest_output" "- top_level_blocking_findings=0"
+  assert_contains "$manifest_output" "- stale_manifest_warning=MANIFEST_OMITS_TOP_LEVEL_GIT_REPO repo=beta"
+
+  rm -rf "$WORKSPACE_ROOT/bitpod-docs" "$REMOTE_ROOT/bitpod-docs.git"
+  restore_dirty_workspace_shape
 }
 
 test_parity_pulse_contracts() {
@@ -346,13 +515,17 @@ test_parity_pulse_contracts() {
   assert_not_contains "$pulse_output" "alpha@main"
 
   local perfect_pulse
+  make_workspace_fully_clean
   perfect_pulse="$(run_audit_capture "$PERFECT_REGISTRY_FILE" "__parity_pulse__ event=pre-push fresh")"
+  restore_dirty_workspace_shape
   assert_contains "$perfect_pulse" "- result=PORCELAIN"
   assert_contains "$perfect_pulse" "- verification=VERIFIED"
   assert_contains "$perfect_pulse" "- repo_findings=none"
 
   local unverified_perfect_shape
+  make_workspace_fully_clean
   unverified_perfect_shape="$(run_audit_capture "$PERFECT_REGISTRY_FILE" "__parity_pulse__ event=post-commit")"
+  restore_dirty_workspace_shape
   assert_contains "$unverified_perfect_shape" "- result=REPORT ONLY"
   assert_contains "$unverified_perfect_shape" "- verification=NOT VERIFIED"
   assert_not_contains "$unverified_perfect_shape" "- result=PORCELAIN"
@@ -360,7 +533,9 @@ test_parity_pulse_contracts() {
   local dirs_before
   dirs_before="$(find "$WORKSPACE_ROOT/local-workspace/local-working-files" -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' ')"
   local emitted_pulse
+  make_workspace_fully_clean
   emitted_pulse="$(run_pulse_emit "$PERFECT_REGISTRY_FILE" "pre-push" "$WORKSPACE_ROOT/alpha")"
+  restore_dirty_workspace_shape
   local dirs_after
   dirs_after="$(find "$WORKSPACE_ROOT/local-workspace/local-working-files" -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' ')"
   assert_contains "$emitted_pulse" "Parity Pulse"
@@ -380,7 +555,9 @@ test_hook_installer() {
 
 test_scheduled_cleanup_helper() {
   local scheduled_output
+  make_workspace_fully_clean
   scheduled_output="$(run_scheduled_capture "$PERFECT_REGISTRY_FILE")"
+  restore_dirty_workspace_shape
   assert_contains "$scheduled_output" "- result=PORCELAIN"
   assert_file_exists "$WORKSPACE_ROOT/local-workspace/local-working-files/local-cleanup-audit/latest_scheduled_cleanup.md"
   assert_file_exists "$WORKSPACE_ROOT/local-workspace/local-working-files/local-cleanup-audit/scheduled_cleanup_state.env"
@@ -404,6 +581,7 @@ test_scheduled_cleanup_helper() {
 }
 
 test_contract_derived_local_workspace_guardrails() {
+  make_workspace_fully_clean
   mkdir -p "$WORKSPACE_ROOT/local-workspace/local-handoffs"
   echo "handoff residue" > "$WORKSPACE_ROOT/local-workspace/local-handoffs/test.txt"
 
@@ -422,6 +600,7 @@ test_contract_derived_local_workspace_guardrails() {
   assert_contains "$guardrail_output" "- handoff_files=1"
 
   rm -rf "$WORKSPACE_ROOT/local-workspace/local-handoffs"
+  restore_dirty_workspace_shape
 }
 
 test_local_trash_bucket_actionability_is_t1_t2_visible() {
@@ -442,11 +621,12 @@ test_local_trash_bucket_actionability_is_t1_t2_visible() {
   assert_contains "$t1_output" "- trash_actionable_buckets=1"
   assert_contains "$t1_output" "- trash_bucket=local-workspace/local-trash-delete/local-high-volume-residue action=review_for_local_purge files=101"
   assert_contains "$t1_output" "- files_to_move_to_local_purge=101"
-  assert_contains "$t1_output" "Would you like to execute safe local-workspace cleanup now?"
+  assert_contains "$t1_output" "Do you want me to execute and move the identified eligible items to the approved trash/disposal lane, yes or no?"
   assert_contains "$t1_output" "run T1 cleanup execute local-workspace"
 
   local t2_output=""
   local t2_status=0
+  make_workspace_fully_clean
   if t2_output="$(run_audit_capture "$PERFECT_REGISTRY_FILE" "run T2 audit")"; then
     t2_status=0
   else
@@ -456,7 +636,8 @@ test_local_trash_bucket_actionability_is_t1_t2_visible() {
   assert_contains "$t2_output" "- trash_actionable_buckets=1"
   assert_contains "$t2_output" "- quick_gate=ESCALATE_RECOMMENDED"
   assert_contains "$t2_output" "- medium_gate=ESCALATE_RECOMMENDED"
-  assert_contains "$t2_output" "Would you like to execute safe local-workspace cleanup now?"
+  assert_contains "$t2_output" "Do you want me to execute and move the identified eligible items to the approved trash/disposal lane, yes or no?"
+  restore_dirty_workspace_shape
 
   rm -rf "$bucket"
 }
@@ -477,7 +658,29 @@ test_t1_safe_local_workspace_execute_moves_to_local_purge() {
   rm -rf "$WORKSPACE_ROOT/local-workspace/local-trash-delete/local-purge/local-execute-residue"
 }
 
+test_weekly_cleanup_moves_from_local_working_files_to_local_purge() {
+  local weekly_root="$TEST_ROOT/weekly-cleanup-root"
+  local src_dir="$weekly_root/local-workspace/local-working-files/weekly-trash-source"
+  local dst_file="$weekly_root/local-workspace/local-trash-delete/local-purge/weekly-trash-source/file.txt"
+
+  mkdir -p "$src_dir"
+  printf 'weekly residue\n' > "$src_dir/file.txt"
+  touch -t 202001010000 "$src_dir/file.txt"
+
+  local weekly_output
+  weekly_output="$(BITPOD_APP_ROOT="$weekly_root" "$AUDIT_CTL" "__cleanup_trash_weekly__")"
+
+  assert_contains "$weekly_output" "Audit Control | Weekly Local Trash-to-Purge Cleanup"
+  assert_contains "$weekly_output" "- scope=local-workspace/local-working-files -> local-workspace/local-trash-delete/local-purge"
+  assert_contains "$weekly_output" "- final_status=mutated"
+  assert_file_missing "$src_dir/file.txt"
+  assert_file_exists "$dst_file"
+
+  rm -rf "$weekly_root"
+}
+
 test_bounded_network_probes() {
+  make_workspace_fully_clean
   local fake_bin="$TEST_ROOT/fake-bin"
   mkdir -p "$fake_bin"
   cat > "$fake_bin/gh" <<'EOF'
@@ -498,9 +701,10 @@ EOF
   [[ "$timed_status" -eq 30 ]] || fail "expected timed T3 exit status 30, got $timed_status"
   assert_contains "$timed_output" "- result=FRACTURED"
   assert_contains "$timed_output" "- overall=NOT VERIFIED"
-  assert_contains "$timed_output" "- network_probe_failures=2"
+  assert_contains "$timed_output" "- network_probe_failures=6"
   assert_contains "$timed_output" "network_probe_failure=surface=repo_audit repo=alpha operation=gh_pr_list detail=timed out after 1s"
   assert_contains "$timed_output" "network_probe_failure=surface=repo_audit repo=demo-repository operation=gh_pr_list detail=timed out after 1s"
+  restore_dirty_workspace_shape
 }
 
 setup_workspace
@@ -508,12 +712,15 @@ test_refresh_repo_registry
 test_cleanup_contracts
 test_stale_branch_contracts
 test_open_pr_remote_branch_is_not_stale
+test_top_level_workspace_truth_contracts
+test_manifest_drift_is_not_verified
 test_parity_pulse_contracts
 test_hook_installer
 test_scheduled_cleanup_helper
 test_contract_derived_local_workspace_guardrails
 test_local_trash_bucket_actionability_is_t1_t2_visible
 test_t1_safe_local_workspace_execute_moves_to_local_purge
+test_weekly_cleanup_moves_from_local_working_files_to_local_purge
 test_bounded_network_probes
 
 echo "PASS: test_audit_tools.sh"
