@@ -119,6 +119,26 @@ create_tracked_repo() {
   git -C "$remote_path" symbolic-ref HEAD refs/heads/main >/dev/null
 }
 
+create_linked_worktree_repo() {
+  local name="$1"
+  local source_path="$TEST_ROOT/${name}_source"
+  local repo_path="$WORKSPACE_ROOT/$name"
+  local remote_path="$REMOTE_ROOT/$name.git"
+  local branch_name="${name}-worktree"
+
+  git init -b main "$source_path" >/dev/null
+  echo "$name" > "$source_path/README.md"
+  git_commit_all "$source_path" "initial"
+
+  git init --bare "$remote_path" >/dev/null
+  git -C "$source_path" remote add origin "$remote_path"
+  git -C "$source_path" push -u origin main >/dev/null
+  git -C "$remote_path" symbolic-ref HEAD refs/heads/main >/dev/null
+
+  git -C "$source_path" worktree add -b "$branch_name" "$repo_path" origin/main >/dev/null
+  git -C "$repo_path" branch --set-upstream-to=origin/main "$branch_name" >/dev/null
+}
+
 advance_remote() {
   local name="$1"
   local clone_path="$TEST_ROOT/${name}_remote_clone"
@@ -392,6 +412,11 @@ EOF
 test_top_level_workspace_truth_contracts() {
   make_workspace_fully_clean
   create_tracked_repo "zeta"
+  create_linked_worktree_repo "eta"
+  create_linked_worktree_repo "theta"
+  local worktree_registry="$TEST_ROOT/perfect_registry_with_worktree.tsv"
+  cp "$PERFECT_REGISTRY_FILE" "$worktree_registry"
+  echo "theta|theta|1|1|1|1|verified linked worktree" >> "$worktree_registry"
   mkdir -p "$WORKSPACE_ROOT/T01-Agents"
   ln -s alpha "$WORKSPACE_ROOT/taylor01-skills"
   printf 'stray\n' > "$WORKSPACE_ROOT/stray-root.txt"
@@ -411,7 +436,7 @@ EOF
 
   local truth_output=""
   local truth_status=0
-  if truth_output="$(run_audit_capture "$PERFECT_REGISTRY_FILE" "run T3 audit only repos")"; then
+  if truth_output="$(run_audit_capture "$worktree_registry" "run T3 audit only repos")"; then
     truth_status=0
   else
     truth_status=$?
@@ -420,13 +445,59 @@ EOF
   [[ "$truth_status" -eq 30 ]] || fail "expected top-level truth T3 exit status 30, got $truth_status"
   assert_contains "$truth_output" "- result=FRACTURED"
   assert_contains "$truth_output" "- registry_problem=zeta problem=UNREGISTERED_TOP_LEVEL_GIT_REPO detail=zeta"
+  assert_contains "$truth_output" "- registry_problem=eta problem=UNREGISTERED_TOP_LEVEL_GIT_REPO detail=eta"
+  assert_not_contains "$truth_output" "registry_problem=theta problem=NOT_GIT_REPO"
   assert_contains "$truth_output" "- top_level_finding=PROHIBITED_TOP_LEVEL_FOLDER path=T01-Agents blocking=true"
   assert_contains "$truth_output" "- top_level_finding=PROHIBITED_TOP_LEVEL_SYMLINK path=taylor01-skills blocking=true"
   assert_contains "$truth_output" "- top_level_finding=PROHIBITED_TOP_LEVEL_FILE path=stray-root.txt blocking=true"
+  assert_not_contains "$truth_output" "- top_level_finding=PROHIBITED_TOP_LEVEL_FOLDER path=eta"
+  assert_not_contains "$truth_output" "- top_level_finding=PROHIBITED_TOP_LEVEL_FOLDER path=theta"
   assert_contains "$truth_output" "- stale_manifest_warning=MANIFEST_OMITS_TOP_LEVEL_GIT_REPO repo=zeta"
+  assert_contains "$truth_output" "- stale_manifest_warning=MANIFEST_OMITS_TOP_LEVEL_GIT_REPO repo=eta"
   assert_contains "$truth_output" "- stale_manifest_warning=MANIFEST_ACTIVE_REPO_MISSING_LOCAL_GIT repo=ghost-repo"
 
-  rm -rf "$WORKSPACE_ROOT/zeta" "$REMOTE_ROOT/zeta.git" "$WORKSPACE_ROOT/T01-Agents" "$WORKSPACE_ROOT/taylor01-skills" "$WORKSPACE_ROOT/stray-root.txt" "$WORKSPACE_ROOT/bitpod-docs"
+  git -C "$TEST_ROOT/eta_source" worktree remove --force "$WORKSPACE_ROOT/eta" >/dev/null
+  git -C "$TEST_ROOT/theta_source" worktree remove --force "$WORKSPACE_ROOT/theta" >/dev/null
+  rm -rf "$WORKSPACE_ROOT/zeta" "$REMOTE_ROOT/zeta.git" "$REMOTE_ROOT/eta.git" "$REMOTE_ROOT/theta.git" "$WORKSPACE_ROOT/T01-Agents" "$WORKSPACE_ROOT/taylor01-skills" "$WORKSPACE_ROOT/stray-root.txt" "$WORKSPACE_ROOT/bitpod-docs"
+  restore_dirty_workspace_shape
+}
+
+test_manifest_drift_is_not_verified() {
+  make_workspace_fully_clean
+  create_tracked_repo "bitpod-docs"
+  local manifest_registry="$TEST_ROOT/perfect_registry_with_manifest_repo.tsv"
+  cp "$PERFECT_REGISTRY_FILE" "$manifest_registry"
+  echo "bitpod-docs|bitpod-docs|1|1|1|1|verified manifest repo" >> "$manifest_registry"
+  mkdir -p "$WORKSPACE_ROOT/bitpod-docs/process"
+  cat > "$WORKSPACE_ROOT/bitpod-docs/process/global-agent-policy-distribution-manifest.json" <<'EOF'
+{
+  "activeRepos": [
+    "alpha",
+    "bitpod-docs",
+    "bitpod-tools",
+    "delta",
+    "demo-repository",
+    "gamma"
+  ]
+}
+EOF
+
+  local manifest_output=""
+  local manifest_status=0
+  if manifest_output="$(run_audit_capture "$manifest_registry" "run T3 audit only repos")"; then
+    manifest_status=0
+  else
+    manifest_status=$?
+  fi
+
+  [[ "$manifest_status" -eq 30 ]] || fail "expected manifest drift T3 exit status 30, got $manifest_status"
+  assert_contains "$manifest_output" "- result=FRACTURED"
+  assert_contains "$manifest_output" "- overall=NOT VERIFIED"
+  assert_contains "$manifest_output" "- registry_problems=0"
+  assert_contains "$manifest_output" "- top_level_blocking_findings=0"
+  assert_contains "$manifest_output" "- stale_manifest_warning=MANIFEST_OMITS_TOP_LEVEL_GIT_REPO repo=beta"
+
+  rm -rf "$WORKSPACE_ROOT/bitpod-docs" "$REMOTE_ROOT/bitpod-docs.git"
   restore_dirty_workspace_shape
 }
 
@@ -642,6 +713,7 @@ test_cleanup_contracts
 test_stale_branch_contracts
 test_open_pr_remote_branch_is_not_stale
 test_top_level_workspace_truth_contracts
+test_manifest_drift_is_not_verified
 test_parity_pulse_contracts
 test_hook_installer
 test_scheduled_cleanup_helper

@@ -328,6 +328,19 @@ assert_registry_ready() {
   return 0
 }
 
+is_git_worktree_root() {
+  local path="$1"
+  local inside top path_physical top_physical
+
+  [[ -d "$path" ]] || return 1
+  inside="$(git -C "$path" rev-parse --is-inside-work-tree 2>/dev/null)" || return 1
+  [[ "$inside" == "true" ]] || return 1
+  top="$(git -C "$path" rev-parse --show-toplevel 2>/dev/null)" || return 1
+  path_physical="$(cd "$path" && pwd -P)" || return 1
+  top_physical="$(cd "$top" && pwd -P)" || return 1
+  [[ "$path_physical" == "$top_physical" ]]
+}
+
 collect_repo_paths() {
   local feature="$1"
   local include_top_level_truth="${2:-0}"
@@ -363,7 +376,7 @@ collect_repo_paths() {
       echo "$repo|MISSING_PATH|$rel_path" >> "$REGISTRY_PROBLEMS_FILE"
       continue
     fi
-    if [[ ! -d "$abs_path/.git" ]]; then
+    if ! is_git_worktree_root "$abs_path"; then
       echo "$repo|NOT_GIT_REPO|$rel_path" >> "$REGISTRY_PROBLEMS_FILE"
       continue
     fi
@@ -471,7 +484,7 @@ collect_top_level_workspace_truth() {
     if [[ -L "$path" ]]; then
       append_top_level_finding "PROHIBITED_TOP_LEVEL_SYMLINK" "$rel_path" "direct workspace symlink is not a real top-level repo or approved local-workspace lane" "true"
     elif [[ -d "$path" ]]; then
-      if [[ -d "$path/.git" ]]; then
+      if is_git_worktree_root "$path"; then
         top_level_git_repo_count=$((top_level_git_repo_count + 1))
         printf '%s|%s\n' "$rel_path" "$path" >> "$TOP_LEVEL_GIT_ROWS_FILE"
         if ! grep -Fxq -- "$rel_path" "$TMP_REGISTRY_ACTIVE_RELS"; then
@@ -1219,6 +1232,7 @@ cleanup_overall_verification() {
     if [[ "$code2" -eq 0 &&
           "$registry_problem_count" -eq 0 &&
           "$top_level_blocking_issue_count" -eq 0 &&
+          "$manifest_warning_count" -eq 0 &&
           "$network_probe_fail_count" -eq 0 &&
           "$stale_local_branch_count" -eq 0 &&
           "$stale_remote_branch_count" -eq 0 ]]; then
