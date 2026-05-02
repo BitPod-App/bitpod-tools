@@ -35,9 +35,11 @@ Maintenance update — 2026-04-28:
 - require a mapping table covering PRs, Linear issues, project scope, status class, labels, and bidirectional links
 - require single clean retroactive-link comments instead of duplicate or shorthand-only comments
 - make project-scope cleanup fail closed when available tooling cannot remove a wrong project assignment
+- add the Issue Type decision guide as the evidence-based rubric for future hygiene audits and normal triage
 
 Linked artifacts:
 - `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/linear_operating_guide_v3.md`
+- `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/linear_issue_type_decision_guide_v1.md`
 - `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/linear_admin_change_control_v1.md`
 - `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/linear_change_proposal_template_v1.md`
 - `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/linear_process_v1_1_control_tower_change_proposal_2026-04-15.md`

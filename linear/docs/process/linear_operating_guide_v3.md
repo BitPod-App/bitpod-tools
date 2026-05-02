@@ -26,6 +26,7 @@ Maintenance update — 2026-04-28:
 - require a small mapping table before merge, retroactive cleanup, or broad Linear normalization
 - make bidirectional GitHub PR and Linear issue links part of completion evidence
 - make project-scope classification explicit, especially for shared infrastructure that does not belong in product/model projects
+- add `linear_issue_type_decision_guide_v1.md` as the evidence-based rubric for Issue Type triage and hygiene corrections
 
 ## Scope
 
@@ -121,6 +122,7 @@ Maintenance update — 2026-04-28:
 11. Weekly hygiene beats backlog drift
 - Keep Linear small and legible.
 - Close stale tickets, merge duplicates, and normalize missing acceptance criteria before adding more structure.
+- Normalize missing or suspicious `Issue Type` values through `linear_issue_type_decision_guide_v1.md`; title-only type corrections are not allowed.
 - Prefer fewer labels unless a new label clearly solves repeated friction.
 
 12. QA and PM truth must be honest
@@ -137,7 +139,7 @@ Maintenance update — 2026-04-28:
 - Otherwise, the engine must leave a correction comment and stop short of closure.
 
 14. PR-to-Linear closeout guardrail
-- Before merge, retroactive linking, or Linear normalization, create a small mapping table with: GitHub PR, Linear issue(s), owning project, status class, required labels, and expected bidirectional links.
+- Before merge, retroactive linking, or Linear normalization, create a small mapping table with: GitHub PR, Linear issue(s), owning project, status class, Issue Type decision, required labels, and expected bidirectional links.
 - Status class must be explicit:
   - PR-backed implementation: `Done` only after merge/evidence is real.
   - Docs/design/audit: `Accepted` when reviewed/accepted but not an implementation closure.
@@ -190,6 +192,7 @@ This version corresponds to:
 - evidence-first completion protocol from `v2`
 - Taylor01 portability review gate from `taylor01_portability_review_gate_v1.md`
 - active issue evidence contract from `linear_issue_template_evidence_contract_v2.md`
+- Issue Type decision rubric from `linear_issue_type_decision_guide_v1.md`
 - PR-to-Linear closeout guardrail added to `linear_operating_guide_v3.md` on 2026-04-28
 - Linear admin/process change-control from `linear_admin_change_control_v1.md`
 - proposal workflow from `linear_change_proposal_template_v1.md`
@@ -199,6 +202,7 @@ Artifacts:
 - `linear_operating_model_v1.md`
 - `linear_operating_guide_v3.md`
 - `linear_issue_template_evidence_contract_v2.md`
+- `linear_issue_type_decision_guide_v1.md`
 - `taylor01_portability_review_gate_v1.md`
 - `linear_admin_change_control_v1.md`
 - `linear_change_proposal_template_v1.md`

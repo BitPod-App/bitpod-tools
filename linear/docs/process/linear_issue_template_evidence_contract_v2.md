@@ -27,6 +27,7 @@ Every "Done" claim must include:
 - GitHub PR link(s) using `linear_link_reference_policy_v1.md` format.
 - Linear issue link(s) using canonical full-title format.
 - Project scope check: correct project, standalone issue, or explicit blocker if tooling cannot remove a wrong project.
+- Issue Type decision: evidence-based selection or correction using `linear_issue_type_decision_guide_v1.md`.
 - Status class check: implementation, docs/design/audit, or future/unstarted.
 - Label check: finalized labels applied only to finalized items; future items do not receive completion labels.
 - Bidirectional linking check: PR comment plus Linear issue comment/link verified, with no duplicate link-spam.
@@ -96,6 +97,7 @@ PR-to-Linear closeout check:
 - PR: [BitPod-App/repo-name PR #123 — PR Title](https://github.com/BitPod-App/repo-name/pull/123)
 - Linear: [BIT-000 — Full Issue Title](https://linear.app/bitpod-app/issue/BIT-000/issue-slug)
 - Project scope: correct / standalone / blocked by tooling limitation
+- Issue Type decision: Feature / Bug / Chore / Design / Plan / Release / left ambiguous; evidence source noted
 - Status class: implementation / docs-design-audit / future-unstarted
 - Labels: domain label + qa/pm result labels verified where finalized
 - Bidirectional links: PR comment verified; Linear attachment/comment verified; no duplicate retroactive comments

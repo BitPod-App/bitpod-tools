@@ -212,6 +212,8 @@ This board is the closest Linear equivalent to a single meaningful Pivotal board
 
 ## Ticket types
 
+Operational type selection, retroactive correction, and hygiene-audit normalization are governed by `linear_issue_type_decision_guide_v1.md`. This model defines the taxonomy; the decision guide defines how to apply it from evidence.
+
 Canonical issue types:
 
 - `Plan`
@@ -238,6 +240,7 @@ Canonical issue types:
 - no extra type taxonomy
 - `Plan` and `Release` are the only issue types where sub-issues are generally expected
 - outside of `Plan` and some `Release` tickets, sub-issues should usually be avoided
+- issue type corrections must be evidence-based; do not infer type from title alone
 
 ### Feature definition
 
