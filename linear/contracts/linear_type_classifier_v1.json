@@ -1,0 +1,153 @@
+{
+  "version": "linear_type_classifier_v1",
+  "status": "active",
+  "owner": "Product Development",
+  "supersedes": [
+    "linear/docs/process/linear_issue_type_decision_guide_v1.md prose-only decision flow"
+  ],
+  "purpose": "Deterministic issue type classifier and advisory default QA/PM routing recommendation source for Linear ticket creation, triage, and hygiene automation.",
+  "required_intake_block": "Linear Classification",
+  "required_intake_fields": [
+    "Output",
+    "Behavior change",
+    "Broken existing behavior",
+    "Evidence",
+    "Children expected",
+    "PM-testable"
+  ],
+  "output_values": [
+    "code",
+    "docs/process",
+    "design artifact",
+    "design approval",
+    "release coordination",
+    "plan container"
+  ],
+  "output_aliases": {
+    "implementation": "code",
+    "docs": "docs/process",
+    "process": "docs/process"
+  },
+  "strict_boolean_fields": [
+    "Behavior change",
+    "Broken existing behavior",
+    "Children expected",
+    "PM-testable"
+  ],
+  "boolean_values": [
+    "yes",
+    "no"
+  ],
+  "canonical_types": [
+    "Bug",
+    "Feature",
+    "Chore",
+    "Design",
+    "Plan",
+    "Release"
+  ],
+  "type_decision_order": [
+    {
+      "type": "Bug",
+      "when": {
+        "broken_existing_behavior": true,
+        "evidence_required": true
+      },
+      "reason": "Expected behavior did not work and evidence exists. This remains Bug even if the implementation fix is refactor, cleanup, or hardening."
+    },
+    {
+      "type": "Design",
+      "when": {
+        "output_any_of": [
+          "design artifact",
+          "design approval"
+        ]
+      },
+      "reason": "Ticket output is serious design artifact or design approval, usually Figma/mockup/design-system evidence."
+    },
+    {
+      "type": "Release",
+      "when": {
+        "output_any_of": [
+          "release coordination"
+        ]
+      },
+      "reason": "Ticket is a real release coordination container with release mechanics."
+    },
+    {
+      "type": "Plan",
+      "when": {
+        "output_any_of": [
+          "plan container"
+        ],
+        "children_expected": true
+      },
+      "reason": "Ticket is a mini-project/epic container with real subtickets toward one precise goal."
+    },
+    {
+      "type": "Feature",
+      "when": {
+        "behavior_change": true
+      },
+      "reason": "Ticket adds or upgrades functionality with real value to people or agents."
+    },
+    {
+      "type": "Chore",
+      "when": {
+        "default": true
+      },
+      "reason": "Maintenance, docs/process, cleanup, refactor, upgrade, or hygiene work without new user/agent-facing functionality."
+    }
+  ],
+  "routing_defaults_status": "advisory_until_wired_to_label_automation",
+  "routing_defaults": [
+    {
+      "type": "Design",
+      "qa": "skip",
+      "pm": "required",
+      "reason": "Design acceptance is PM/design review; QA does not validate design artifacts."
+    },
+    {
+      "type": "Chore",
+      "condition": {
+        "pm_testable": false
+      },
+      "qa": "required",
+      "pm": "skip_allowed",
+      "reason": "Highly technical chores with no PM-testable behavior change can be accepted by QA evidence."
+    },
+    {
+      "type": "Bug",
+      "condition": {
+        "pm_testable": false
+      },
+      "qa": "required",
+      "pm": "skip_allowed",
+      "reason": "Tiny/narrow bugs can skip PM when QA evidence is enough."
+    },
+    {
+      "type_any_of": [
+        "Plan",
+        "Release"
+      ],
+      "qa": "subissues_decide",
+      "pm": "subissues_decide",
+      "reason": "Plan and Release are coordinating containers; real subtickets carry type and route."
+    },
+    {
+      "type_any_of": [
+        "Feature",
+        "Bug",
+        "Chore"
+      ],
+      "qa": "required",
+      "pm": "required",
+      "reason": "Default implementation route unless a skip condition above applies."
+    }
+  ],
+  "learning_loop": {
+    "human_correction_log": "linear/docs/process/linear_type_classifier_corrections_v1.md",
+    "rule": "When CJ corrects a hygiene audit classification, record one short correction in the markdown log, then convert it into this JSON classifier or a classifier test fixture in the same PR/run.",
+    "no_hidden_memory": true
+  }
+}
