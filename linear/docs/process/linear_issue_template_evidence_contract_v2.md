@@ -31,6 +31,18 @@ Every "Done" claim must include:
 - Label check: finalized labels applied only to finalized items; future items do not receive completion labels.
 - Bidirectional linking check: PR comment plus Linear issue comment/link verified, with no duplicate link-spam.
 
+7. `Issue Type check` (required when creating, triaging, or normalizing issue type)
+- Exactly one canonical issue type is set, or `needs-type` is present with a note naming the missing evidence.
+- Type choice follows `linear/contracts/linear_type_classifier_v1.json` and `linear_issue_type_decision_guide_v1.md`.
+- Type is not inferred from title alone.
+- Include the compact `Linear Classification` intake block when moving an issue to `Ready`:
+  - `Output`
+  - `Behavior change`
+  - `Broken existing behavior`
+  - `Evidence`
+  - `Children expected`
+  - `PM-testable`
+
 ## Taylor01 Portability Check (required when relevant)
 
 For issues touching agents, workflows, process docs, workspace policy, or tool integrations, also include:
@@ -77,7 +89,7 @@ Commands/UI checks:
 - GitHub UI: Org Settings -> Security -> Require 2FA = enabled
 
 Artifacts:
-- `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/github_org_baseline_evidence_2026-03-06.md`
+- `/Users/taylor01/BitPod-App/bitpod-tools/linear/docs/process/github_org_baseline_evidence_2026-03-06.md`
 - [PR #6](https://github.com/BitPod-App/bitpod-tools/pull/6)
 
 Pass/Fail:
@@ -100,6 +112,11 @@ PR-to-Linear closeout check:
 - Labels: domain label + qa/pm result labels verified where finalized
 - Bidirectional links: PR comment verified; Linear attachment/comment verified; no duplicate retroactive comments
 
+Issue Type check:
+- Type: Feature / Bug / Chore / Design / Plan / Release / blocked by `needs-type`
+- Evidence basis: acceptance criteria, defect evidence, design artifact, parent rollout scope, release checklist, or other current issue evidence
+- Decision guide: `linear/contracts/linear_type_classifier_v1.json` and `linear_issue_type_decision_guide_v1.md`
+
 Risk / follow-up:
 - `code_security` feature is plan-gated; tracked separately and not blocking this issue.
 ```
@@ -121,3 +138,4 @@ Risk / follow-up:
 - If a meaningful temporary bypass is used, add or update the active bypass register entry instead of silently relying on memory.
 - If a PR-to-Linear closeout check is required and missing, do not claim the issue/project/PR history is normalized.
 - If project membership cannot be corrected through available tooling, record that as an explicit blocker rather than marking the project cleanup fully complete.
+- If issue type evidence is missing or ambiguous, keep or add `needs-type` rather than guessing.
