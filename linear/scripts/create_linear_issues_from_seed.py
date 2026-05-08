@@ -76,7 +76,7 @@ def resolve_project_id(token: str, project_name: str):
 
 def resolve_state_id(token: str, team_id: str, state_name: str) -> str:
     query = """
-    query TeamStates($id: String!) {
+    query TeamStates($id: ID!) {
       team(id: $id) {
         id
         key
