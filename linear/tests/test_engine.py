@@ -78,7 +78,21 @@ class EngineTests(unittest.TestCase):
             "description": "Linear Classification\n- Output: code\n- Behavior change: yes\n- Broken existing behavior: no\n- Evidence: acceptance criteria\n- Children expected: no\n- PM-testable: yes\n\nObjective\nScope\nRequired outputs\nVerification plan\nRollback note\nAcceptance / closure criteria",
         }
         actions = self.bot.on_linear_ready_gate(issue)
-        self.assertEqual(actions, [])
+        self.assertTrue(any(a.kind == "comment" and "Routing recommendation" in a.payload["body"] for a in actions))
+        self.assertFalse(any(a.kind == "set_status" for a in actions))
+        self.assertFalse(any(a.kind == "set_label" and a.payload.get("value") == "qa-skipped" for a in actions))
+
+    def test_ready_gate_design_autosets_qa_skipped(self):
+        issue = {
+            "identifier": "BIT-45",
+            "status": "Ready",
+            "labels": ["🎨 Design"],
+            "estimate": 3,
+            "description": "Linear Classification\n- Output: design artifact\n- Behavior change: no\n- Broken existing behavior: no\n- Evidence: design acceptance\n- Children expected: no\n- PM-testable: yes\n\nObjective\nScope\nRequired outputs\nVerification plan\nRollback note\nAcceptance / closure criteria",
+        }
+        actions = self.bot.on_linear_ready_gate(issue)
+        self.assertTrue(any(a.kind == "set_label" and a.payload.get("value") == "qa-skipped" for a in actions))
+        self.assertTrue(any(a.kind == "comment" and "QA=skip" in a.payload["body"] for a in actions))
 
     def test_ready_gate_plan_parent_requires_estimate(self):
         issue = {
