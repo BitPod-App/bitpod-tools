@@ -19,6 +19,9 @@ When automation hygiene mutates Linear issue type/routing and CJ corrects it:
 3. Update `linear/contracts/linear_type_classifier_v1.json` or add a classifier test fixture in the same run/PR.
 4. Reference the changed rule/test in the audit report back to CJ.
 
+Helper:
+- `python3 linear/scripts/record_type_classifier_correction.py` can append an entry here and (optionally) add a machine-enforced fixture row in `linear/tests/fixtures/linear_type_classifier_corrections_v1.json` (BIT-441).
+
 ## Entry format
 
 ```md
