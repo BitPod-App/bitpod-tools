@@ -206,6 +206,10 @@ cd $WORKSPACE/bitpod-tools
 python3 linear/scripts/create_linear_issues_from_seed.py
 ```
 
+Issue creation note (status/state):
+- Linear API issue creation is deterministic when you pass a concrete `stateId` (workflow state ID).
+- For Product Development (`team=BIT`), `Backlog` stateId is `162716a8-ffa4-43ea-9e0d-c48fdb8054bc` (BIT-442).
+
 `simulate_e2e.py` runs the feature happy-path sequence:
 - PR opened -> In Progress
 - PR ready for review -> `In Review`

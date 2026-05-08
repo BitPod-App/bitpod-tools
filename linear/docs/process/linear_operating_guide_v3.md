@@ -92,7 +92,7 @@ Maintenance update — 2026-04-28:
 - Treat this assignee/delegate restriction as a temporary safety rule until Codex is decoupled from the user's personal Linear identity.
 - Do not casually change priority, estimate, due date, or milestone when confidence is low.
 - Do not create duplicate retroactive issues when an existing issue already owns the scope.
-- Temporary Product Development issue-creation workaround: if a new issue lands in `Icebox 🧊` despite being intended for `Backlog`, immediately correct it to `Backlog` using the concrete Backlog status ID `162716a8-ffa4-43ea-9e0d-c48fdb8054bc` and record the evidence. Tracked by BIT-442.
+- Temporary Product Development issue-creation workaround (BIT-442): if a new issue lands in `Icebox 🧊` despite being intended for `Backlog`, immediately correct it to `Backlog` using the concrete workflow state ID `162716a8-ffa4-43ea-9e0d-c48fdb8054bc` (Backlog). If a toolchain only accepts IDs, `Icebox 🧊` is `8bc24299-6afe-49e7-a713-42c4ec7f1863`. Record the evidence.
 
 8. Capability degradation handling
 - If tool behavior is impaired, stop speculative actions and post minimal verified state.
