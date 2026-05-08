@@ -74,7 +74,46 @@ def resolve_project_id(token: str, project_name: str):
     raise SystemExit(f"project name not found: {project_name}")
 
 
-def create_issue(token: str, team_id: str, project_id: Optional[str], title: str, description: str):
+def resolve_state_id(token: str, team_id: str, state_name: str) -> str:
+    query = """
+    query TeamStates($id: String!) {
+      team(id: $id) {
+        id
+        key
+        name
+        states {
+          nodes {
+            id
+            name
+            type
+            position
+          }
+        }
+      }
+    }
+    """
+    payload = gql_request(token, query, {"id": team_id})
+    errors = payload.get("errors")
+    if errors:
+        raise SystemExit(json.dumps(errors, indent=2))
+    nodes = payload.get("data", {}).get("team", {}).get("states", {}).get("nodes", [])
+    if not nodes:
+        raise SystemExit(f"no workflow states returned for team_id={team_id}")
+    for node in nodes:
+        if node.get("name") == state_name:
+            return node["id"]
+    options = ", ".join(sorted({n.get("name", "") for n in nodes if n.get("name")}))
+    raise SystemExit(f"workflow state not found: {state_name!r}. options: {options}")
+
+
+def create_issue(
+    token: str,
+    team_id: str,
+    project_id: Optional[str],
+    title: str,
+    description: str,
+    state_id: Optional[str] = None,
+):
     query = """
     mutation CreateIssue($input: IssueCreateInput!) {
       issueCreate(input: $input) {
@@ -95,6 +134,8 @@ def create_issue(token: str, team_id: str, project_id: Optional[str], title: str
     }
     if project_id:
         input_payload["projectId"] = project_id
+    if state_id:
+        input_payload["stateId"] = state_id
     payload = gql_request(token, query, {"input": input_payload})
     errors = payload.get("errors")
     if errors:
@@ -117,6 +158,16 @@ def main():
     parser.add_argument("--seed", default=str(DEFAULT_SEED))
     parser.add_argument("--team-key", default="BIT")
     parser.add_argument("--project-name", default="Taylor01")
+    parser.add_argument(
+        "--state-name",
+        default="Backlog",
+        help="Workflow state name to use on create (resolved to stateId). Defaults to Backlog.",
+    )
+    parser.add_argument(
+        "--state-id",
+        default="",
+        help="Workflow state ID to use on create (overrides --state-name). Recommended when toolchains have name-resolution ambiguity.",
+    )
     parser.add_argument("--live", action="store_true")
     args = parser.parse_args()
 
@@ -132,6 +183,9 @@ def main():
 
     team_id = resolve_team_id(token, args.team_key)
     project_id = resolve_project_id(token, args.project_name)
+    requested_state_id = args.state_id.strip() or None
+    if requested_state_id is None:
+        requested_state_id = resolve_state_id(token, team_id, args.state_name)
     for issue in seed["issues"]:
         created = create_issue(
             token=token,
@@ -139,6 +193,7 @@ def main():
             project_id=project_id,
             title=issue["title"],
             description=issue["description"],
+            state_id=requested_state_id,
         )
         print(f"{created['identifier']}: {created['title']} -> {created['url']}")
 
