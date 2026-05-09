@@ -1,7 +1,15 @@
 import unittest
 from datetime import datetime, timezone
 
-from linear.src.engine import LinearBotEngine
+from linear.src.engine import (
+    BOOLEAN_VALUES,
+    CANONICAL_TYPES,
+    CLASSIFICATION_FIELDS,
+    CLASSIFIER_CONTRACT,
+    STRICT_BOOLEAN_FIELDS,
+    VALID_OUTPUTS,
+    LinearBotEngine,
+)
 
 
 class EngineTests(unittest.TestCase):
@@ -45,7 +53,7 @@ class EngineTests(unittest.TestCase):
             "status": "Ready",
             "labels": [],
             "estimate": 3,
-            "description": "Objective\nScope\nRequired outputs\nVerification plan\nRollback note\nAcceptance / closure criteria",
+            "description": "Linear Classification\n- Output: code\n- Behavior change: yes\n- Broken existing behavior: no\n- Evidence: acceptance criteria\n- Children expected: no\n- PM-testable: yes\n\nObjective\nScope\nRequired outputs\nVerification plan\nRollback note\nAcceptance / closure criteria",
         }
         actions = self.bot.on_linear_ready_gate(issue)
         self.assertTrue(any(a.kind == "set_status" and a.payload["status"] == "Backlog" for a in actions))
@@ -56,7 +64,7 @@ class EngineTests(unittest.TestCase):
             "identifier": "BIT-45",
             "status": "Ready",
             "labels": ["Feature"],
-            "description": "Objective\nScope\nRequired outputs\nVerification plan\nRollback note\nAcceptance / closure criteria",
+            "description": "Linear Classification\n- Output: code\n- Behavior change: yes\n- Broken existing behavior: no\n- Evidence: acceptance criteria\n- Children expected: no\n- PM-testable: yes\n\nObjective\nScope\nRequired outputs\nVerification plan\nRollback note\nAcceptance / closure criteria",
         }
         actions = self.bot.on_linear_ready_gate(issue)
         self.assertTrue(any(a.kind == "set_label" and a.payload["value"] == "needs-estimate" for a in actions))
@@ -67,7 +75,7 @@ class EngineTests(unittest.TestCase):
             "status": "Ready",
             "labels": ["⭐️ Feature"],
             "estimate": 3,
-            "description": "Objective\nScope\nRequired outputs\nVerification plan\nRollback note\nAcceptance / closure criteria",
+            "description": "Linear Classification\n- Output: code\n- Behavior change: yes\n- Broken existing behavior: no\n- Evidence: acceptance criteria\n- Children expected: no\n- PM-testable: yes\n\nObjective\nScope\nRequired outputs\nVerification plan\nRollback note\nAcceptance / closure criteria",
         }
         actions = self.bot.on_linear_ready_gate(issue)
         self.assertEqual(actions, [])
@@ -77,7 +85,7 @@ class EngineTests(unittest.TestCase):
             "identifier": "BIT-45",
             "status": "Ready",
             "labels": ["Plan"],
-            "description": "Objective\nScope\nRequired outputs\nVerification plan\nRollback note\nAcceptance / closure criteria",
+            "description": "Linear Classification\n- Output: plan container\n- Behavior change: no\n- Broken existing behavior: no\n- Evidence: child-ticket rollout scope\n- Children expected: yes\n- PM-testable: no\n\nObjective\nScope\nRequired outputs\nVerification plan\nRollback note\nAcceptance / closure criteria",
         }
         actions = self.bot.on_linear_ready_gate(issue)
         self.assertTrue(any(a.kind == "set_label" and a.payload["value"] == "needs-estimate" for a in actions))
@@ -88,10 +96,80 @@ class EngineTests(unittest.TestCase):
             "status": "Ready",
             "labels": ["Feature", "Bug"],
             "estimate": 3,
+            "description": "Linear Classification\n- Output: code\n- Behavior change: yes\n- Broken existing behavior: no\n- Evidence: acceptance criteria\n- Children expected: no\n- PM-testable: yes\n\nObjective\nScope\nRequired outputs\nVerification plan\nRollback note\nAcceptance / closure criteria",
+        }
+        actions = self.bot.on_linear_ready_gate(issue)
+        self.assertTrue(any(a.kind == "set_label" and a.payload["value"] == "needs-type" for a in actions))
+
+    def test_ready_gate_missing_classification_block_fails_closed(self):
+        issue = {
+            "identifier": "BIT-45",
+            "status": "Ready",
+            "labels": ["Feature"],
+            "estimate": 3,
             "description": "Objective\nScope\nRequired outputs\nVerification plan\nRollback note\nAcceptance / closure criteria",
         }
         actions = self.bot.on_linear_ready_gate(issue)
         self.assertTrue(any(a.kind == "set_label" and a.payload["value"] == "needs-type" for a in actions))
+        self.assertTrue(any(a.kind == "comment" and "Linear Classification" in a.payload["body"] for a in actions))
+
+    def test_ready_gate_type_mismatch_fails_closed(self):
+        issue = {
+            "identifier": "BIT-45",
+            "status": "Ready",
+            "labels": ["Chore"],
+            "estimate": 3,
+            "description": "Linear Classification\n- Output: code\n- Behavior change: yes\n- Broken existing behavior: no\n- Evidence: acceptance criteria\n- Children expected: no\n- PM-testable: yes\n\nObjective\nScope\nRequired outputs\nVerification plan\nRollback note\nAcceptance / closure criteria",
+        }
+        actions = self.bot.on_linear_ready_gate(issue)
+        self.assertTrue(any(a.kind == "set_label" and a.payload["value"] == "needs-type" for a in actions))
+        self.assertTrue(any(a.kind == "comment" and "classifier predicts `Feature`" in a.payload["body"] for a in actions))
+
+    def test_ready_gate_invalid_classification_values_fail_closed(self):
+        issue = {
+            "identifier": "BIT-45",
+            "status": "Ready",
+            "labels": ["Chore"],
+            "estimate": 3,
+            "description": "Linear Classification\n- Output: ???\n- Behavior change: maybe\n- Broken existing behavior: TBD\n- Evidence: acceptance criteria\n- Children expected: no\n- PM-testable: no\n\nObjective\nScope\nRequired outputs\nVerification plan\nRollback note\nAcceptance / closure criteria",
+        }
+        actions = self.bot.on_linear_ready_gate(issue)
+        self.assertTrue(any(a.kind == "set_label" and a.payload["value"] == "needs-type" for a in actions))
+        self.assertTrue(any(a.kind == "comment" and "Invalid `Linear Classification` values" in a.payload["body"] for a in actions))
+
+    def test_ready_gate_ignores_existing_in_progress_for_migration(self):
+        issue = {
+            "identifier": "BIT-45",
+            "status": "In Progress",
+            "labels": ["Feature"],
+            "estimate": 3,
+            "description": "Objective\nScope\nRequired outputs\nVerification plan\nRollback note\nAcceptance / closure criteria",
+        }
+        self.assertEqual(self.bot.on_linear_ready_gate(issue), [])
+
+    def test_classifier_contract_parity(self):
+        self.assertEqual(CANONICAL_TYPES, set(CLASSIFIER_CONTRACT["canonical_types"]))
+        self.assertEqual(CLASSIFICATION_FIELDS, set(CLASSIFIER_CONTRACT["required_intake_fields"]))
+        self.assertEqual(VALID_OUTPUTS, set(CLASSIFIER_CONTRACT["output_values"]))
+        self.assertEqual(STRICT_BOOLEAN_FIELDS, set(CLASSIFIER_CONTRACT["strict_boolean_fields"]))
+        self.assertEqual(BOOLEAN_VALUES, set(CLASSIFIER_CONTRACT["boolean_values"]))
+        self.assertEqual(
+            [rule["type"] for rule in CLASSIFIER_CONTRACT["type_decision_order"]],
+            ["Bug", "Design", "Release", "Plan", "Feature", "Chore"],
+        )
+
+    def test_classifier_routes_technical_chore_pm_skip_allowed(self):
+        intake = {
+            "Output": "docs/process",
+            "Behavior change": "no",
+            "Broken existing behavior": "no",
+            "Evidence": "process maintenance",
+            "Children expected": "no",
+            "PM-testable": "no",
+        }
+        issue_type, _reason = self.bot.classify_issue_type(intake)
+        self.assertEqual(issue_type, "Chore")
+        self.assertEqual(self.bot.classify_route(issue_type, intake)[:2], ("required", "skip_allowed"))
 
     def test_linear_comment_failed(self):
         actions = self.bot.on_linear_comment(

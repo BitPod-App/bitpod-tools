@@ -60,6 +60,8 @@ Maintenance update — 2026-04-28:
   - what problem is being solved
   - what done looks like
   - who owns it right now
+- Every issue that moves to `Ready` must have exactly one evidence-supported canonical issue type.
+- Use `linear/contracts/linear_type_classifier_v1.json` plus `linear_issue_type_decision_guide_v1.md` for issue-type decisions; do not infer type from title alone.
 - If those are missing, the issue is not actually ready.
 
 5. Keep issues small and action-oriented
@@ -90,6 +92,7 @@ Maintenance update — 2026-04-28:
 - Treat this assignee/delegate restriction as a temporary safety rule until Codex is decoupled from the user's personal Linear identity.
 - Do not casually change priority, estimate, due date, or milestone when confidence is low.
 - Do not create duplicate retroactive issues when an existing issue already owns the scope.
+- Temporary Product Development issue-creation workaround: if a new issue lands in `Icebox 🧊` despite being intended for `Backlog`, immediately correct it to `Backlog` using the concrete Backlog status ID `162716a8-ffa4-43ea-9e0d-c48fdb8054bc` and record the evidence. Tracked by BIT-442.
 
 8. Capability degradation handling
 - If tool behavior is impaired, stop speculative actions and post minimal verified state.
@@ -198,6 +201,9 @@ Artifacts:
 
 - `linear_operating_model_v1.md`
 - `linear_operating_guide_v3.md`
+- `linear/contracts/linear_type_classifier_v1.json`
+- `linear_issue_type_decision_guide_v1.md`
+- `linear_type_classifier_corrections_v1.md`
 - `linear_issue_template_evidence_contract_v2.md`
 - `taylor01_portability_review_gate_v1.md`
 - `linear_admin_change_control_v1.md`

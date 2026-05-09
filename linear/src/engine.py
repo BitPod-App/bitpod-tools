@@ -1,8 +1,9 @@
 import json
 import re
+from pathlib import Path
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 ISSUE_KEY_RE = re.compile(r"\b([A-Z]{2,}-\d+)\b")
 QA_TOKEN_RE = re.compile(r"QA_RESULT=(PASSED|FAILED|SKIPPED)")
@@ -27,6 +28,22 @@ TYPE_LABEL_ALIASES = {
     "🏁 Release": "Release",
 }
 VALID_ESTIMATES = {1, 2, 3, 5, 8}
+CLASSIFIER_CONTRACT_PATH = Path(__file__).resolve().parents[1] / "contracts" / "linear_type_classifier_v1.json"
+
+
+def _load_classifier_contract() -> Dict[str, Any]:
+    with CLASSIFIER_CONTRACT_PATH.open(encoding="utf-8") as f:
+        return json.load(f)
+
+
+CLASSIFIER_CONTRACT = _load_classifier_contract()
+CLASSIFICATION_FIELDS = set(CLASSIFIER_CONTRACT["required_intake_fields"])
+VALID_OUTPUTS = set(CLASSIFIER_CONTRACT["output_values"])
+OUTPUT_ALIASES = {value: value for value in VALID_OUTPUTS}
+OUTPUT_ALIASES.update(CLASSIFIER_CONTRACT.get("output_aliases", {}))
+STRICT_BOOLEAN_FIELDS = set(CLASSIFIER_CONTRACT["strict_boolean_fields"])
+BOOLEAN_VALUES = set(CLASSIFIER_CONTRACT["boolean_values"])
+
 
 
 @dataclass
@@ -102,6 +119,99 @@ class LinearBotEngine:
 
     def _labels(self, issue_labels: Optional[List[str]]) -> Set[str]:
         return set(issue_labels or [])
+
+    def _truthy(self, value: Any) -> bool:
+        return str(value or "").strip().lower() == "yes"
+
+    def _parse_linear_classification(self, description: str) -> Dict[str, str]:
+        if not description:
+            return {}
+        lines = description.splitlines()
+        in_block = False
+        out: Dict[str, str] = {}
+        for raw in lines:
+            line = raw.strip()
+            if not in_block:
+                if line.rstrip(":").lower() == "linear classification":
+                    in_block = True
+                continue
+            if not line:
+                if out:
+                    break
+                continue
+            if line.startswith("##") or (not line.startswith("-") and out):
+                break
+            if not line.startswith("-") or ":" not in line:
+                continue
+            key, value = line[1:].split(":", 1)
+            key = key.strip()
+            value = value.strip()
+            if key in CLASSIFICATION_FIELDS:
+                out[key] = value
+        return out
+
+    def _classification_missing_fields(self, intake: Dict[str, str]) -> Set[str]:
+        return {field for field in CLASSIFICATION_FIELDS if not intake.get(field)}
+
+    def _normalize_output(self, value: Any) -> str:
+        raw = str(value or "").strip().lower()
+        return OUTPUT_ALIASES.get(raw, raw)
+
+    def _classification_invalid_fields(self, intake: Dict[str, str]) -> Dict[str, str]:
+        invalid: Dict[str, str] = {}
+        output = self._normalize_output(intake.get("Output"))
+        if output not in VALID_OUTPUTS:
+            invalid["Output"] = str(intake.get("Output", ""))
+        for field in STRICT_BOOLEAN_FIELDS:
+            value = str(intake.get(field, "")).strip().lower()
+            if value not in BOOLEAN_VALUES:
+                invalid[field] = str(intake.get(field, ""))
+        return invalid
+
+    def classify_issue_type(self, intake: Dict[str, str]) -> Tuple[Optional[str], str]:
+        invalid = self._classification_invalid_fields(intake)
+        if invalid:
+            return None, "invalid classifier intake: " + ", ".join(f"{k}={v!r}" for k, v in sorted(invalid.items()))
+
+        output = self._normalize_output(intake.get("Output", ""))
+        evidence = str(intake.get("Evidence", "")).strip()
+        behavior_change = self._truthy(intake.get("Behavior change"))
+        broken = self._truthy(intake.get("Broken existing behavior"))
+        children_expected = self._truthy(intake.get("Children expected"))
+
+        for rule in CLASSIFIER_CONTRACT["type_decision_order"]:
+            issue_type = rule["type"]
+            when = rule["when"]
+            if when.get("default"):
+                return issue_type, rule["reason"]
+            if when.get("evidence_required") and not evidence:
+                continue
+            if "broken_existing_behavior" in when and when["broken_existing_behavior"] != broken:
+                continue
+            if "children_expected" in when and when["children_expected"] != children_expected:
+                continue
+            if "behavior_change" in when and when["behavior_change"] != behavior_change:
+                continue
+            if "output_any_of" in when and output not in set(when["output_any_of"]):
+                continue
+            return issue_type, rule["reason"]
+        return None, "no classifier rule matched"
+
+    def classify_route(self, issue_type: str, intake: Dict[str, str]) -> Tuple[str, str, str]:
+        invalid = self._classification_invalid_fields(intake)
+        if invalid:
+            return "blocked", "blocked", "invalid classifier intake"
+        pm_testable = self._truthy(intake.get("PM-testable"))
+        for rule in CLASSIFIER_CONTRACT["routing_defaults"]:
+            if "type" in rule and rule["type"] != issue_type:
+                continue
+            if "type_any_of" in rule and issue_type not in set(rule["type_any_of"]):
+                continue
+            condition = rule.get("condition", {})
+            if "pm_testable" in condition and condition["pm_testable"] != pm_testable:
+                continue
+            return rule["qa"], rule["pm"], rule["reason"]
+        return "required", "required", "default implementation route"
 
     def _normalize_type_label(self, label: str) -> Optional[str]:
         if not label:
@@ -199,11 +309,52 @@ class LinearBotEngine:
     def on_linear_ready_gate(self, issue: Dict[str, Any]) -> List[Action]:
         issue_key = issue.get("identifier", "")
         status_name = issue.get("status", "")
-        if status_name not in (self.cfg.todo_status, self.cfg.in_progress_status):
+        if status_name != self.cfg.todo_status:
             return []
 
         labels = self._labels(issue.get("labels", []))
         description = issue.get("description", "")
+
+        intake = self._parse_linear_classification(description)
+        missing_intake = self._classification_missing_fields(intake)
+        invalid_intake = self._classification_invalid_fields(intake) if not missing_intake else {}
+        if missing_intake:
+            return [
+                Action(
+                    "linear",
+                    "set_label",
+                    issue_key,
+                    {"group": self.cfg.blocked_group, "value": self.cfg.blocked_needs_type},
+                ),
+                Action(
+                    "linear",
+                    "comment",
+                    issue_key,
+                    {
+                        "body": "Missing `Linear Classification` block or fields: " + ", ".join(sorted(missing_intake)) + ". Add Output / Behavior change / Broken existing behavior / Evidence / Children expected / PM-testable before moving to Ready."
+                    },
+                ),
+                Action("linear", "set_status", issue_key, {"status": self.cfg.backlog_status}),
+            ]
+
+        if invalid_intake:
+            return [
+                Action(
+                    "linear",
+                    "set_label",
+                    issue_key,
+                    {"group": self.cfg.blocked_group, "value": self.cfg.blocked_needs_type},
+                ),
+                Action(
+                    "linear",
+                    "comment",
+                    issue_key,
+                    {
+                        "body": "Invalid `Linear Classification` values: " + ", ".join(f"{k}={v!r}" for k, v in sorted(invalid_intake.items())) + ". Use constrained Output values and yes/no boolean fields before moving to Ready."
+                    },
+                ),
+                Action("linear", "set_status", issue_key, {"status": self.cfg.backlog_status}),
+            ]
 
         type_labels = self._type_labels(labels)
         if len(type_labels) != 1:
@@ -219,7 +370,28 @@ class LinearBotEngine:
                     "comment",
                     issue_key,
                     {
-                        "body": "Missing or invalid `Issue Type`. Set exactly one canonical type label: `📄 Plan` `⭐️ Feature` `🐞 Bug` `⚙️ Chore` `🎨 Design` `🏁 Release`"
+                        "body": "Missing or invalid `Issue Type`. Set exactly one canonical type label: `📄 Plan` `⭐️ Feature` `🐞 Bug` `⚙️ Chore` `🎨 Design` `🏁 Release`. Use the machine classifier intake block, not title-only inference."
+                    },
+                ),
+                Action("linear", "set_status", issue_key, {"status": self.cfg.backlog_status}),
+            ]
+
+        predicted_type, predicted_reason = self.classify_issue_type(intake)
+        actual_type = next(iter(type_labels))
+        if predicted_type and actual_type != predicted_type:
+            return [
+                Action(
+                    "linear",
+                    "set_label",
+                    issue_key,
+                    {"group": self.cfg.blocked_group, "value": self.cfg.blocked_needs_type},
+                ),
+                Action(
+                    "linear",
+                    "comment",
+                    issue_key,
+                    {
+                        "body": f"Issue Type does not match `Linear Classification` classifier. Label is `{actual_type}` but classifier predicts `{predicted_type}` because {predicted_reason}. Correct the intake block or type label before moving to Ready."
                     },
                 ),
                 Action("linear", "set_status", issue_key, {"status": self.cfg.backlog_status}),
@@ -237,7 +409,7 @@ class LinearBotEngine:
                     "linear",
                     "comment",
                     issue_key,
-                    {"body": "Missing or invalid estimate. Set one of: `1` `2` `3` `5` `8` before moving this issue into active execution."},
+                    {"body": "Missing or invalid estimate. Set one of: `1` `2` `3` `5` `8` before moving this issue to Ready."},
                 ),
                 Action("linear", "set_status", issue_key, {"status": self.cfg.backlog_status}),
             ]

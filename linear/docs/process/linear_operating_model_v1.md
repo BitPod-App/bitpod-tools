@@ -238,6 +238,9 @@ Canonical issue types:
 - no extra type taxonomy
 - `Plan` and `Release` are the only issue types where sub-issues are generally expected
 - outside of `Plan` and some `Release` tickets, sub-issues should usually be avoided
+- Type assignment must be evidence-based; use `linear_issue_type_decision_guide_v1.md` when creating, triaging, normalizing, or hygiene-auditing issue types
+- The automation source for issue-type decisions is `linear/contracts/linear_type_classifier_v1.json`; the decision guide explains intent and edge cases
+- Do not infer issue type from title alone; if evidence is missing, leave the type unset and use `needs-type`
 
 ### Feature definition
 
