@@ -433,7 +433,33 @@ class LinearBotEngine:
                 Action("linear", "set_status", issue_key, {"status": self.cfg.backlog_status}),
             ]
 
-        return []
+        # At this point the issue has a valid classifier intake + canonical type.
+        # Surface routing defaults with minimal safe automation.
+        qa_route, pm_route, route_reason = self.classify_route(actual_type, intake)
+        out: List[Action] = [
+            Action(
+                "linear",
+                "comment",
+                issue_key,
+                {
+                    "body": (
+                        "Routing recommendation (from `linear_type_classifier_v1.json`): "
+                        f"QA={qa_route}, PM={pm_route}. Reason: {route_reason}"
+                    )
+                },
+            )
+        ]
+        if qa_route == "skip":
+            out.insert(
+                0,
+                Action(
+                    "linear",
+                    "set_label",
+                    issue_key,
+                    {"group": self.cfg.qa_gate_group, "value": self.cfg.qa_skipped},
+                ),
+            )
+        return out
 
     def on_linear_comment(
         self,
