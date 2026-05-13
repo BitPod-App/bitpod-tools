@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import base64
 import json
+import os
 import re
 import subprocess
 import sys
@@ -72,13 +73,19 @@ def run_text(cmd: list[str]) -> str:
 
 
 def _workspace_root() -> Path:
-    return Path('/Users/cjarguello/BitPod-App')
+    env_root = os.environ.get('BITPOD_WORKSPACE_ROOT')
+    if env_root:
+        return Path(env_root).expanduser().resolve()
+    for parent in CURRENT.parents:
+        if (parent / 'bitpod-tools').exists():
+            return parent
+    raise RuntimeError('Could not locate BitPod workspace root; set BITPOD_WORKSPACE_ROOT')
 
 
 def load_reference_materials() -> str:
     workspace_root = _workspace_root()
     pieces: list[str] = []
-    donor_zip = Path('/Users/cjarguello/bitpod-app-retired-2026-03-16/local-workspace/local-working-files/vera_pack_v1.zip')
+    donor_zip = Path(os.environ.get('VERA_REFERENCE_PACK_ZIP', workspace_root / 'local-workspace' / 'local-working-files' / 'vera_pack_v1.zip')).expanduser()
     if donor_zip.exists():
         with zipfile.ZipFile(donor_zip) as zf:
             for name in ('VERA_PERSONA_PROFILE_v1.md', 'QA_CHECKLIST_TEMPLATE_v2.md'):

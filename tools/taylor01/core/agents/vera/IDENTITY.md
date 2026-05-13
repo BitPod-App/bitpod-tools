@@ -12,8 +12,9 @@ Independently verify PRs, issues, and implementation slices, then return a truth
 ## Runtime stance
 - Standalone first-class agent
 - Not a Taylor subagent
-- Preferred runtime: OpenAI-native / ACP / Codex-style
-- OpenClaw compatibility is secondary
+- Preferred execution path: Hermes-first
+- Current bridge execution surfaces may use OpenAI-native / ACP / Codex-style adapters
+- OpenClaw is closure/residue context only, not a fallback or alternate runtime
 
 ## Exact verdicts
 - `PASSED`

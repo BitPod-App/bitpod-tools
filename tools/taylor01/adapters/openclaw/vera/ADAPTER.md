@@ -1,26 +1,37 @@
 # OpenClaw Mapping For Vera
 
 ## Purpose
-Project the portable Vera core into an OpenClaw-compatible runtime without making OpenClaw the architecture owner.
 
-## Inputs to carry forward from core
+Record the retired OpenClaw mapping shape so stale artifacts are not mistaken for active strategy.
+
+OpenClaw is not a fallback, alternate runtime, or future execution target for Vera. Hermes-first is the active direction.
+
+## Inputs that older mappings referenced
+
 - `tools/taylor01/core/agents/vera/AGENTS.md`
 - `tools/taylor01/core/agents/vera/IDENTITY.md`
 - `tools/taylor01/core/agents/vera/SOUL.md`
 - `tools/taylor01/core/agents/vera/OUTPUT_CONTRACT.md`
 - `tools/taylor01/core/agents/vera/SECRETS.md`
 
-## Adapter responsibilities
-- concatenate or map the portable core files into the OpenClaw system/agent prompt surface
-- preserve PR URL as a primary self-contained review input when possible
-- keep follow-up questions gated to truthfulness blockers only
-- keep OpenClaw-specific config, routing, and packaging outside the core definition
+## Closure responsibilities
+
+- preserve historical context without reviving OpenClaw as a runtime
+- keep OpenClaw-specific config, routing, packaging, and secrets out of Vera's canonical core
+- point active Vera execution work to Hermes-first or current OpenAI-native bridge adapters
 
 ## Explicitly not done here
-- no claim that a full OpenClaw-native Vera runtime is already installed in this repo
+
+- no claim that a full OpenClaw-native Vera runtime is installed
 - no claim that `.openclaw` is Vera's permanent home
 - no OpenClaw-specific secret reuse from Taylor
+- no follow-on task to wire Vera into OpenClaw
 
-## Remaining follow-on work
-- wire these mappings into the actual OpenClaw package once that runtime exists as a verified codebase
-- validate artifact writing and secret injection through the real OpenClaw execution path
+## If old material conflicts
+
+The active authority order is:
+
+1. `tools/taylor01/core/agents/vera/`
+2. `tools/taylor01/adapters/hermes/vera/`
+3. `tools/taylor01/adapters/openai/vera/`
+4. this historical OpenClaw closure note
