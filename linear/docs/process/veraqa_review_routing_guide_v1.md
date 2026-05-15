@@ -15,6 +15,21 @@ Companion context:
 - [github_team_purpose_reviewer_routing_v1.md](./github_team_purpose_reviewer_routing_v1.md)
 - [vera_qa_lane_contract_v1.md](./vera_qa_lane_contract_v1.md)
 
+
+## Current rollout status
+
+Status: **Paused until VeraQA is ready**.
+
+While paused, active repo CODEOWNERS files keep the intended VeraQA route as comments only. This prevents GitHub from auto-requesting VeraQA before the lane is ready while preserving the exact route to re-enable.
+
+To re-enable:
+
+1. restore the active CODEOWNERS line in each repo:
+   - `sector-feeds` and `bitregime-core`: `* @BitPod-App/veraqa-tier-2`
+   - all other active repos: `* @BitPod-App/veraqa-tier-1`
+2. give the CODEOWNERS team write access on the repos it owns, because GitHub requires write access for valid CODEOWNERS teams;
+3. keep `required_approving_review_count=1` and `require_code_owner_reviews=false` unless the operator explicitly asks for hard code-owner gating.
+
 ## Default routing
 
 Use CODEOWNERS to point PR review toward the right VeraQA lane:
