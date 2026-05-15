@@ -117,6 +117,80 @@ The minimum successful QA handoff is therefore:
 - Vera returns `verification_report.md`
 - Taylor or CJ decides what to do with that verdict
 
+
+## Tiered routing model (Hermes-aware)
+
+Vera lane remains the dedicated QA authority, but now with a dynamic tier policy.
+
+Membership policy for all VeraQA tiers: only `vera-qa` is required in v1; adding members is a controlled expansion requiring explicit governance approval.
+
+### T1 (Default)
+
+- Name: `VeraQA-T1`
+- Team: `@BitPod-App/veraqa-tier-1`
+- Trigger: baseline/default for PRs.
+- Model: low-cost model (cheap routing model).
+- Goal: pass/fail + evidence with practical runtime checks.
+
+### T2 (Escalated)
+
+- Name: `VeraQA-T2`
+- Team: `@BitPod-App/veraqa-tier-2`
+- Trigger: high-risk/large PRs (score-based; see policy below).
+- Model: `Codex-3.0`.
+- Goal: deeper reasoning on architectural and behavior-risky changes.
+
+### T3 (Periodic deep audit)
+
+- Name: `VeraQA-T3-Audit`
+- Team: `@BitPod-App/veraqa-tier-3-audit`
+- Trigger: periodic sample + explicit high-risk large PRs.
+- Model: OpenAI Native Code Review.
+- Goal: low-frequency, high-signal external review when risk/volume justifies cost.
+
+## Dynamic escalation policy
+
+Use the same `R` score in team/ruleset docs:
+
+- risk label present (`risk:high`, `risk:security`, `migration`, `production`, `release`, `data`, `secrets`): `+3`
+- `files_changed >= 8`: `+2`
+- `lines_changed >= 500`: `+2`
+- critical scope touched (`/.github/workflows/`, `migrations/`, `runtime/`, `infra/`, `cloudflare/`, `deploy/`, `terraform/`): `+2`
+- blocking label: `+1`
+
+Decision:
+
+- `R >= 4`: move to **T2**
+- `R >= 7`: move to **T2 + T3**
+
+Team-scoped high-impact repo carve-out (`sector-feeds`, `bitregime-core`):
+
+- default path is T2,
+- small follow-up bypass to T1 only when all are true:
+  - `files_changed <= 3`
+  - `lines_changed <= 120`
+  - no critical scope and `R < 4`.
+
+T3 sampling budget:
+
+- For each calendar day and repo in `{sector-feeds, bitregime-core}`:
+  - `required_t3 = max(1, ceil(N / 4)) + L`
+  - `N` = PRs handled that day in repo
+  - `L` = PRs with `R >= 7`
+
+<!--
+## Commented out short description (human readable)
+
+- `N` = number of PRs that reached merge flow in that repo for the day.
+- `L` = how many of those had `R >= 7` (high-risk).
+- If `N=0`, required T3 is `0` for that repo/day.
+- If `N>0`, at least one T3 is required (`max(1, ceil(N/4))`).
+- Each high-risk PR adds one extra required T3 (`+L`).
+- Example: `N=3`, `L=0` => `1`; `N=9`, `L=2` => `5`.
+-->
+
+This prevents blind weekly schedules and avoids spending T3 on every routine follow-up.
+
 ## Interim Linear-first bridge
 
 Until Vera has a fuller dedicated runtime again, a cheap interim bridge is
