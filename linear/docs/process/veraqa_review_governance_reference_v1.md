@@ -71,13 +71,14 @@ Ruleset baseline:
 
 ## Override and bypass policy
 
-Owner/admin bypass is allowed only as an explicit, temporary override.
+Owner/admin bypass is allowed only as an explicit, temporary override. Admin direct push is an emergency path only.
 
 Every bypass must be logged inline in this file before or immediately after use with:
 
 - repo
 - PR
 - reason
+- reviewer
 - approver
 - expected revalidation date
 - closeout condition
@@ -88,9 +89,9 @@ A bypass is not closed until the closeout condition has been satisfied and the a
 
 No active bypasses are currently recorded.
 
-| repo | PR | reason | approver | expected revalidation date | closeout condition | status |
-|---|---|---|---|---|---|---|
-| _none_ | _none_ | _none_ | _none_ | _none_ | _none_ | _closed_ |
+| repo | PR | reason | reviewer | approver | expected revalidation date | closeout condition | status |
+|---|---|---|---|---|---|---|---|
+| _none_ | _none_ | _none_ | _none_ | _none_ | _none_ | _none_ | _closed_ |
 
 ## Validation command contract
 
