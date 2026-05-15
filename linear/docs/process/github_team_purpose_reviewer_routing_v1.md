@@ -40,20 +40,29 @@ Applies to active repos in org `BitPod-App` for PR review routing and merge-gove
 
 ### Repo CODEOWNERS baseline
 
-For active repos, CODEOWNERS should route by default to the default Vera QA reviewer lane.
+CODEOWNERS should route by default to the appropriate Vera QA reviewer lane.
+
+Default/high-impact split:
 
 ```text
-# BitPod baseline CODEOWNERS (V1.5)
+# Default active repos
 * @BitPod-App/veraqa-tier-1
+
+# High-impact repos: sector-feeds, bitregime-core
+* @BitPod-App/veraqa-tier-2
 ```
 
-No other reviewer team should be in required-code-owner routing by default.
+No maintainer team should be in default QA review routing.
+
+## GitHub permission note
+
+GitHub only treats a team as a valid CODEOWNERS owner when that team has write access to the repository. For VeraQA teams, write access is a GitHub routing requirement, not implementation ownership. The role boundary remains QA review only.
 
 ### Branch protection / rulesets baseline
 
-- Use fixed GitHub branch policy for merge safety (`required_approving_review_count: 1` as current safety baseline).
-- Do not encode a fixed maintainer-only required-reviewer team in rulesets or branch protection.
-- Branch/ruleset required review teams should reflect this policy text and map to the live VeraQA tiering policy instead of static maintainer-gating.
+- Use lightweight GitHub branch policy for merge safety (`required_approving_review_count: 1` as current safety baseline).
+- Keep `require_code_owner_reviews=false` so CODEOWNERS guides reviewer routing without creating hard-to-bypass governance friction.
+- Do not encode maintainer teams as required reviewer gates in rulesets or branch protection.
 
 ## Dynamic Vera QA tier policy (recommended)
 
@@ -83,68 +92,45 @@ Interpretation:
 #### Team-scoped high-impact repos
 `sector-feeds`, `bitregime-core`
 
-- These are T2-heavy repos, but should **not** force T2 for tiny follow-up PRs.
-- Start as T2 unless all of the **T2-small-exemption** conditions are true:
-  - `files_changed <= 3`
-  - `lines_changed <= 120`
-  - `R < 4`
-  - no critical-path paths touched
+- Default to **T2**.
+- Keep these repos on T2 even for small follow-up PRs because their blast radius and operating importance are higher.
+- Escalate to **T3** only for exceptional risk, periodic deep audit, or explicit Taylor/CJ request.
 
-- If all conditions are true, route as **T1**.
-- Otherwise route as **T2**.
+### 3) T3 usage
 
-### 3) T3 cadence (dynamic, not time-fixed)
+T3 is a rare deep-audit lane, not normal merge gating.
 
-For each high-impact repo (`sector-feeds`, `bitregime-core`) use daily dynamic sampling:
+Use T3 only when one of these is true:
 
-- Let `N` = number of PRs that completed merge flow in the calendar day in that repo.
-- Let `L` = number of those PRs where `R >= 7` (large/high-risk PRs).
-- Required T3 quota for the day:
+- explicit Taylor/CJ request,
+- exceptional risk or high blast radius,
+- periodic sample chosen for assurance.
 
-```text
-required_t3 = max(1, ceil(N / 4)) + L
-```
-
-<!--
-## Commented out short description (human readable)
-
-- `N` is the number of PRs that reached merge-complete flow in that repo for the calendar day.
-- `L` is how many of those PRs had `R >= 7` (high-risk/big PRs).
-- If `N=0`, no T3 requirement for that repo/day.
-- If there is any activity (`N>0`), at least one T3 is required (`max(1, ceil(N/4))`).
-- High-risk PRs add one extra mandatory T3 each (`+L`).
-- Example: `N=5`, `L=1` => `max(1, ceil(5/4)) + 1 = 3`
-  (2 routine-cycle T3s + 1 high-risk-required T3).
--->
-
-- This means:
-  - at least one periodic T3 when there is activity,
-  - extra T3 for large/high-risk PRs.
-- If no PRs in the day, no T3 quota is required.
-- T3 queue must be satisfied before merge-closeout for day-end handoff.
+There is no fixed daily quota in this guidance. Add automation later only if review misses or bypasses become frequent enough to justify it.
 
 ### 4) Cost discipline and overuse controls
 
-- T2 and T3 are explicit escalations, not defaults.
-- Small follow-up PRs in high-impact repos are intentionally kept on T1 when they are low-risk.
-- T3 is periodic and sampling-based so only a subset of important work gets expensive deep review.
+- T2 is the default for `sector-feeds` and `bitregime-core`; in other repos it is an escalation.
+- T3 is rare and should not be used as routine merge gating.
+- Keep the model understandable before adding automation or stricter rules.
 
 ## Team/ruleset implementation notes
 
 When implementing in GitHub:
 
 1. keep maintainer teams out of the reviewer-routing default path;
-2. ensure `veraqa-tier-1` is the CODEOWNERS routing default;
-3. keep required review counts aligned with this model;
-4. add lightweight policy-driven reviewer escalation outside static rulesets for T2/T3, plus periodic sampling jobs / triage review packets.
+2. use `veraqa-tier-1` as the default CODEOWNERS route for ordinary repos;
+3. use `veraqa-tier-2` as the default CODEOWNERS route for `sector-feeds` and `bitregime-core`;
+4. keep required review counts lightweight and use CODEOWNERS as routing guidance rather than a hard-to-bypass gate;
+5. use T3 only for exceptional risk, periodic deep audit, or explicit Taylor/CJ request.
 
 ## Recommended next actions
 
 1. Move maintainer gating references (`core-maintainers` / `code-maintainers`) out of reviewer-routing defaults.
 2. Keep maintainer teams as write-only maintainers.
-3. Set/keep VeraQA tier teams as the authoritative reviewer routing source.
-4. Implement the PR-score + daily T3 quota process in CI or merge-prep tooling.
-5. Document per-repo exceptions and keep a small explicit override log for trust auditability.
+3. Set/keep VeraQA tier teams as the reviewer routing source.
+4. Keep bypass guidance lightweight: admins may bypass when needed and should leave a short visible reason when QA is skipped.
+5. Revisit stricter automation only if bypasses or routing misses become frequent.
 
 ## Out of scope
 

@@ -163,33 +163,17 @@ Decision:
 - `R >= 4`: move to **T2**
 - `R >= 7`: move to **T2 + T3**
 
-Team-scoped high-impact repo carve-out (`sector-feeds`, `bitregime-core`):
+Team-scoped high-impact repos (`sector-feeds`, `bitregime-core`):
 
-- default path is T2,
-- small follow-up bypass to T1 only when all are true:
-  - `files_changed <= 3`
-  - `lines_changed <= 120`
-  - no critical scope and `R < 4`.
+- default path is always T2.
+- do not downshift these repos to T1 solely because a PR is small.
+- use T3 only for exceptional risk, periodic deep audit, or explicit Taylor/CJ request.
 
-T3 sampling budget:
+T3 usage:
 
-- For each calendar day and repo in `{sector-feeds, bitregime-core}`:
-  - `required_t3 = max(1, ceil(N / 4)) + L`
-  - `N` = PRs handled that day in repo
-  - `L` = PRs with `R >= 7`
-
-<!--
-## Commented out short description (human readable)
-
-- `N` = number of PRs that reached merge flow in that repo for the day.
-- `L` = how many of those had `R >= 7` (high-risk).
-- If `N=0`, required T3 is `0` for that repo/day.
-- If `N>0`, at least one T3 is required (`max(1, ceil(N/4))`).
-- Each high-risk PR adds one extra required T3 (`+L`).
-- Example: `N=3`, `L=0` => `1`; `N=9`, `L=2` => `5`.
--->
-
-This prevents blind weekly schedules and avoids spending T3 on every routine follow-up.
+- T3 is rare deep audit, not normal merge gating.
+- Use it for explicit Taylor/CJ request, exceptional risk, or occasional assurance sampling.
+- There is no fixed daily quota in this guidance.
 
 ## Interim Linear-first bridge
 
