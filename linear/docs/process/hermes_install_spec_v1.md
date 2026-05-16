@@ -16,7 +16,7 @@ Hermes is the runtime that executes the Taylor Orchestrator Contract (BIT-62) an
 Principal hierarchy:
 
 ```
-CJ → Taylor01 → Vera / Clio / Simon / Nora (fallback)
+CJ → Taylor01 → Vera / Mara / Simon / Nora (fallback)
 CJ → Codex (local code execution, assigned directly in Linear)
 ```
 
@@ -28,7 +28,7 @@ Root SOUL = minimal neutral bootstrap. Never used for real work.
 
 Linear is the single shared canvas. Telegram is the intercom (Phase 1). Discord investigated in Phase 3. Agents are colleagues who live in both. The record always ends up in Linear.
 
-**Attribution model:** OAuth actor authorization (`app:taylor01`, `app:vera`, `app:clio`, `app:simon`) registered in Linear Settings → API → OAuth Applications. Every agent action in Linear is attributed to the correct app actor — not to CJ. This is structural, not a text convention.
+**Attribution model:** OAuth actor authorization (`app:taylor01`, `app:vera`, `app:mara`, `app:simon`) registered in Linear Settings → API → OAuth Applications. Every agent action in Linear is attributed to the correct app actor — not to CJ. This is structural, not a text convention.
 Reference: https://linear.app/developers/oauth-actor-authorization
 
 **Codex invocation model:** Codex for Linear cloud connector is disabled (CJ action, Step 0 of Phase 1). After that, assigning Codex to a Linear ticket and @mentioning Codex in Linear are both safe — no cloud tasks created. Taylor01 assigns Codex in Linear normally. Webhook detects assignment and fires local `codex exec` on mini-01.
@@ -46,7 +46,7 @@ Reference: https://linear.app/developers/oauth-actor-authorization
 |---|---|---|---|---|
 | taylor01 | Taylor | Lead PM & Hermes Orchestrator | gpt-5.5 (openai-codex) | 1 active |
 | vera | Vera | QA Gatekeeper | gpt-4o API (T1) / o3 API (T2) | 1 defined, wired Phase 2 |
-| clio | Scribe | Canon Keeper & Policy Auditor | gpt-4o (openai) | 1 defined, minimum skill Phase 2 |
+| mara | Scribe | Canon Keeper & Policy Auditor | gpt-4o (openai) | 1 defined, minimum skill Phase 2 |
 | simon | Simon | Quick Fix & Repair Engineer | gpt-4.5-mini reasoning med-high | 2 defined, active Phase 3 |
 | nora | Noradex | True Codex Fallback Engineer | gpt-5.4 med | defined only, no phase |
 
@@ -89,7 +89,7 @@ Reference: https://linear.app/developers/oauth-actor-authorization
 │   │       ├── qa-review-t1/
 │   │       ├── qa-review-t2/
 │   │       └── qa-report-emit/
-│   ├── clio/
+│   ├── mara/
 │   │   ├── SOUL.md
 │   │   ├── config.yaml              ← gpt-4o
 │   │   └── skills/
@@ -189,10 +189,10 @@ PM acceptance:
     + CJ notified via Telegram
   → If ambiguous: escalate to CJ via Telegram, post reply to ticket
 
-Scribe / Clio tickets:
+Scribe / Mara tickets:
   → Full QA required (not skipped)
-  → After each Clio pm-accepted, I ask CJ via Telegram:
-    "Clio completed [ticket]. DIFF: [summary]. Continue? [y/n]"
+  → After each Mara pm-accepted, I ask CJ via Telegram:
+    "Mara completed [ticket]. DIFF: [summary]. Continue? [y/n]"
 
 Ticket creation from Telegram:
   → CJ explains intent conversationally
@@ -321,19 +321,19 @@ Blunt, protective. Findings stated plainly. I do not soften.
 A verdict is a verdict. I do not negotiate labels.
 ```
 
-### Clio `~/.hermes/profiles/clio/SOUL.md`
+### Mara `~/.hermes/profiles/mara/SOUL.md`
 
 ```
-## Clio
+## Mara
 Alias: Scribe
 Role: Canon Keeper & Policy Auditor
 Model: gpt-4o (openai, NOT codex pool)
-Path: ~/.hermes/profiles/clio/SOUL.md
+Path: ~/.hermes/profiles/mara/SOUL.md
 Phase 2: minimum read-only audit skill only.
 Phase 4: deep upgrade (write access, active canon keeper).
 
 ## Identity
-I am Clio, BitPod's institutional memory and canon keeper.
+I am Mara, BitPod's institutional memory and canon keeper.
 I convert ephemeral decisions into durable knowledge.
 I audit from the outside: policies, docs, READMEs, AGENTS.md files,
 .codex, .hermes, .github, .toml files — identifying what is broken,
@@ -349,15 +349,15 @@ docs. Less thinking, equal or better policy following.
 
 ## Canon Update Protocol
 I never update canon autonomously.
-Proposals flow: Clio stages draft → Taylor01 summarises to CJ
-→ CJ approves via Telegram → Taylor01 relays → Clio promotes.
+Proposals flow: Mara stages draft → Taylor01 summarises to CJ
+→ CJ approves via Telegram → Taylor01 relays → Mara promotes.
 Previous versions: marked LEGACY, timestamped, retained for context.
 
 ## Phase 4 Investigation (before upgrade)
 - Audit taylor01-mind repo: what is salvageable?
-- Can Clio use taylor01-mind's cleanup-discipline doctor as Phase 2
+- Can Mara use taylor01-mind's cleanup-discipline doctor as Phase 2
   minimum skill? (likely yes — it already exists and works)
-- What is the full surface Clio should own in Phase 4?
+- What is the full surface Mara should own in Phase 4?
 - Approval gates and rollback mechanisms for write access?
 
 ## Voice
@@ -549,7 +549,7 @@ Reply 'queue' to see Ready tickets.
 Reply 'go 5' to extend Codex batch.
 ```
 
-Clio archives weekly digest summary to Notion (Phase 4).
+Mara archives weekly digest summary to Notion (Phase 4).
 
 ---
 
@@ -577,7 +577,7 @@ Taylor01 mem0 accumulates from day one:
 - Goal context for PM acceptance
 - Escalation patterns
 
-Vera and Clio get mem0 in Phase 4.
+Vera and Mara get mem0 in Phase 4.
 
 ---
 
@@ -694,7 +694,7 @@ Real enforcement:
 3. Lockfiles: `~/.hermes/profiles/taylor01/locks/[skill].lock`
 4. Token-guardrail skill: hard stop at 5 Codex assignments, Telegram prompt
 5. Codex job counter: local counter file, resets at midnight
-6. QA tier rules: read from Clio's canon file at dispatch time
+6. QA tier rules: read from Mara's canon file at dispatch time
 7. Codex cloud integration: disabled at ChatGPT connector level — not policy, infrastructure
 
 ---
@@ -707,7 +707,7 @@ Before Phase 2 goes live, register these OAuth apps in Linear (Settings → API 
 |---|---|---|
 | taylor01 | app:taylor01 | Taylor01 all Linear actions |
 | vera | app:vera | Vera QA verdicts posted directly |
-| clio | app:clio | Clio canon proposals (Phase 4) |
+| mara | app:mara | Mara canon proposals (Phase 4) |
 | simon | app:simon | Simon repair tickets (Phase 3) |
 
 ---
@@ -724,12 +724,12 @@ Each phase is a milestone. Theme-based. Tickets live in the project.
 **Goal:** Taylor01 is alive, reachable, and remembers. No Linear automation yet.
 
 - Step 0 (CJ): Disable Codex for Linear cloud connector at chatgpt.com/admin/ca
-- Step 0 (CJ): Register Linear OAuth apps (app:taylor01, app:vera, app:clio, app:simon)
+- Step 0 (CJ): Register Linear OAuth apps (app:taylor01, app:vera, app:mara, app:simon)
 - Read `~/.hermes-bit472/hermes-agent/hermes-already-has-routines.md` before wiping
 - Preserve from bit472: sessions, memories, skills, library config, model settings
 - Wipe `~/.hermes` (v0.12.0) and `~/.hermes-bit472` code dir
 - Install hermes-agent v0.13.0 fresh to `~/.hermes`
-- Create all profile dirs: taylor01, vera, clio, simon, nora
+- Create all profile dirs: taylor01, vera, mara, simon, nora
 - Write all SOUL files (Section above) — source from `taylor01-mind/`
 - Write config.yaml per profile
 - Configure mem0 in taylor01 config (verify key against Hermes docs first)
@@ -759,7 +759,7 @@ Each phase is a milestone. Theme-based. Tickets live in the project.
 - Vera GitHub permissions configured by Codex (see Vera section)
 - Wire Vera QA dispatch (Hermes Kanban → Vera → app:vera posts to Linear)
 - Wire PM acceptance skill
-- Clio Phase 2 minimum: policy-audit-v1 (read-only, creates Linear tickets)
+- Mara Phase 2 minimum: policy-audit-v1 (read-only, creates Linear tickets)
 - /01 @taylor plan-with-taylor planning integration
 - Create BIT-79 retirement ticket (close when Vera first verdict posted)
 - Update linear_operating_guide_v3.md: remove "substitute surface" language
@@ -790,20 +790,20 @@ Each phase is a milestone. Theme-based. Tickets live in the project.
 
 ---
 
-### Phase 4 — Intelligence: Clio Full + Goals + mem0 All Agents
+### Phase 4 — Intelligence: Mara Full + Goals + mem0 All Agents
 
 **Goal:** Institutional memory active. Goals wired. Self-improvement loop begins.
 
-- Clio upgraded: write access, active canon keeper, approval gates defined
-- Clio archives weekly digest to Notion
+- Mara upgraded: write access, active canon keeper, approval gates defined
+- Mara archives weekly digest to Notion
 - Goals integration with Taylor01 (Plan tickets, PM acceptance, high-impact templates)
 - mem0 for Vera: QA defect patterns, tier escalation history, false positive patterns
-- mem0 for Clio: canon drift patterns, proposal history
+- mem0 for Mara: canon drift patterns, proposal history
 - Discord wired if Phase 3 investigation passed
-- Self-improvement loop first pass: Clio stages → Taylor01 summarises → CJ approves
-- Scribe/Clio overlap metric tracking begins (feeds Phase 5 T3/T4 decisions)
+- Self-improvement loop first pass: Mara stages → Taylor01 summarises → CJ approves
+- Scribe/Mara overlap metric tracking begins (feeds Phase 5 T3/T4 decisions)
 
-**Done when:** Clio proposes a canon change, CJ approves via Telegram, Clio promotes it. Goals referenced in PM acceptance automatically.
+**Done when:** Mara proposes a canon change, CJ approves via Telegram, Mara promotes it. Goals referenced in PM acceptance automatically.
 
 ---
 
