@@ -1,4 +1,3 @@
 # BitPod baseline CODEOWNERS
-# VeraQA rollout paused until the lane is ready.
-# Re-enable intended route by uncommenting the next line:
-# * @BitPod-App/veraqa-tier-1
+# VeraQA active: all changes require the repo's VeraQA tier owner.
+* @BitPod-App/veraqa-tier-1
