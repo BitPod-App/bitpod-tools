@@ -175,65 +175,41 @@ T3 usage:
 - Use it for explicit Taylor/CJ request, exceptional risk, or occasional assurance sampling.
 - There is no fixed daily quota in this guidance.
 
-## Interim Linear-first bridge
+## Retired Linear Agent / Linear-bot Vera prompt
 
-Until Vera has a fuller dedicated runtime again, a cheap interim bridge is
-acceptable if it preserves the lane boundary.
+The old built-in Linear Agent / Linear-bot prompt path is retired as an active
+VeraQA execution surface. It was useful as a temporary copy-paste bridge, but it
+now creates identity confusion because the intended path is a dedicated Vera
+runtime/Hermes agent surface, not workspace guidance inside Linear Agent.
 
-### Acceptable interim shape
+Current rule:
 
-- the operator starts from a Linear issue or PR-linked Linear thread
-- the Linear bot receives:
-  - PR or issue link
-  - critical acceptance criteria
-  - verification target or commands when available
-- the bot returns one durable QA artifact:
-  - `verification_report.md`
-- the bot posts a concise receipt back to:
-  - the Linear issue, and
-  - the PR when a PR exists
+- do not use Linear Agent workspace guidance as the active VeraQA gate
+- do not ask the built-in Linear Agent to impersonate Vera
+- do not treat a Linear Agent response as an independent VeraQA verdict
+- keep the dedicated Vera core/runtime artifacts as the preserved path for real
+  VeraQA evolution
 
-### Minimum receipt fields
+Manual workspace cleanup paired with this repo change:
 
-The receipt may be lightweight, but it should still include:
+- disable or neutralize the old Linear Agent workspace guidance that says Vera
+  should review `In Review` issues
+- keep the normal Linear GitHub integration, MCP authorization, and GitHub org
+  connection separate from this retired agent prompt
 
-- target PR or issue
-- `PR_URL=<full PR URL>` when a PR exists
-- a `QA_RESULT=PASSED`, `QA_RESULT=FAILED`, or `QA_RESULT=SKIPPED` token
-- QA label:
-  - `qa-passed`, `qa-failed`, or `qa-skipped`
-- durable artifact link or path
-- one-line reason when label is `qa-failed` or `qa-skipped`
+Dedicated Vera/Hermes follow-up remains tracked through:
 
-Interim mapping note:
+- [BIT-94 — Create Vera QA Specialist agent and make QA Review gating real](https://linear.app/bitpod-app/issue/BIT-94/create-vera-qa-specialist-agent-and-make-qa-review-gating-real)
+- [BIT-99 — Embody first specialist as a real AI agent/runtime beyond lane or skill proxy](https://linear.app/bitpod-app/issue/BIT-99/embody-first-specialist-as-a-real-ai-agentruntime-beyond-lane-or-skill)
+- [BIT-398 — Vera/Hermes Telegram QA-repair lane](https://linear.app/bitpod-app/issue/BIT-398/verahermes-telegram-qa-repair-lane)
+- [BIT-488 — Retire stale Linear Agent Vera QA prompt and align repo guidance](https://linear.app/bitpod-app/issue/BIT-488/retire-stale-linear-agent-vera-qa-prompt-and-align-repo-guidance)
 
-- if older language refers to `NO_VERDICT`, map that outcome to `QA_RESULT=SKIPPED` with label `qa-skipped`
+### What remains valid
 
-Starter prompt/example:
-
-- `linear/examples/vera_linear_pr_review_prompt_v1.md`
-
-### Explicit non-goals for the interim bridge
-
-This interim Linear-first bridge does not need to recreate the full Zulip-era
-runtime package yet. It may omit:
-
-- `session_summary.md`
-- `worth_remembering.json`
-- conversation/window capture
-- SHA receipt bundles
-- multi-artifact upload cards
-- Taylor-branded `qa_review.md` receipt flow
-
-### Hard rule
-
-Even in the cheap interim bridge, the QA lane must still:
-
-- fail closed to `QA_RESULT=FAILED` and `qa-failed` when context is insufficient
-- map legacy `NO_VERDICT` semantics to `QA_RESULT=SKIPPED` and `qa-skipped` when a skip outcome is explicitly required
-- avoid implementation ownership
-- return an explicit verdict artifact rather than a casual chat opinion
-- keep QA authority separate from Taylor planning or engineering execution
+The portable Vera contract and bridge/runtime code remain valid if they are used
+as a dedicated Vera execution path that emits evidence-bound artifacts. The
+retirement here applies to the old Linear Agent prompt, not to VeraQA as a
+concept or to CODEOWNERS reviewer routing.
 
 ## Independence Rules
 
