@@ -124,6 +124,15 @@ When implementing in GitHub:
 4. keep required review counts lightweight and use CODEOWNERS as routing guidance rather than a hard-to-bypass gate;
 5. use T3 only for exceptional risk, periodic deep audit, or explicit Taylor/CJ request.
 
+
+## PR readiness and draft policy
+
+Default to a normal pull request when the change is intended to be review-ready.
+
+Use a draft pull request only when the work is genuinely incomplete, exploratory, waiting on required validation, or intentionally opened as an early checkpoint. The PR body should state what is missing before it can be marked ready for review.
+
+Do not use draft status as a default safety habit for finished work. If validation has run and the author believes the change is ready for review, open a normal PR.
+
 ## Recommended next actions
 
 1. Move maintainer gating references (`core-maintainers` / `code-maintainers`) out of reviewer-routing defaults.
