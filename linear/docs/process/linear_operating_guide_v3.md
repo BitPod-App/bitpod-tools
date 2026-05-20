@@ -3,7 +3,7 @@
 Version: v3
 Status: Active
 Owner: Product Development (Codex + Taylor)
-Last updated: 2026-04-28
+Last updated: 2026-05-20
 Primary issue: [BIT-22 — Versioned Linear operating guide for agents (with rollback path)](https://linear.app/bitpod-app/issue/BIT-22/versioned-linear-operating-guide-for-agents-with-rollback-path)
 Supersedes: `linear_operating_guide_v2.md` as the active guide
 
