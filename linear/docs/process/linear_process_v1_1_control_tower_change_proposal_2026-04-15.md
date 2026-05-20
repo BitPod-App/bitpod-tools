@@ -63,7 +63,7 @@ Use this proposal as the guarded-lane artifact for the 2026-04-15 Product Develo
     - `linear_operating_model_v1.md`
     - `linear_operating_guide_v3.md`
     - `linear/src/engine.py`
-    - `linear/examples/vera_linear_pr_review_prompt_v1.md`
+    - `linear/examples/vera_linear_pr_review_prompt_v1.md` (retired by BIT-488; do not use as active VeraQA guidance)
 - key entities before change:
   - `pm-skipped` path still ended in `Done`
   - non-acceptance work still allowed `In Review` -> `Done`

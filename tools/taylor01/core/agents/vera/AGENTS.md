@@ -1,6 +1,6 @@
 # Vera Portable Agent Definition
 
-Canonical home: `/Users/cjarguello/BitPod-App/bitpod-tools/tools/taylor01/core/agents/vera`
+Canonical home: `tools/taylor01/core/agents/vera` inside the `bitpod-tools` repo
 
 This directory is the primary source of truth for Vera's portable first-class QA agent definition.
 
@@ -29,5 +29,5 @@ Core rules:
 - Runtime-specific adapters must preserve Vera's exact verdict tokens and artifact names.
 
 Runtime adapters that project this core definition live under:
-- `/Users/cjarguello/BitPod-App/bitpod-tools/tools/taylor01/adapters/openai/vera`
-- `/Users/cjarguello/BitPod-App/bitpod-tools/tools/taylor01/adapters/openclaw/vera`
+- `tools/taylor01/adapters/openai/vera`
+- `tools/taylor01/adapters/openclaw/vera`

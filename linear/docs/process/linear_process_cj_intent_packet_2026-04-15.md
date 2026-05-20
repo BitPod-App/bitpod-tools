@@ -208,7 +208,7 @@ Repo-side aligned implementation artifacts:
 - `/Users/cjarguello/BitPod-App/bitpod-tools/linear/docs/process/linear_operating_guide_v3.md`
 - `/Users/cjarguello/BitPod-App/bitpod-tools/linear/docs/process/linear_process_v1_1_control_tower_change_proposal_2026-04-15.md`
 - `/Users/cjarguello/BitPod-App/bitpod-tools/linear/src/engine.py`
-- `/Users/cjarguello/BitPod-App/bitpod-tools/linear/examples/vera_linear_pr_review_prompt_v1.md`
+- `linear/examples/vera_linear_pr_review_prompt_v1.md` (retired by BIT-488; do not use as active VeraQA guidance)
 
 ## Operator interpretation rule
 
