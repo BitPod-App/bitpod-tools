@@ -44,6 +44,12 @@ Maintenance update — 2026-05-05:
 - add `linear_type_classifier_corrections_v1.md` as the human correction log that feeds classifier updates/tests
 - document the temporary Backlog-status-ID workaround for the observed issue-creation path that can land new Product Development tickets in `Icebox 🧊`
 
+Maintenance update — 2026-05-20:
+- codify issue description as the source of truth for current scope, decisions, acceptance criteria, blockers, and intended behavior
+- constrain comments to audit trail / pointer usage rather than hidden acceptance criteria or replacement canon
+- require `DESCRIPTION_STALE` when tooling cannot update a stale description
+- update the evidence contract so completion claims include description synchronization
+
 Linked artifacts:
 - `/Users/taylor01/BitPod-App/bitpod-tools/linear/docs/process/linear_operating_guide_v3.md`
 - `/Users/taylor01/BitPod-App/bitpod-tools/linear/contracts/linear_type_classifier_v1.json`

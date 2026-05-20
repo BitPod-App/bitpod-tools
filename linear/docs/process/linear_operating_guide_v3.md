@@ -27,6 +27,13 @@ Maintenance update — 2026-04-28:
 - make bidirectional GitHub PR and Linear issue links part of completion evidence
 - make project-scope classification explicit, especially for shared infrastructure that does not belong in product/model projects
 
+Maintenance update — 2026-05-20:
+
+- make the Linear issue description the source of truth for current scope, decisions, acceptance criteria, blockers, and intended behavior
+- make comments an audit trail and pointer surface, not a substitute source of truth
+- require agents to update stale descriptions when a comment or external review changes material ticket truth
+- require QA/review to read the current description and linked PR/artifact, not reconstruct acceptance criteria from comment history
+
 ## Scope
 
 - issue lifecycle handling for migration and operations work
@@ -47,8 +54,13 @@ Maintenance update — 2026-04-28:
 - Completion claims must include commands or UI proof and artifact path(s).
 - Queue status alone is not proof of completion.
 
-2. Single source of truth
-- Use issue comments for execution evidence.
+2. Issue description is the current source of truth
+- The Linear issue description owns current scope, decisions, acceptance criteria, blockers, intended names/IDs, and done-when requirements.
+- Comments are audit trail and pointer surface only. Use them to say what changed, why, what was verified, and where to review it.
+- Do not leave material truth changes buried only in comments. If a comment, external review, PR discussion, or operator decision changes scope, naming, blocker state, or acceptance criteria, update the issue description body in the same pass when tooling permits.
+- A comment that changes ticket truth should point to the description change, for example: `Updated the description: <field/section> now says <new truth>.`
+- If the description cannot be edited with available tooling or permissions, explicitly flag `DESCRIPTION_STALE` in the comment, state the exact stale text/section, and treat the ticket as not decision-complete until the description is corrected.
+- Use issue comments for execution evidence, verification notes, PR links, and change-audit breadcrumbs.
 - Store durable artifacts in repo under `/bitpod-tools/linear/docs/process/`.
 
 3. Link hygiene
@@ -75,6 +87,8 @@ Maintenance update — 2026-04-28:
 
 7. `update Linear` means increase issue truth
 - Default interpretation: make the issue materially more truthful, not merely leave a note.
+- Start with the description: if current scope, acceptance criteria, blocker, decision, or intended behavior changed, update the description body before or alongside the evidence comment.
+- The evidence comment should summarize the description delta instead of becoming the only place where the new truth exists.
 - After meaningful execution or repo-thread closeout, update any clearly stale safe field when evidence is clear:
   - status/state when lifecycle actually changed
   - GitHub PR or merge links when they exist
@@ -127,6 +141,7 @@ Maintenance update — 2026-04-28:
 - Prefer fewer labels unless a new label clearly solves repeated friction.
 
 12. QA and PM truth must be honest
+- QA and PM reviewers should be able to use the current issue description plus linked PR/artifact as the acceptance source. Do not require reviewers to reconstruct acceptance criteria from comment history.
 - Do not imply “Vera QA” unless a real independent Vera-capable surface exists for that run.
 - Current substitute QA surfaces must label themselves honestly.
 - If required QA is missing, the truthful state is blocked by missing QA, not implied pass.
@@ -154,6 +169,7 @@ Maintenance update — 2026-04-28:
 
 ## Required issue evidence format
 
+- Description sync: whether the issue description is current, what section changed, or explicit `DESCRIPTION_STALE` blocker if it could not be updated
 - What was changed
 - Verification command(s) or UI check performed
 - Artifact path(s)
@@ -194,6 +210,7 @@ This version corresponds to:
 - Taylor01 portability review gate from `taylor01_portability_review_gate_v1.md`
 - active issue evidence contract from `linear_issue_template_evidence_contract_v2.md`
 - PR-to-Linear closeout guardrail added to `linear_operating_guide_v3.md` on 2026-04-28
+- description-as-source-of-truth guardrail added to `linear_operating_guide_v3.md` on 2026-05-20
 - Linear admin/process change-control from `linear_admin_change_control_v1.md`
 - proposal workflow from `linear_change_proposal_template_v1.md`
 

@@ -11,19 +11,25 @@ Every "Done" claim must include:
 1. `Status line`
 - Current status and transition reason.
 
-2. `Commands/UI checks`
+2. `Description sync`
+- State whether the issue description is current after the work.
+- If scope, decisions, blockers, names/IDs, intended behavior, or acceptance criteria changed, update the issue description and name the changed section.
+- If the description could not be updated, include `DESCRIPTION_STALE`, quote or name the stale section, and do not treat the issue as decision-complete until corrected.
+- Comments should point to what changed in the description; comments must not replace the description as the source of truth.
+
+3. `Commands/UI checks`
 - Exact command(s) run or explicit UI path used.
 
-3. `Artifacts`
+4. `Artifacts`
 - Absolute path(s) to generated docs/logs/screenshots (or PR/commit links).
 
-4. `Pass/Fail`
+5. `Pass/Fail`
 - Explicit pass/fail result per check.
 
-5. `Risk / follow-up`
+6. `Risk / follow-up`
 - Any deferred risk and next action.
 
-6. `PR-to-Linear closeout check` (required when a GitHub PR or Linear normalization is involved)
+7. `PR-to-Linear closeout check` (required when a GitHub PR or Linear normalization is involved)
 - GitHub PR link(s) using `linear_link_reference_policy_v1.md` format.
 - Linear issue link(s) using canonical full-title format.
 - Project scope check: correct project, standalone issue, or explicit blocker if tooling cannot remove a wrong project.
@@ -31,7 +37,7 @@ Every "Done" claim must include:
 - Label check: finalized labels applied only to finalized items; future items do not receive completion labels.
 - Bidirectional linking check: PR comment plus Linear issue comment/link verified, with no duplicate link-spam.
 
-7. `Issue Type check` (required when creating, triaging, or normalizing issue type)
+8. `Issue Type check` (required when creating, triaging, or normalizing issue type)
 - Exactly one canonical issue type is set, or `needs-type` is present with a note naming the missing evidence.
 - Type choice follows `linear/contracts/linear_type_classifier_v1.json` and `linear_issue_type_decision_guide_v1.md`.
 - Type is not inferred from title alone.
@@ -84,6 +90,10 @@ Execution update:
 Status: In Progress -> Done
 Transition reason: all required checks passed.
 
+Description sync:
+- Updated description section: Done when / Acceptance criteria now reflects the verified current gate.
+- No acceptance criteria are left only in comments.
+
 Commands/UI checks:
 - `gh api /orgs/BitPod-App --jq '{two_factor_requirement_enabled,members_can_delete_repositories}'`
 - GitHub UI: Org Settings -> Security -> Require 2FA = enabled
@@ -133,6 +143,7 @@ Risk / follow-up:
 ## Enforcement note
 
 - If a completion comment omits required evidence fields, status must not move to `Done`.
+- If material issue truth changed but the description was not updated, keep or return the issue to `In Review` / blocked state and add `DESCRIPTION_STALE` until corrected.
 - If a relevant issue omits the Taylor01 portability block, status must not be treated as decision-complete unless an explicit temporary-bypass note is present in the same update.
 - If uncertain, set/keep `In Review` and request missing evidence.
 - If a meaningful temporary bypass is used, add or update the active bypass register entry instead of silently relying on memory.
