@@ -11,12 +11,14 @@ This contract is the target operating model for technical QA in BitPod Phase 4. 
 
 ## Current implementation reference
 
-This repo contract is currently implemented through the local `qa-specialist` skill:
+This repo contract is implemented through the repo-backed `qa-specialist` skill source:
 
-- canonical local surface:
-  - `$WORKSPACE/local-workspace/local-codex/skills/qa-specialist/SKILL.md`
-  - `$WORKSPACE/local-workspace/local-codex/skills/qa-specialist/references/QA_OUTPUT_CONTRACTS_v1.md`
-  - `$WORKSPACE/local-workspace/local-codex/skills/qa-specialist/references/QA_REVIEW_CHECKLIST_v1.md`
+- canonical repo source:
+  - `$WORKSPACE/bitpod-tools/tools/taylor01/core/agents/vera/skills/qa-specialist/SKILL.md`
+  - `$WORKSPACE/bitpod-tools/tools/taylor01/core/agents/vera/skills/qa-specialist/references/QA_OUTPUT_CONTRACTS_v1.md`
+  - `$WORKSPACE/bitpod-tools/tools/taylor01/core/agents/vera/skills/qa-specialist/references/QA_REVIEW_CHECKLIST_v1.md`
+
+If this skill is installed into a local Codex or Hermes runtime, the runtime copy is an installed artifact. The repo source above remains the reviewable source of truth.
 
 That skill should be treated as a transitional implementation surface for Vera while the dedicated QA lane is still being operationalized as a fuller agent/runtime.
 
