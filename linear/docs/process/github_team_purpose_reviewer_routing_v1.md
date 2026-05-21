@@ -21,20 +21,20 @@ Applies to active repos in org `BitPod-App` for PR review routing and merge-gove
 ### Vera QA teams (review routing)
 
 #### `veraqa-tier-1` (aka `VeraQA-T1`)
-- Team membership policy: currently only `vera-qa` is expected in each VeraQA team unless CJ approves adding others.
+- Team membership policy: only `vera-qa` belongs in each VeraQA team unless CJ explicitly approves another reviewer. `taylor-01` must not be a VeraQA team member; Taylor01 PM acceptance is separate from code review.
 - Default reviewer lane for most repos.
 - Targets routine PR quality checks with a low-cost model.
 
 #### `veraqa-tier-2` (aka `VeraQA-T2`)
-- Team membership policy: currently only `vera-qa` is expected in each VeraQA team unless CJ approves adding others.
+- Team membership policy: only `vera-qa` belongs in each VeraQA team unless CJ explicitly approves another reviewer. `taylor-01` must not be a VeraQA team member; Taylor01 PM acceptance is separate from code review.
 - Elevated review lane for high-risk or large PRs.
-- Uses `Codex-3.0` high-reasoning execution.
+- Must use a stronger review setting than T1, such as a stronger OpenAI code-review model or a code-specific model with medium/high reasoning (for example, a verified Codex-3-style code model when available).
 
 #### `veraqa-tier-3-audit` (aka `VeraQA-T3`)
-- Team membership policy: currently only `vera-qa` is expected in each VeraQA team unless CJ approves adding others.
-- Optional periodic deep-review lane, fed by OpenAI Native Code Review.
-- Uses external, high-signal review only when policy says it is needed.
-- Keeps occasional deep assurance without forcing every PR into expensive deep review.
+- Team membership policy: only `vera-qa` belongs in each VeraQA team unless CJ explicitly approves another reviewer. `taylor-01` must not be a VeraQA team member; Taylor01 PM acceptance is separate from code review.
+- Manual + rare deep-review lane, never default merge gating.
+- Uses external/high-signal review only when Taylor/CJ/Vera explicitly request it, exceptional risk warrants it, or periodic audit sampling is intentionally selected.
+- Keeps occasional deep assurance without turning T3 into routine PR theater.
 
 ## Target reviewer-routing baseline
 
@@ -60,8 +60,10 @@ GitHub only treats a team as a valid CODEOWNERS owner when that team has write a
 
 ### Branch protection / rulesets baseline
 
-- Use lightweight GitHub branch policy for merge safety (`required_approving_review_count: 1` as current safety baseline).
-- Keep `require_code_owner_reviews=false` so CODEOWNERS guides reviewer routing without creating hard-to-bypass governance friction.
+- Use a lightweight approval count (`required_approving_review_count: 1`) with a real VeraQA CODEOWNERS gate.
+- Keep `require_code_owner_reviews=true` so CODEOWNERS is a real VeraQA gate, not just a hint.
+- Keep `dismiss_stale_reviews=true` and `require_last_push_approval=true` so new commits after approval require fresh review and the last pusher cannot be the approving reviewer.
+- Keep admin enforcement enabled so admin status does not become the routine bypass path.
 - Do not encode maintainer teams as required reviewer gates in rulesets or branch protection.
 
 ## Dynamic Vera QA tier policy (recommended)
@@ -81,7 +83,7 @@ Compute a lightweight score per PR:
 
 Interpretation:
 - `R >= 4` -> **T2 required**
-- `R >= 7` -> **T2 + T3 required**
+- `R >= 7` -> **T2 required; consider T3 only by explicit Taylor/CJ/Vera request or exceptional-risk judgment**
 
 ### 2) Repo tier map
 
@@ -94,24 +96,24 @@ Interpretation:
 
 - Default to **T2**.
 - Keep these repos on T2 even for small follow-up PRs because their blast radius and operating importance are higher.
-- Escalate to **T3** only for exceptional risk, periodic deep audit, or explicit Taylor/CJ request.
+- Escalate to **T3** only by explicit Taylor/CJ/Vera request, exceptional-risk judgment, or intentionally selected periodic deep audit.
 
 ### 3) T3 usage
 
-T3 is a rare deep-audit lane, not normal merge gating.
+T3 is a rare manual deep-audit lane, never default and not normal merge gating.
 
 Use T3 only when one of these is true:
 
-- explicit Taylor/CJ request,
+- explicit Taylor/CJ/Vera request,
 - exceptional risk or high blast radius,
-- periodic sample chosen for assurance.
+- periodic sample intentionally chosen for assurance.
 
 There is no fixed daily quota in this guidance. Add automation later only if review misses or bypasses become frequent enough to justify it.
 
 ### 4) Cost discipline and overuse controls
 
 - T2 is the default for `sector-feeds` and `bitregime-core`; in other repos it is an escalation.
-- T3 is rare and should not be used as routine merge gating.
+- T3 is manual + rare and must never be used as routine/default merge gating.
 - Keep the model understandable before adding automation or stricter rules.
 
 ## Team/ruleset implementation notes
@@ -121,8 +123,8 @@ When implementing in GitHub:
 1. keep maintainer teams out of the reviewer-routing default path;
 2. use `veraqa-tier-1` as the default CODEOWNERS route for ordinary repos;
 3. use `veraqa-tier-2` as the default CODEOWNERS route for `sector-feeds` and `bitregime-core`;
-4. keep required review counts lightweight and use CODEOWNERS as routing guidance rather than a hard-to-bypass gate;
-5. use T3 only for exceptional risk, periodic deep audit, or explicit Taylor/CJ request.
+4. keep required review count lightweight at one approval, but use CODEOWNERS as a real VeraQA gate with stale-review dismissal, last-push approval, and admin enforcement enabled;
+5. use T3 only for exceptional risk, intentionally selected periodic deep audit, or explicit Taylor/CJ/Vera request; never as default.
 
 
 ## PR readiness and draft policy
