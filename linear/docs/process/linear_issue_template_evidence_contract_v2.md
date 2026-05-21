@@ -31,6 +31,7 @@ Every "Done" claim must include:
 - If VeraQA is requested, the official QA identity is `vera-qa`; advisory workers or PR authors are not substitutes.
 - Record the Linear translation: `qa-passed` + forward movement, `qa-failed` + back to `In Progress`, or blocked/held with evidence.
 - Record Taylor01 PM acceptance separately from technical QA: accept, reject, block, or elevate to CJ, with confidence and reason when not accepting.
+- Taylor01 may PM-accept CJ-requested work/tickets she created or coordinated, but must not use `qa-skipped` as a replacement for VeraQA when VeraQA is required on PR-backed work.
 
 7. `Risk / follow-up`
 - Any deferred risk and next action.
@@ -137,6 +138,7 @@ QA / PM gate sync:
 - Official QA: `vera-qa` approved / requested changes / blocked, with GitHub review link.
 - Linear translation: `qa-passed` -> Delivered / `qa-failed` -> In Progress / blocked with evidence.
 - Taylor01 PM acceptance: accepted / rejected / blocked / elevated to CJ, with confidence and reason.
+- QA-skip check: confirm Taylor01 did not substitute `qa-skipped` for VeraQA where VeraQA was required; PM acceptance may still be valid for CJ-requested work.
 
 Risk / follow-up:
 - `code_security` feature is plan-gated; tracked separately and not blocking this issue.

@@ -146,8 +146,8 @@ Maintenance update — 2026-05-20:
 12. QA and PM truth must be honest
 - QA and PM reviewers should be able to use the current issue description plus linked PR/artifact as the acceptance source. Do not require reviewers to reconstruct acceptance criteria from comment history.
 - Official GitHub code review / QA is VeraQA's lane when CODEOWNERS or branch protection requests `veraqa-tier-1`. The expected review identity is `vera-qa`, not the PR author and not an advisory worker.
-- Treat `vera-qa` GitHub reviews as real QA/code reviews. Do not require a second human or worker pass merely to make the QA review “real”; request a higher-tier review only when the change risk or Vera's own verdict calls for it.
-- Vera never authors PRs. That separation is what makes Vera the correct permanent QA gate.
+- Treat `vera-qa` GitHub reviews as real QA/code reviews. Do not require a second human or worker pass merely to make the QA review “real”; request a higher-tier Vera review only when the change risk or Vera's own verdict calls for it.
+- Vera never authors PRs. That separation is what makes Vera the correct permanent QA gate. VeraQA teams should contain `vera-qa` only unless CJ explicitly approves another reviewer.
 - Spawned workers are not the official code-review gate by default. Use them to observe PR/check/review state, run bounded advisory checks, or report when QA passes/rejects; do not treat them as a substitute for `vera-qa` approval.
 - QA outcome translation to Linear:
   - Vera approval / QA pass -> move forward according to workflow, normally toward `Delivered` with `qa-passed` when the issue's description/acceptance criteria are satisfied.
@@ -156,6 +156,7 @@ Maintenance update — 2026-05-20:
 - Taylor01 PM acceptance is a separate product/orchestration gate after technical QA. It asks whether passing QA means the change should integrate to `main`, what CJ would want, confidence level, and whether to accept, reject, block, or elevate to CJ.
 - Taylor01 PM acceptance is not GitHub self-review and is not code review. Taylor01 should not be described as executing or writing code; execution is owned by Codex/HermesAgent lanes.
 - When CJ is actively collaborating in the thread, Taylor01 may normally perform PM acceptance for jointly-authored/coordinated work unless Taylor01 identifies a real reason to ask CJ first. If Taylor01 does not accept after Vera QA passes, treat that as an interesting blocker/decision and record why.
+- Taylor01 may PM-accept work/tickets CJ asked her to create or coordinate, but she must not QA-skip when VeraQA is required. Taylor01 may invoke VeraQA or require the ticket/PR to pass through the same QA gate as other work.
 - CJ waiver is waiver, not QA. CJ remains the final human/accountability override when needed.
 
 13. GitHub truth is allowed, but fail closed
@@ -193,6 +194,7 @@ Rules:
 
 - Technical QA and PM acceptance are different gates.
 - `vera-qa` approval is the official code-review/QA signal when VeraQA is requested.
+- T1 is normal VeraQA; T2 must use stronger OpenAI/code-review settings than T1, such as a stronger model or code-specific medium/high reasoning. T3 is manual + rare, never default.
 - Taylor01 PM acceptance should translate the post-QA product decision into Linear status/labels and merge readiness; it should not pretend to be code review.
 - Spawned workers may observe until official QA passes/rejects and report only on material state changes, bounded timeouts, or failures. They should not loop indefinitely and should not be treated as official QA unless explicitly running under the gate identity.
 

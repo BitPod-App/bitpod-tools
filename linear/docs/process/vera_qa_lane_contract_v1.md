@@ -114,22 +114,24 @@ Optional companion artifacts may exist when useful, but they are not required to
 The minimum successful QA handoff is therefore:
 
 - Taylor or engineering supplies the verification target and criteria
-- Vera returns `verification_report.md`
+- Vera returns `verification_report.md` or an official GitHub review with evidence
 - Taylor or CJ decides what to do with that verdict
+
+Taylor01 may PM-accept CJ-requested work/tickets she created or coordinated. Taylor01 may invoke Vera or require a ticket/PR to pass through VeraQA, but Taylor01 must not code-review or QA-skip as a substitute for VeraQA when VeraQA is required.
 
 
 ## Tiered routing model (Hermes-aware)
 
 Vera lane remains the dedicated QA authority, but now with a dynamic tier policy.
 
-Membership policy for all VeraQA tiers: only `vera-qa` is required in v1; adding members is a controlled expansion requiring explicit governance approval.
+Membership policy for all VeraQA tiers: only `vera-qa` belongs in v1; adding members is a controlled expansion requiring explicit governance approval. `taylor-01` must not be a VeraQA team member because Taylor01 PM acceptance is separate from code review.
 
 ### T1 (Default)
 
 - Name: `VeraQA-T1`
 - Team: `@BitPod-App/veraqa-tier-1`
 - Trigger: baseline/default for PRs.
-- Model: low-cost model (cheap routing model).
+- Model: baseline strong Vera review model (currently expected to be GPT-5.4-class or better), with practical pass/fail evidence. T1 is normal review, not weak/theatrical review.
 - Goal: pass/fail + evidence with practical runtime checks.
 
 ### T2 (Escalated)
@@ -137,16 +139,16 @@ Membership policy for all VeraQA tiers: only `vera-qa` is required in v1; adding
 - Name: `VeraQA-T2`
 - Team: `@BitPod-App/veraqa-tier-2`
 - Trigger: high-risk/large PRs (score-based; see policy below).
-- Model: `Codex-3.0`.
+- Model: stronger-than-T1 OpenAI/code-review setting, such as a stronger OpenAI model or a code-specific model with medium/high reasoning (for example, a verified Codex-3-style code model when available).
 - Goal: deeper reasoning on architectural and behavior-risky changes.
 
-### T3 (Periodic deep audit)
+### T3 (Manual rare deep audit)
 
 - Name: `VeraQA-T3-Audit`
 - Team: `@BitPod-App/veraqa-tier-3-audit`
-- Trigger: periodic sample + explicit high-risk large PRs.
-- Model: OpenAI Native Code Review.
-- Goal: low-frequency, high-signal external review when risk/volume justifies cost.
+- Trigger: manual rare deep audit only: explicit Taylor/CJ/Vera request, exceptional risk, or intentionally selected periodic audit sample.
+- Model: strongest available high-signal external/deep review path.
+- Goal: low-frequency assurance when risk justifies cost. T3 is never default merge gating.
 
 ## Dynamic escalation policy
 
@@ -161,18 +163,18 @@ Use the same `R` score in team/ruleset docs:
 Decision:
 
 - `R >= 4`: move to **T2**
-- `R >= 7`: move to **T2 + T3**
+- `R >= 7`: **T2 required; consider T3 only by explicit Taylor/CJ/Vera request or exceptional-risk judgment**
 
 Team-scoped high-impact repos (`sector-feeds`, `bitregime-core`):
 
 - default path is always T2.
 - do not downshift these repos to T1 solely because a PR is small.
-- use T3 only for exceptional risk, periodic deep audit, or explicit Taylor/CJ request.
+- use T3 only for exceptional risk, intentionally selected periodic deep audit, or explicit Taylor/CJ/Vera request.
 
 T3 usage:
 
-- T3 is rare deep audit, not normal merge gating.
-- Use it for explicit Taylor/CJ request, exceptional risk, or occasional assurance sampling.
+- T3 is manual + rare deep audit, never default and not normal merge gating.
+- Use it for explicit Taylor/CJ/Vera request, exceptional risk, or intentionally selected assurance sampling.
 - There is no fixed daily quota in this guidance.
 
 ## Retired Linear Agent / Linear-bot Vera prompt

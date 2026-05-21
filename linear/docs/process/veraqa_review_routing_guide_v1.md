@@ -18,17 +18,17 @@ Companion context:
 
 ## Current rollout status
 
-Status: **Paused until VeraQA is ready**.
+Status: **Active**.
 
-While paused, active repo CODEOWNERS files keep the intended VeraQA route as comments only. This prevents GitHub from auto-requesting VeraQA before the lane is ready while preserving the exact route to re-enable.
+Live-state note — 2026-05-21:
 
-To re-enable:
+- Active repo CODEOWNERS files route PR review to VeraQA teams.
+- `sector-feeds` and `bitregime-core` route to `@BitPod-App/veraqa-tier-2`.
+- Other active repos route to `@BitPod-App/veraqa-tier-1`.
+- VeraQA tier teams should contain `vera-qa` only unless CJ explicitly approves adding another reviewer.
+- `taylor-01` must not be a VeraQA team member because Taylor01 PM acceptance is separate from code review.
 
-1. restore the active CODEOWNERS line in each repo:
-   - `sector-feeds` and `bitregime-core`: `* @BitPod-App/veraqa-tier-2`
-   - all other active repos: `* @BitPod-App/veraqa-tier-1`
-2. give the CODEOWNERS team write access on the repos it owns, because GitHub requires write access for valid CODEOWNERS teams;
-3. keep `required_approving_review_count=1` and `require_code_owner_reviews=false` unless the operator explicitly asks for hard code-owner gating.
+If routing is found paused or commented out again, re-enable by restoring the active CODEOWNERS line for the correct tier and verifying that the owning VeraQA team has write access on that repo.
 
 ## Default routing
 
@@ -52,6 +52,8 @@ T1 should check the practical quality bar: does the change match the request, ar
 
 ### T2: high-impact or complex QA
 
+T2 must use a stronger review setting than baseline T1, such as a stronger OpenAI code-review model or a code-specific model with medium/high reasoning (for example, a verified Codex-3-style code model when available). Do not downshift T2 into the same baseline model/settings as T1.
+
 Use T2 by default for:
 
 - `sector-feeds`
@@ -64,11 +66,11 @@ Use T2 in other repos when a PR is large, complex, risky, or touches sensitive a
 - data, migration, security, secret, or production behavior
 - broad refactors or behavior changes with high blast radius
 
-### T3: rare deep audit
+### T3: rare manual deep audit
 
-Use T3 only for exceptional risk, periodic deep audit, or explicit Taylor/CJ request.
+Use T3 only for exceptional risk, periodic deep audit, or explicit Taylor/CJ/Vera request.
 
-T3 is not normal merge gating.
+T3 is manual + rare, never default, and not normal merge gating.
 
 
 ## GitHub permission note
@@ -81,11 +83,11 @@ Keep GitHub branch protection lightweight:
 
 ```yaml
 required_approving_review_count: 1
-require_code_owner_reviews: false
+require_code_owner_reviews: true
 restrictions: null
 ```
 
-CODEOWNERS is the routing hint. The one required approval is the merge safety baseline.
+CODEOWNERS is the VeraQA routing gate. The one required approval is the lightweight merge safety baseline.
 
 ## Bypass guidance
 
@@ -103,4 +105,4 @@ Do not build a large bypass registry unless bypasses become frequent enough to n
 
 The durable rule is simple:
 
-> VeraQA owns technical QA review routing. `sector-feeds` and `bitregime-core` default to T2. Other repos default to T1 unless PR size, complexity, or risk justifies T2. T3 is rare audit.
+> VeraQA owns technical QA review routing. `sector-feeds` and `bitregime-core` default to T2. Other repos default to T1 unless PR size, complexity, or risk justifies T2. T3 is manual + rare, never default.
