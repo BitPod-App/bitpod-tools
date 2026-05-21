@@ -49,6 +49,8 @@ Maintenance update — 2026-05-20:
 - constrain comments to audit trail / pointer usage rather than hidden acceptance criteria or replacement canon
 - require `DESCRIPTION_STALE` when tooling cannot update a stale description
 - update the evidence contract so completion claims include description synchronization
+- codify VeraQA (`vera-qa`) as the official GitHub QA/code-review gate and separate it from Taylor01 PM acceptance
+- codify spawned workers as observation/advisory helpers by default, not official code-review substitutes
 
 Linked artifacts:
 - `/Users/taylor01/BitPod-App/bitpod-tools/linear/docs/process/linear_operating_guide_v3.md`

@@ -33,6 +33,9 @@ Maintenance update — 2026-05-20:
 - make comments an audit trail and pointer surface, not a substitute source of truth
 - require agents to update stale descriptions when a comment or external review changes material ticket truth
 - require QA/review to read the current description and linked PR/artifact, not reconstruct acceptance criteria from comment history
+- codify VeraQA (`vera-qa`) as the permanent official GitHub QA/code-review gate when requested by CODEOWNERS or branch protection
+- codify Taylor01 PM acceptance as a separate product/orchestration gate after QA, not a GitHub code-review substitute
+- constrain spawned workers to observation/advisory checks unless they are explicitly operating through a real gate identity
 
 ## Scope
 
@@ -142,10 +145,18 @@ Maintenance update — 2026-05-20:
 
 12. QA and PM truth must be honest
 - QA and PM reviewers should be able to use the current issue description plus linked PR/artifact as the acceptance source. Do not require reviewers to reconstruct acceptance criteria from comment history.
-- Do not imply “Vera QA” unless a real independent Vera-capable surface exists for that run.
-- Current substitute QA surfaces must label themselves honestly.
-- If required QA is missing, the truthful state is blocked by missing QA, not implied pass.
-- CJ waiver is waiver, not QA.
+- Official GitHub code review / QA is VeraQA's lane when CODEOWNERS or branch protection requests `veraqa-tier-1`. The expected review identity is `vera-qa`, not the PR author and not an advisory worker.
+- Treat `vera-qa` GitHub reviews as real QA/code reviews. Do not require a second human or worker pass merely to make the QA review “real”; request a higher-tier review only when the change risk or Vera's own verdict calls for it.
+- Vera never authors PRs. That separation is what makes Vera the correct permanent QA gate.
+- Spawned workers are not the official code-review gate by default. Use them to observe PR/check/review state, run bounded advisory checks, or report when QA passes/rejects; do not treat them as a substitute for `vera-qa` approval.
+- QA outcome translation to Linear:
+  - Vera approval / QA pass -> move forward according to workflow, normally toward `Delivered` with `qa-passed` when the issue's description/acceptance criteria are satisfied.
+  - Vera requested changes / QA reject -> move back to `In Progress` with `qa-failed` / QA-rejected evidence and link to the GitHub requested changes.
+  - Vera blocked/uncertain -> keep or move to `In Review` with blocker evidence and next action.
+- Taylor01 PM acceptance is a separate product/orchestration gate after technical QA. It asks whether passing QA means the change should integrate to `main`, what CJ would want, confidence level, and whether to accept, reject, block, or elevate to CJ.
+- Taylor01 PM acceptance is not GitHub self-review and is not code review. Taylor01 should not be described as executing or writing code; execution is owned by Codex/HermesAgent lanes.
+- When CJ is actively collaborating in the thread, Taylor01 may normally perform PM acceptance for jointly-authored/coordinated work unless Taylor01 identifies a real reason to ask CJ first. If Taylor01 does not accept after Vera QA passes, treat that as an interesting blocker/decision and record why.
+- CJ waiver is waiver, not QA. CJ remains the final human/accountability override when needed.
 
 13. GitHub truth is allowed, but fail closed
 - Objective GitHub events may update Linear when the event is real and the gate state is valid.
@@ -166,6 +177,24 @@ Maintenance update — 2026-05-20:
 - Each relevant Linear issue should have the GitHub PR link attached and one clean comment using the canonical reference format from `linear_link_reference_policy_v1.md`.
 - If a required field cannot be changed through available tooling, record the blocker explicitly instead of claiming the closeout is complete.
 - A closeout is incomplete until the mapping table, reciprocal links, project hygiene, status checks, and label checks are all verified.
+
+## Clean review/acceptance model
+
+Default target flow:
+
+```text
+Codex/HermesAgent execution -> GitHub PR
+VeraQA (`vera-qa`) -> official GitHub QA/code review
+Taylor01 -> PM/orchestration acceptance or reject/block/elevate decision
+CJ -> final human/accountability override where needed
+```
+
+Rules:
+
+- Technical QA and PM acceptance are different gates.
+- `vera-qa` approval is the official code-review/QA signal when VeraQA is requested.
+- Taylor01 PM acceptance should translate the post-QA product decision into Linear status/labels and merge readiness; it should not pretend to be code review.
+- Spawned workers may observe until official QA passes/rejects and report only on material state changes, bounded timeouts, or failures. They should not loop indefinitely and should not be treated as official QA unless explicitly running under the gate identity.
 
 ## Required issue evidence format
 
@@ -211,6 +240,7 @@ This version corresponds to:
 - active issue evidence contract from `linear_issue_template_evidence_contract_v2.md`
 - PR-to-Linear closeout guardrail added to `linear_operating_guide_v3.md` on 2026-04-28
 - description-as-source-of-truth guardrail added to `linear_operating_guide_v3.md` on 2026-05-20
+- VeraQA official QA plus Taylor01 PM acceptance split added to `linear_operating_guide_v3.md` on 2026-05-20
 - Linear admin/process change-control from `linear_admin_change_control_v1.md`
 - proposal workflow from `linear_change_proposal_template_v1.md`
 

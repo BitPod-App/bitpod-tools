@@ -26,10 +26,16 @@ Every "Done" claim must include:
 5. `Pass/Fail`
 - Explicit pass/fail result per check.
 
-6. `Risk / follow-up`
+6. `QA / PM gate sync`
+- When a GitHub PR is involved, record the official QA reviewer identity and review outcome.
+- If VeraQA is requested, the official QA identity is `vera-qa`; advisory workers or PR authors are not substitutes.
+- Record the Linear translation: `qa-passed` + forward movement, `qa-failed` + back to `In Progress`, or blocked/held with evidence.
+- Record Taylor01 PM acceptance separately from technical QA: accept, reject, block, or elevate to CJ, with confidence and reason when not accepting.
+
+7. `Risk / follow-up`
 - Any deferred risk and next action.
 
-7. `PR-to-Linear closeout check` (required when a GitHub PR or Linear normalization is involved)
+8. `PR-to-Linear closeout check` (required when a GitHub PR or Linear normalization is involved)
 - GitHub PR link(s) using `linear_link_reference_policy_v1.md` format.
 - Linear issue link(s) using canonical full-title format.
 - Project scope check: correct project, standalone issue, or explicit blocker if tooling cannot remove a wrong project.
@@ -37,7 +43,7 @@ Every "Done" claim must include:
 - Label check: finalized labels applied only to finalized items; future items do not receive completion labels.
 - Bidirectional linking check: PR comment plus Linear issue comment/link verified, with no duplicate link-spam.
 
-8. `Issue Type check` (required when creating, triaging, or normalizing issue type)
+9. `Issue Type check` (required when creating, triaging, or normalizing issue type)
 - Exactly one canonical issue type is set, or `needs-type` is present with a note naming the missing evidence.
 - Type choice follows `linear/contracts/linear_type_classifier_v1.json` and `linear_issue_type_decision_guide_v1.md`.
 - Type is not inferred from title alone.
@@ -126,6 +132,11 @@ Issue Type check:
 - Type: Feature / Bug / Chore / Design / Plan / Release / blocked by `needs-type`
 - Evidence basis: acceptance criteria, defect evidence, design artifact, parent rollout scope, release checklist, or other current issue evidence
 - Decision guide: `linear/contracts/linear_type_classifier_v1.json` and `linear_issue_type_decision_guide_v1.md`
+
+QA / PM gate sync:
+- Official QA: `vera-qa` approved / requested changes / blocked, with GitHub review link.
+- Linear translation: `qa-passed` -> Delivered / `qa-failed` -> In Progress / blocked with evidence.
+- Taylor01 PM acceptance: accepted / rejected / blocked / elevated to CJ, with confidence and reason.
 
 Risk / follow-up:
 - `code_security` feature is plan-gated; tracked separately and not blocking this issue.
