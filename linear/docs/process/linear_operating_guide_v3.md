@@ -193,7 +193,7 @@ CJ -> final human/accountability override where needed
 Rules:
 
 - Technical QA and PM acceptance are different gates.
-- `vera-qa` approval is the official code-review/QA signal when VeraQA is requested.
+- `vera-qa` approval is the official code-review/QA signal when VeraQA is requested. Branch protection should enforce code-owner review, stale-review dismissal, last-push approval, and admin enforcement so nothing reaches `main` without current VeraQA approval.
 - T1 is normal VeraQA; T2 must use stronger OpenAI/code-review settings than T1, such as a stronger model or code-specific medium/high reasoning. T3 is manual + rare, never default.
 - Taylor01 PM acceptance should translate the post-QA product decision into Linear status/labels and merge readiness; it should not pretend to be code review.
 - Spawned workers may observe until official QA passes/rejects and report only on material state changes, bounded timeouts, or failures. They should not loop indefinitely and should not be treated as official QA unless explicitly running under the gate identity.

@@ -60,8 +60,10 @@ GitHub only treats a team as a valid CODEOWNERS owner when that team has write a
 
 ### Branch protection / rulesets baseline
 
-- Use lightweight GitHub branch policy for merge safety (`required_approving_review_count: 1` as current safety baseline).
-- Keep `require_code_owner_reviews=true` so CODEOWNERS is a real VeraQA gate, not just a hint. Keep the required approval count lightweight at `1`.
+- Use a lightweight approval count (`required_approving_review_count: 1`) with a real VeraQA CODEOWNERS gate.
+- Keep `require_code_owner_reviews=true` so CODEOWNERS is a real VeraQA gate, not just a hint.
+- Keep `dismiss_stale_reviews=true` and `require_last_push_approval=true` so new commits after approval require fresh review and the last pusher cannot be the approving reviewer.
+- Keep admin enforcement enabled so admin status does not become the routine bypass path.
 - Do not encode maintainer teams as required reviewer gates in rulesets or branch protection.
 
 ## Dynamic Vera QA tier policy (recommended)
@@ -121,7 +123,7 @@ When implementing in GitHub:
 1. keep maintainer teams out of the reviewer-routing default path;
 2. use `veraqa-tier-1` as the default CODEOWNERS route for ordinary repos;
 3. use `veraqa-tier-2` as the default CODEOWNERS route for `sector-feeds` and `bitregime-core`;
-4. keep required review counts lightweight and use CODEOWNERS as routing guidance rather than a hard-to-bypass gate;
+4. keep required review count lightweight at one approval, but use CODEOWNERS as a real VeraQA gate with stale-review dismissal, last-push approval, and admin enforcement enabled;
 5. use T3 only for exceptional risk, intentionally selected periodic deep audit, or explicit Taylor/CJ/Vera request; never as default.
 
 

@@ -79,15 +79,18 @@ GitHub only treats a team as a valid CODEOWNERS owner when that team has write a
 
 ## Branch protection posture
 
-Keep GitHub branch protection lightweight:
+Keep GitHub branch protection strict enough to make VeraQA real, but lightweight in approval count:
 
 ```yaml
 required_approving_review_count: 1
 require_code_owner_reviews: true
+dismiss_stale_reviews: true
+require_last_push_approval: true
+enforce_admins: true
 restrictions: null
 ```
 
-CODEOWNERS is the VeraQA routing gate. The one required approval is the lightweight merge safety baseline.
+CODEOWNERS is the VeraQA routing gate. The one required approval is the lightweight merge safety baseline. Dismiss stale reviews and last-push approval prevent post-review changes from slipping through without fresh VeraQA approval; admin enforcement prevents routine admin bypass from becoming the default path.
 
 ## Bypass guidance
 
