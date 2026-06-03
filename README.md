@@ -33,6 +33,12 @@ and reusable operator support surfaces.
 - `SECURITY.md`
 - `bitpod-tools-threat-model.md`
 
+## Policy References
+
+- `linear/docs/process/linear_link_reference_policy_v1.md` — canonical
+  Linear issue and GitHub PR hyperlink formats for tool output, including
+  degraded fallback and rollout guardrails.
+
 ## Identity Notes
 
 - This is an operational tooling repo, not the main product repo.
