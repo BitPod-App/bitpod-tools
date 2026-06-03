@@ -22,6 +22,16 @@ Ticket-shaped homes such as `$HOME/.hermes-bit472` are temporary proof/migration
 - Use `$HOME`/env-driven references instead of person-specific absolute paths in portable docs.
 - Keep secrets and OAuth caches out of repo docs.
 
+## Executable Telegram/Taylor01/Codex gate
+
+Run the read-only preflight before claiming the Telegram -> Hermes Agent Taylor01 -> Codex route is executable:
+
+```bash
+python3 tools/taylor01/adapters/hermes/telegram_taylor01_codex_gate.py
+```
+
+The gate checks only observable prerequisites: canonical `$HOME/.hermes` targeting, masked Telegram token injection, `hermes` CLI availability, addressability of the `taylor01` Hermes profile, `codex` CLI availability, and absence of active OpenClaw runtime environment variables. It does not start Telegram polling, mutate Hermes home, run Codex, or claim a successful heartbeat.
+
 ## Read next
 
 - `vera/README.md`

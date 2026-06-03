@@ -31,6 +31,7 @@ This folder contains the Linear tool surface plus the process canon that governs
 - `./docs/process/linear_change_proposal_template_v1.md`
 - `./docs/process/linear_link_reference_policy_v1.md`
 - `./docs/process/linear_issue_template_evidence_contract_v2.md`
+- `./docs/process/linear_live_executor_rollout_path_v1.md`
 - `./docs/process/linear_operating_guide_changelog.md`
 
 ## PR-to-Linear closeout enforcement
@@ -122,6 +123,7 @@ Implemented in engine/service:
   - merged PRs fail closed when merge-readiness truth is incomplete
   - backlog aging drives `Backlog` -> `Icebox 🧊` -> `Stale`
   - Dry-run default and simulation runner
+  - guarded live Linear executor for `comment`, `set_status`, and `set_label` only, blocked unless governance allows the action, `LINEAR_LIVE_EXECUTOR_ENABLED=true`, and Linear actor attribution matches expected config
 
 ## Preferred workflow note
 
@@ -157,8 +159,10 @@ Recommended env vars:
 - `GITHUB_APP_ID` (future live mode)
 - `GITHUB_APP_PRIVATE_KEY` (future live mode)
 - `GITHUB_WEBHOOK_SECRET` (future live mode)
-- `LINEAR_API_KEY` or OAuth app creds (future live mode)
-- `LINEAR_WEBHOOK_SECRET` (future live mode)
+- `LINEAR_API_KEY` or OAuth app creds (guarded live mode)
+- `LINEAR_WEBHOOK_SECRET` (future/live webhook mode)
+- `LINEAR_LIVE_EXECUTOR_ENABLED=false` (hard kill switch; default off)
+- `LINEAR_EXPECTED_ACTOR_ID` / `LINEAR_EXPECTED_ACTOR_NAME` / `LINEAR_EXPECTED_ACTOR_EMAIL` (at least one required before live Linear mutations)
 
 Reference template:
 - `./config.example.env`
@@ -231,7 +235,7 @@ python3 linear/scripts/discord_config_preflight.py \
 
 ```bash
 cd $WORKSPACE/bitpod-tools
-python3 -m unittest linear/tests/test_engine.py linear/tests/test_runtime.py linear/tests/test_e2e_flow.py
+python3 -m unittest linear/tests/test_engine.py linear/tests/test_runtime.py linear/tests/test_linear_executor.py linear/tests/test_e2e_flow.py
 ```
 
 One-command local smoke:
@@ -274,8 +278,10 @@ PR checks run automatically for `linear/**` via:
 
 ## Live-mode safety
 
-- Service live mode currently supports GitHub PR comments only.
-- Linear live mutation executor is intentionally fail-closed until final API/actor wiring is complete.
+- Service live mode supports GitHub PR comments through the existing `gh` path.
+- Linear live execution is guarded by governance plus the hard `LINEAR_LIVE_EXECUTOR_ENABLED` kill switch.
+- The Linear executor supports only `comment`, `set_status`, and `set_label`; unsupported actions fail closed.
+- Actor attribution must match configured expected Linear actor fields before any live Linear mutation runs.
 
 ## Portability-first architecture
 

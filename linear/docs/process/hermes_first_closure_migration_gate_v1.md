@@ -118,6 +118,25 @@ Do not mark [BIT-413 — Cost dashboard and prompt-template control surface MVP]
 
 If the cost-dashboard/prompt-control umbrella is too broad, split or cancel stale scope truthfully. Cost visibility remains useful, but it is not required as proof that Hermes-first is the direction.
 
+
+## Honcho recovery packet
+
+Honcho identity, session-routing, hydration, and stale-ticket correction guidance is tracked in `honcho_recovery_packet_2026-06-02.md`.
+
+Use that packet before claiming Taylor01/Honcho memory health, running PM-acceptance gates that depend on BIT-527 hydration, migrating orphan conclusions, or correcting older Linear tickets. The packet supersedes raw 2026-05-29 recovery drafts and intentionally omits token-like examples and stale apply-now values.
+
+## Executable route preflight
+
+The Telegram -> Hermes Agent Taylor01 -> Codex migration gate is no longer document-only in `bitpod-tools`. The repo-backed executable preflight is:
+
+```bash
+python3 tools/taylor01/adapters/hermes/telegram_taylor01_codex_gate.py
+```
+
+This preflight is intentionally read-only. It may return `BLOCKED` without indicating a regression; `BLOCKED` means at least one prerequisite is not currently observable from the local environment. A `PASS` means only that the local prerequisites are present enough to proceed to a live Telegram heartbeat test; it does not prove a Telegram message was received, a Hermes Taylor01 task responded, or Codex executed work.
+
+The preflight preserves the OpenClaw boundary by failing closed if active OpenClaw runtime environment variables are present. OpenClaw remains historical closure context only, not a fallback route.
+
 ## Acceptance
 
 - Plain `hermes profile list` from `$HOME/.hermes` shows `default`, `taylor01`, and `vera` after hydration.

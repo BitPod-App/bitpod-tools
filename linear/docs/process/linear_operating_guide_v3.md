@@ -121,6 +121,7 @@ Maintenance update — 2026-05-20:
   - deleted project can still read back as active
   - removed blocker relations can still read back as present
   - broad project-list queries can fail with `Query too complex`
+- Honcho/memory-route recovery uses `honcho_recovery_packet_2026-06-02.md`: do not bulk-hydrate process docs, do not carry forward token examples, and re-check Linear/Honcho live truth before correcting tickets.
 
 9. Linear admin change control
 - Workflow, schema, template, automation, or other meaningful admin changes must follow `linear_admin_change_control_v1.md`.
@@ -254,6 +255,7 @@ Artifacts:
 - `linear_issue_type_decision_guide_v1.md`
 - `linear_type_classifier_corrections_v1.md`
 - `linear_issue_template_evidence_contract_v2.md`
+- `honcho_recovery_packet_2026-06-02.md`
 - `taylor01_portability_review_gate_v1.md`
 - `linear_admin_change_control_v1.md`
 - `linear_change_proposal_template_v1.md`

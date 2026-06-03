@@ -14,11 +14,18 @@ from pathlib import Path
 from typing import Any
 
 CURRENT = Path(__file__).resolve()
-for parent in CURRENT.parents:
-    if (parent / 'AGENTS.md').exists() and (parent / 'tools' / 'taylor01').exists():
-        if str(parent) not in sys.path:
-            sys.path.insert(0, str(parent))
-        break
+
+
+def _discover_repo_root() -> Path:
+    for parent in CURRENT.parents:
+        if (parent / 'AGENTS.md').exists() and (parent / 'tools' / 'taylor01').exists():
+            return parent
+    raise RuntimeError('Could not locate bitpod-tools repo root for Vera PR review adapter')
+
+
+REPO_ROOT = _discover_repo_root()
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 
 from tools.taylor01.core.agents.vera.contract import (
     PortableReviewResult,
@@ -32,6 +39,9 @@ from tools.taylor01.core.agents.vera.contract import (
 DEFAULT_MODEL = 'gpt-5.4'
 MAX_DIFF_CHARS = 18000
 MAX_FILE_CHARS = 12000
+REFERENCE_PACK_ENVS = ('VERA_REFERENCE_PACK_PATH', 'VERA_REFERENCE_PACK_ZIP')
+QA_SKILL_ENV = 'TAYLOR01_QA_SPECIALIST_SKILL_PATH'
+WORKSPACE_ROOT_ENVS = ('BITPOD_WORKSPACE_ROOT', 'TAYLOR01_WORKSPACE_ROOT')
 
 
 @dataclass(frozen=True)
@@ -41,12 +51,40 @@ class PRRef:
     number: int
 
 
+@dataclass(frozen=True)
+class ReferenceMaterial:
+    label: str
+    path: Path
+    text: str
+    required: bool
+
+    def as_status(self) -> dict[str, Any]:
+        return {
+            'label': self.label,
+            'path': str(self.path),
+            'required': self.required,
+            'chars': len(self.text),
+            'bytes': len(self.text.encode('utf-8')),
+        }
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description='Run Vera against a GitHub PR URL via the OpenAI Agents SDK.')
-    parser.add_argument('pr_url', help='GitHub PR URL to review')
-    parser.add_argument('--output-dir', required=True, help='Directory for verification_report.md + manifest.json')
+    parser.add_argument('pr_url', nargs='?', help='GitHub PR URL to review')
+    parser.add_argument('--output-dir', help='Directory for verification_report.md + manifest.json')
     parser.add_argument('--model', default=DEFAULT_MODEL, help=f'Agent model (default: {DEFAULT_MODEL})')
-    return parser.parse_args()
+    parser.add_argument(
+        '--verify-reference-materials',
+        action='store_true',
+        help='Verify that Vera reference materials load, then print a JSON status and exit without calling OpenAI.',
+    )
+    args = parser.parse_args()
+    if not args.verify_reference_materials:
+        if not args.pr_url:
+            parser.error('pr_url is required unless --verify-reference-materials is set')
+        if not args.output_dir:
+            parser.error('--output-dir is required unless --verify-reference-materials is set')
+    return args
 
 
 def parse_pr_url(pr_url: str) -> PRRef:
@@ -72,33 +110,122 @@ def run_text(cmd: list[str]) -> str:
     return proc.stdout
 
 
+def _env_path(name: str, *, base: Path = REPO_ROOT) -> Path | None:
+    raw = os.environ.get(name, '').strip()
+    if not raw:
+        return None
+    path = Path(raw).expanduser()
+    if not path.is_absolute():
+        path = base / path
+    return path.resolve()
+
+
 def _workspace_root() -> Path:
-    env_root = os.environ.get('BITPOD_WORKSPACE_ROOT')
-    if env_root:
-        return Path(env_root).expanduser().resolve()
-    for parent in CURRENT.parents:
-        if (parent / 'bitpod-tools').exists():
-            return parent
-    raise RuntimeError('Could not locate BitPod workspace root; set BITPOD_WORKSPACE_ROOT')
+    for env_name in WORKSPACE_ROOT_ENVS:
+        configured = _env_path(env_name)
+        if configured is not None:
+            repo_from_env = (configured / 'bitpod-tools').resolve()
+            if repo_from_env != REPO_ROOT.resolve():
+                raise RuntimeError(
+                    f'{env_name}={configured} does not resolve to the active bitpod-tools repo ({REPO_ROOT})'
+                )
+            return configured
+    return REPO_ROOT.parent.resolve()
+
+
+def _required_reference_paths() -> list[tuple[str, Path, int]]:
+    workspace_root = _workspace_root()
+    qa_skill_path = _env_path(QA_SKILL_ENV) or (
+        workspace_root / 'local-workspace' / 'local-codex' / 'skills' / 'qa-specialist' / 'SKILL.md'
+    ).resolve()
+    return [
+        (
+            'vera_qa_lane_contract_v1.md',
+            REPO_ROOT / 'linear' / 'docs' / 'process' / 'vera_qa_lane_contract_v1.md',
+            6000,
+        ),
+        (
+            'vera_runtime_minimum_v1.md',
+            REPO_ROOT / 'linear' / 'docs' / 'process' / 'vera_runtime_minimum_v1.md',
+            6000,
+        ),
+        ('qa-specialist/SKILL.md', qa_skill_path, 6000),
+    ]
+
+
+def _load_text_material(label: str, path: Path, max_chars: int, *, required: bool) -> ReferenceMaterial | None:
+    if not path.exists():
+        if required:
+            raise RuntimeError(f'Missing required Vera reference material: {label} at {path}')
+        return None
+    if not path.is_file():
+        raise RuntimeError(f'Vera reference material is not a file: {label} at {path}')
+    text = path.read_text(encoding='utf-8', errors='replace')[:max_chars]
+    if not text.strip():
+        raise RuntimeError(f'Vera reference material is empty: {label} at {path}')
+    return ReferenceMaterial(label=label, path=path, text=text, required=required)
+
+
+def _load_reference_pack(path: Path) -> list[ReferenceMaterial]:
+    if not path.exists():
+        raise RuntimeError(f'Configured Vera reference pack points to a missing file: {path}')
+    if not path.is_file():
+        raise RuntimeError(f'Configured Vera reference pack is not a file: {path}')
+    materials: list[ReferenceMaterial] = []
+    with zipfile.ZipFile(path) as zf:
+        names = set(zf.namelist())
+        for name in ('VERA_PERSONA_PROFILE_v1.md', 'QA_CHECKLIST_TEMPLATE_v2.md'):
+            if name in names:
+                text = zf.read(name).decode('utf-8', 'replace')[:5000]
+                if text.strip():
+                    materials.append(ReferenceMaterial(label=name, path=path, text=text, required=False))
+    if not materials:
+        raise RuntimeError(f'Vera reference pack did not contain readable expected entries: {path}')
+    return materials
+
+
+def _reference_pack_path() -> Path | None:
+    for env_name in REFERENCE_PACK_ENVS:
+        configured = _env_path(env_name)
+        if configured is not None:
+            return configured
+    default_pack = _workspace_root() / 'local-workspace' / 'local-working-files' / 'vera_pack_v1.zip'
+    if default_pack.exists():
+        return default_pack.resolve()
+    return None
+
+
+def collect_reference_materials() -> list[ReferenceMaterial]:
+    materials: list[ReferenceMaterial] = []
+    reference_pack = _reference_pack_path()
+    if reference_pack is not None:
+        materials.extend(_load_reference_pack(reference_pack))
+    required_paths = _required_reference_paths()
+    for label, path, max_chars in required_paths:
+        material = _load_text_material(label, path, max_chars, required=True)
+        if material is not None:
+            materials.append(material)
+    required_count = sum(1 for material in materials if material.required)
+    if required_count != len(required_paths):
+        raise RuntimeError('Vera reference material loading did not load every required reference')
+    return materials
 
 
 def load_reference_materials() -> str:
-    workspace_root = _workspace_root()
-    pieces: list[str] = []
-    donor_zip = Path(os.environ.get('VERA_REFERENCE_PACK_ZIP', workspace_root / 'local-workspace' / 'local-working-files' / 'vera_pack_v1.zip')).expanduser()
-    if donor_zip.exists():
-        with zipfile.ZipFile(donor_zip) as zf:
-            for name in ('VERA_PERSONA_PROFILE_v1.md', 'QA_CHECKLIST_TEMPLATE_v2.md'):
-                if name in zf.namelist():
-                    pieces.append(f'[{name}]\n' + zf.read(name).decode('utf-8', 'replace')[:5000])
-    for path in (
-        workspace_root / 'bitpod-tools' / 'linear' / 'docs' / 'process' / 'vera_qa_lane_contract_v1.md',
-        workspace_root / 'bitpod-tools' / 'linear' / 'docs' / 'process' / 'vera_runtime_minimum_v1.md',
-        workspace_root / '.codex' / 'skills' / 'qa-specialist' / 'SKILL.md',
-    ):
-        if path.exists():
-            pieces.append(f'[{path.name}]\n' + path.read_text(encoding='utf-8', errors='replace')[:6000])
+    pieces = [f'[{material.label}]\n{material.text}' for material in collect_reference_materials()]
+    if not pieces:
+        raise RuntimeError('No Vera reference materials loaded')
     return '\n\n'.join(pieces)
+
+
+def verify_reference_materials() -> dict[str, Any]:
+    materials = collect_reference_materials()
+    return {
+        'reference_materials_loaded': True,
+        'repo_root': str(REPO_ROOT),
+        'workspace_root': str(_workspace_root()),
+        'reference_materials': [material.as_status() for material in materials],
+    }
 
 
 def build_instructions() -> str:
@@ -227,6 +354,13 @@ def write_outputs(output_dir: Path, target: PortableReviewTarget, result: Portab
 
 def main() -> int:
     args = parse_args()
+    if args.verify_reference_materials:
+        try:
+            print(json.dumps(verify_reference_materials(), ensure_ascii=False, indent=2))
+            return 0
+        except Exception as exc:  # noqa: BLE001
+            print(json.dumps({'reference_materials_loaded': False, 'error': str(exc)}), file=sys.stderr)
+            return 1
     output_dir = Path(args.output_dir).expanduser().resolve()
     pr_url = args.pr_url.strip()
     agent, Runner = build_agent(args.model)

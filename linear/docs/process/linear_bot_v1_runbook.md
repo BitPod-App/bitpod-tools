@@ -46,9 +46,11 @@ Populate only required values for your mode:
   - `GITHUB_APP_ID`
   - `GITHUB_APP_PRIVATE_KEY`
   - `GITHUB_WEBHOOK_SECRET`
-- Required for Linear live mutation wiring (deferred/fail-closed today):
+- Required for Linear live mutation wiring (guarded/fail-closed):
   - `LINEAR_API_KEY` or OAuth app credentials
   - `LINEAR_WEBHOOK_SECRET`
+  - `LINEAR_LIVE_EXECUTOR_ENABLED=false|true` (hard kill switch; default false)
+  - at least one of `LINEAR_EXPECTED_ACTOR_ID`, `LINEAR_EXPECTED_ACTOR_NAME`, or `LINEAR_EXPECTED_ACTOR_EMAIL`
 
 ## 3) Webhook wiring
 
@@ -76,13 +78,18 @@ Set Worker secrets/vars:
 
 1. Confirm dry-run action output first.
 2. Confirm PR comments are posted by automation actor (not CJ).  
-3. Keep Linear mutation path fail-closed until app actor is verified.
-4. If attribution is wrong, stop and fix identity before continuing.
-5. Confirm trace artifacts are being written:
+3. Keep `LINEAR_LIVE_EXECUTOR_ENABLED=false` until the expected Linear actor is configured.
+4. Turn the kill switch on only for a controlled rollout window.
+5. If logs or traces contain `LINEAR ACTOR WRONG`, turn the kill switch off and fix identity before continuing.
+6. Confirm trace artifacts are being written:
    - runtime events: path from `RUNTIME_TRACE_PATH`
    - service action traces: path from `TRACE_STORE_PATH`
 
-## 6) Incident fallback
+## 6) Live Linear rollout path
+
+Use [linear_live_executor_rollout_path_v1.md](./linear_live_executor_rollout_path_v1.md) for the guarded BIT-505 / BIT-559 rollout. The only supported Linear live actions are `comment`, `set_status`, and `set_label`; all other Linear actions fail closed.
+
+## 7) Incident fallback
 
 If external integration is degraded:
 - keep bot in dry-run
