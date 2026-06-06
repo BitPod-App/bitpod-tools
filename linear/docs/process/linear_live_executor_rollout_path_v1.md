@@ -22,7 +22,7 @@ Live Linear execution requires all of the following:
 1. Service live mode is enabled (`DRY_RUN=false`).
 2. Governance allows the action class.
    - Class A comments are allowed by the current policy matrix.
-   - Class B status/label mutations still require the configured governance path; they are not silently promoted by the executor.
+   - Class B status/label mutations require an exact rollout allowlist entry in `LINEAR_GUARDED_ACTION_ALLOWLIST`; they are not silently promoted by the executor.
 3. The hard Linear executor kill switch is explicitly on: `LINEAR_LIVE_EXECUTOR_ENABLED=true`.
 4. `LINEAR_API_KEY` is present in machine-local runtime configuration.
 5. At least one expected actor field is configured:
@@ -49,6 +49,7 @@ That phrase is intentional. Operators should search traces and logs for `LINEAR 
 DRY_RUN=false
 LINEAR_LIVE_EXECUTOR_ENABLED=true
 LINEAR_API_KEY=...
+LINEAR_GUARDED_ACTION_ALLOWLIST=linear:set_status:BIT-505
 LINEAR_EXPECTED_ACTOR_ID=...
 # Optional additional checks:
 LINEAR_EXPECTED_ACTOR_NAME=...
@@ -74,7 +75,7 @@ Do not store these values in tracked repo files.
    - service trace outcome is `executed` and includes the matched `actor_id` / `actor_name`
    - Linear comment attribution is the automation actor, not CJ
    - no `LINEAR ACTOR WRONG` trace exists
-6. Only after comment attribution is verified, allow the governed BIT-505 / BIT-559 status or label path.
+6. Only after comment attribution is verified, set the narrowest `LINEAR_GUARDED_ACTION_ALLOWLIST` value needed for the governed BIT-505 / BIT-559 status or label proof, for example `linear:set_status:BIT-505`. Do not use wildcards.
 7. Turn `LINEAR_LIVE_EXECUTOR_ENABLED=false` immediately after the controlled window unless the operator explicitly keeps it open.
 
 ## Rollback
