@@ -122,35 +122,23 @@ The minimum successful QA handoff is therefore:
 Taylor01 may PM-accept CJ-requested work/tickets she created or coordinated. Taylor01 may invoke Vera or require a ticket/PR to pass through VeraQA, but Taylor01 must not code-review or QA-skip as a substitute for VeraQA when VeraQA is required.
 
 
-## Tiered routing model (Hermes-aware)
+## Single-gate routing model (Hermes-aware)
 
-Vera lane remains the dedicated QA authority, but now with a dynamic tier policy.
+Vera lane remains the dedicated QA authority. GitHub CODEOWNERS should provide one stable VeraQA approval gate, not encode QA depth through team names.
 
-Membership policy for all VeraQA tiers: only `vera-qa` belongs in v1; adding members is a controlled expansion requiring explicit governance approval. `taylor-01` must not be a VeraQA team member because Taylor01 PM acceptance is separate from code review.
+Membership policy for the VeraQA gate: only verified Vera review identities belong in v1. The current fallback identity is `vera-qa`; BIT-595/BIT-596 decide whether a GitHub App/bot actor can replace or augment it. `taylor-01` and CJ/admin must not be VeraQA gate members because Taylor01 PM acceptance and admin bypass are separate from code review.
 
-### T1 (Default)
+### GitHub CODEOWNERS gate
 
-- Name: `VeraQA-T1`
-- Team: `@BitPod-App/veraqa-tier-1`
-- Trigger: baseline/default for PRs.
-- Model: baseline strong Vera review model (currently expected to be GPT-5.4-class or better), with practical pass/fail evidence. T1 is normal review, not weak/theatrical review.
+- Name: `VeraQA`
+- Team: `@BitPod-App/veraqa`
+- Trigger: default CODEOWNERS approval gate for active repos.
+- Model/depth: chosen by Vera/runtime/process per change risk; not by GitHub team name.
 - Goal: pass/fail + evidence with practical runtime checks.
 
-### T2 (Escalated)
+### Superseded tier names
 
-- Name: `VeraQA-T2`
-- Team: `@BitPod-App/veraqa-tier-2`
-- Trigger: high-risk/large PRs (score-based; see policy below).
-- Model: stronger-than-T1 OpenAI/code-review setting, such as a stronger OpenAI model or a code-specific model with medium/high reasoning (for example, a verified Codex-3-style code model when available).
-- Goal: deeper reasoning on architectural and behavior-risky changes.
-
-### T3 (Manual rare deep audit)
-
-- Name: `VeraQA-T3-Audit`
-- Team: `@BitPod-App/veraqa-tier-3-audit`
-- Trigger: manual rare deep audit only: explicit Taylor/CJ/Vera request, exceptional risk, or intentionally selected periodic audit sample.
-- Model: strongest available high-signal external/deep review path.
-- Goal: low-frequency assurance when risk justifies cost. T3 is never default merge gating.
+`@BitPod-App/veraqa-tier-1`, `@BitPod-App/veraqa-tier-2`, and `@BitPod-App/veraqa-tier-3-audit` are historical routing concepts only. Do not use them as active CODEOWNERS routes. Escalation depth remains valid as a Vera process decision, but it must not be represented by GitHub team name.
 
 ## Dynamic escalation policy
 
@@ -164,18 +152,18 @@ Use the same `R` score in team/ruleset docs:
 
 Decision:
 
-- `R >= 4`: move to **T2**
-- `R >= 7`: **T2 required; consider T3 only by explicit Taylor/CJ/Vera request or exceptional-risk judgment**
+- `R >= 4`: move to **escalated Vera review**
+- `R >= 7`: **escalated Vera review required; consider rare deep audit only by explicit Taylor/CJ/Vera request or exceptional-risk judgment**
 
-Team-scoped high-impact repos (`sector-feeds`, `bitregime-core`):
+High-impact repos (`sector-feeds`, `bitregime-core`):
 
-- default path is always T2.
-- do not downshift these repos to T1 solely because a PR is small.
-- use T3 only for exceptional risk, intentionally selected periodic deep audit, or explicit Taylor/CJ/Vera request.
+- default path is always escalated Vera review.
+- do not downshift these repos to baseline review solely because a PR is small.
+- use rare deep audit only for exceptional risk, intentionally selected periodic deep audit, or explicit Taylor/CJ/Vera request.
 
-T3 usage:
+Rare deep audit usage:
 
-- T3 is manual + rare deep audit, never default and not normal merge gating.
+- Rare deep audit is manual, never default, and not normal merge gating.
 - Use it for explicit Taylor/CJ/Vera request, exceptional risk, or intentionally selected assurance sampling.
 - There is no fixed daily quota in this guidance.
 

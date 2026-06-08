@@ -1,10 +1,10 @@
-# GitHub Team Purpose, Reviewer Routing, and Vera QA Tier Policy v2
+# GitHub Team Purpose, Reviewer Routing, and Vera QA Gate Policy v3
 
 ## Purpose
 
-Define the current BitPod review-routing model and the dynamic VeraQA tier policy that can be used by both team workflows and ruleset governance.
+Define the current BitPod review-routing model and the single VeraQA gate policy that can be used by both team workflows and ruleset governance.
 
-This v2 policy replaces the prior maintainer-gating model for review UX and required-reviewer routing.
+This v3 policy replaces the VeraQA tier-team routing model. Vera QA depth is decided by Vera/runtime/process, not by GitHub team names.
 
 ## Scope
 
@@ -18,41 +18,30 @@ Applies to active repos in org `BitPod-App` for PR review routing and merge-gove
 - **Routing role:** *not* used for default reviewer-gating.
 - **Constraint:** do not include in CODEOWNERS review-routing defaults, branch-reviewer-only gate targets, or rulesets as sole required review source.
 
-### Vera QA teams (review routing)
+### Vera QA gate team (review routing)
 
-#### `veraqa-tier-1` (aka `VeraQA-T1`)
-- Team membership policy: only `vera-qa` belongs in each VeraQA team unless CJ explicitly approves another reviewer. `taylor-01` must not be a VeraQA team member; Taylor01 PM acceptance is separate from code review.
-- Default reviewer lane for most repos.
-- Targets routine PR quality checks with a low-cost model.
+#### `veraqa`
+- Team membership policy: only verified Vera review identities belong in the VeraQA gate. The current fallback identity is `vera-qa`; BIT-595/BIT-596 decide whether a GitHub App/bot actor can replace or augment it. `taylor-01` and CJ/admin must not be VeraQA team members because Taylor01 PM acceptance and admin bypass are separate from code review.
+- Default reviewer gate for active repos.
+- Stable indirection layer for CODEOWNERS so the concrete Vera review actor can change without rewriting every repo.
+- Does not encode QA depth. Vera/runtime/process chooses baseline, escalated, or deep-audit review depth per PR risk.
 
-#### `veraqa-tier-2` (aka `VeraQA-T2`)
-- Team membership policy: only `vera-qa` belongs in each VeraQA team unless CJ explicitly approves another reviewer. `taylor-01` must not be a VeraQA team member; Taylor01 PM acceptance is separate from code review.
-- Elevated review lane for high-risk or large PRs.
-- Must use a stronger review setting than T1, such as a stronger OpenAI code-review model or a code-specific model with medium/high reasoning (for example, a verified Codex-3-style code model when available).
-
-#### `veraqa-tier-3-audit` (aka `VeraQA-T3`)
-- Team membership policy: only `vera-qa` belongs in each VeraQA team unless CJ explicitly approves another reviewer. `taylor-01` must not be a VeraQA team member; Taylor01 PM acceptance is separate from code review.
-- Manual + rare deep-review lane, never default merge gating.
-- Uses external/high-signal review only when Taylor/CJ/Vera explicitly request it, exceptional risk warrants it, or periodic audit sampling is intentionally selected.
-- Keeps occasional deep assurance without turning T3 into routine PR theater.
+#### Superseded tier teams
+- `veraqa-tier-1`, `veraqa-tier-2`, and `veraqa-tier-3-audit` are historical routing concepts only.
+- Do not use tier teams as active CODEOWNERS routes.
+- After all active repos/docs/open PR dependencies are migrated, remove or retire these teams from active org routing.
 
 ## Target reviewer-routing baseline
 
 ### Repo CODEOWNERS baseline
 
-CODEOWNERS should route by default to the appropriate Vera QA reviewer lane.
-
-Default/high-impact split:
+CODEOWNERS should route by default to the single VeraQA gate:
 
 ```text
-# Default active repos
-* @BitPod-App/veraqa-tier-1
-
-# High-impact repos: sector-feeds, bitregime-core
-* @BitPod-App/veraqa-tier-2
+* @BitPod-App/veraqa
 ```
 
-No maintainer team should be in default QA review routing.
+No maintainer team and no VeraQA tier team should be in default QA review routing.
 
 ## GitHub permission note
 
@@ -66,9 +55,9 @@ GitHub only treats a team as a valid CODEOWNERS owner when that team has write a
 - Keep admin enforcement enabled so admin status does not become the routine bypass path.
 - Do not encode maintainer teams as required reviewer gates in rulesets or branch protection.
 
-## Dynamic Vera QA tier policy (recommended)
+## Dynamic Vera QA depth policy (recommended)
 
-This allows us to keep high assurance without overusing T2/T3.
+This allows us to keep high assurance without encoding T2/T3 as GitHub teams.
 
 ### 1) PR risk score (R)
 
@@ -82,27 +71,26 @@ Compute a lightweight score per PR:
 - `+1` if PR is marked as `blocking` by PM queue discipline
 
 Interpretation:
-- `R >= 4` -> **T2 required**
-- `R >= 7` -> **T2 required; consider T3 only by explicit Taylor/CJ/Vera request or exceptional-risk judgment**
+- `R >= 4` -> **escalated Vera review required**
+- `R >= 7` -> **escalated Vera review required; consider rare deep audit only by explicit Taylor/CJ/Vera request or exceptional-risk judgment**
 
-### 2) Repo tier map
+### 2) Repo risk map
 
-#### Default repos (all active repos except listed below)
-- Start as **T1**.
-- Upgrade to **T2** if `R >= 4`.
+#### Default repos
+- Start with baseline Vera review.
+- Upgrade to escalated Vera review if `R >= 4`.
 
-#### Team-scoped high-impact repos
+#### High-impact repos
 `sector-feeds`, `bitregime-core`
 
-- Default to **T2**.
-- Keep these repos on T2 even for small follow-up PRs because their blast radius and operating importance are higher.
-- Escalate to **T3** only by explicit Taylor/CJ/Vera request, exceptional-risk judgment, or intentionally selected periodic deep audit.
+- Default to escalated Vera review because their blast radius and operating importance are higher.
+- Escalate to rare deep audit only by explicit Taylor/CJ/Vera request, exceptional-risk judgment, or intentionally selected periodic deep audit.
 
-### 3) T3 usage
+### 3) Rare deep audit usage
 
-T3 is a rare manual deep-audit lane, never default and not normal merge gating.
+Rare deep audit is manual, never default, and not normal merge gating.
 
-Use T3 only when one of these is true:
+Use rare deep audit only when one of these is true:
 
 - explicit Taylor/CJ/Vera request,
 - exceptional risk or high blast radius,
@@ -112,8 +100,8 @@ There is no fixed daily quota in this guidance. Add automation later only if rev
 
 ### 4) Cost discipline and overuse controls
 
-- T2 is the default for `sector-feeds` and `bitregime-core`; in other repos it is an escalation.
-- T3 is manual + rare and must never be used as routine/default merge gating.
+- Escalated review is the default for `sector-feeds` and `bitregime-core`; in other repos it is an escalation.
+- Deep audit is manual + rare and must never be used as routine/default merge gating.
 - Keep the model understandable before adding automation or stricter rules.
 
 ## Team/ruleset implementation notes
@@ -121,11 +109,10 @@ There is no fixed daily quota in this guidance. Add automation later only if rev
 When implementing in GitHub:
 
 1. keep maintainer teams out of the reviewer-routing default path;
-2. use `veraqa-tier-1` as the default CODEOWNERS route for ordinary repos;
-3. use `veraqa-tier-2` as the default CODEOWNERS route for `sector-feeds` and `bitregime-core`;
-4. keep required review count lightweight at one approval, but use CODEOWNERS as a real VeraQA gate with stale-review dismissal, last-push approval, and admin enforcement enabled;
-5. use T3 only for exceptional risk, intentionally selected periodic deep audit, or explicit Taylor/CJ/Vera request; never as default.
-
+2. use `@BitPod-App/veraqa` as the single CODEOWNERS route for active repos;
+3. keep required review count lightweight at one approval, but use CODEOWNERS as a real VeraQA gate with stale-review dismissal, last-push approval, and admin enforcement enabled;
+4. decide review depth in Vera/runtime/process, not by GitHub team name;
+5. use rare deep audit only for exceptional risk, intentionally selected periodic assurance, or explicit Taylor/CJ/Vera request; never as default.
 
 ## PR readiness and draft policy
 
@@ -139,7 +126,7 @@ Do not use draft status as a default safety habit for finished work. If validati
 
 1. Move maintainer gating references (`core-maintainers` / `code-maintainers`) out of reviewer-routing defaults.
 2. Keep maintainer teams as write-only maintainers.
-3. Set/keep VeraQA tier teams as the reviewer routing source.
+3. Set/keep `@BitPod-App/veraqa` as the reviewer routing source.
 4. Keep bypass guidance lightweight: admins may bypass when needed and should leave a short visible reason when QA is skipped.
 5. Revisit stricter automation only if bypasses or routing misses become frequent.
 

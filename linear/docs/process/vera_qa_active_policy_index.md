@@ -4,7 +4,7 @@
 **Owner:** Taylor01  
 **Linked issue:** [BIT-497 — Vera QA policy index — consolidate active vs. legacy docs](https://linear.app/bitpod-app/issue/BIT-497/vera-qa-policy-index-consolidate-active-vs-legacy-docs)
 
-> **Quick answer:** The current Vera QA policy is `vera_qa_lane_contract_v1.md`. Routing is via CODEOWNERS → `@BitPod-App/veraqa-tier-1` (or tier-2 for sector-feeds / bitregime-core). Vera runs as a Hermes agent. Start there.
+> **Quick answer:** The current Vera QA policy is `vera_qa_lane_contract_v1.md`. Routing is via CODEOWNERS → `@BitPod-App/veraqa` as the single GitHub-native VeraQA gate. Vera decides QA depth at runtime/process level; GitHub team names must not encode tiers. Vera runs as a Hermes agent. Start there.
 
 ---
 
@@ -12,20 +12,20 @@
 
 | File | Status | What it governs |
 |---|---|---|
-| [`vera_qa_lane_contract_v1.md`](./vera_qa_lane_contract_v1.md) | ✅ Working baseline (PRIMARY) | Full QA lane contract: role boundaries, verdict authority, required artifacts, flow, tiered routing model, independence rules |
-| [`veraqa_review_routing_guide_v1.md`](./veraqa_review_routing_guide_v1.md) | ✅ Active guidance | CODEOWNERS routing defaults, tier selection rules, bypass guidance |
-| [`github_team_purpose_reviewer_routing_v1.md`](./github_team_purpose_reviewer_routing_v1.md) | ✅ Active | GitHub team purpose, dynamic tier policy (v2), escalation scoring |
+| [`vera_qa_lane_contract_v1.md`](./vera_qa_lane_contract_v1.md) | ✅ Working baseline (PRIMARY) | Full QA lane contract: role boundaries, verdict authority, required artifacts, flow, single-gate routing model, independence rules |
+| [`veraqa_review_routing_guide_v1.md`](./veraqa_review_routing_guide_v1.md) | ✅ Active guidance | CODEOWNERS single-gate routing defaults, escalation rules, bypass guidance |
+| [`github_team_purpose_reviewer_routing_v1.md`](./github_team_purpose_reviewer_routing_v1.md) | ✅ Active | GitHub team purpose, single VeraQA gate policy, escalation scoring |
 | [`qa_authority_model_v1.md`](./qa_authority_model_v1.md) | ✅ Working baseline | QA independence rules, verdict authority, gate policy |
 
-### Active GitHub teams
+### Active GitHub team
 
 | Team | Members | Default use |
 |---|---|---|
-| `@BitPod-App/veraqa-tier-1` | `vera-qa` only | Baseline QA for most repos |
-| `@BitPod-App/veraqa-tier-2` | `vera-qa` only | High-impact: sector-feeds, bitregime-core (always); other repos when R ≥ 4 |
-| `@BitPod-App/veraqa-tier-3-audit` | `vera-qa` only | Manual + rare deep audit only — never default |
+| `@BitPod-App/veraqa` | verified Vera review identities only; currently `vera-qa` unless/until BIT-595/BIT-596 prove a safer GitHub App/bot replacement | Single GitHub-native CODEOWNERS approval gate for active repos |
 
-**Membership rule:** Only `vera-qa` belongs in VeraQA teams. `taylor-01` must not be a member — PM acceptance is separate from code review.
+**Membership rule:** Only verified Vera review identities belong in the VeraQA gate team. `taylor-01` and CJ/admin must not be default VeraQA team members — PM acceptance and admin bypass are separate from code review.
+
+**Superseded routing:** `@BitPod-App/veraqa-tier-1`, `@BitPod-App/veraqa-tier-2`, and `@BitPod-App/veraqa-tier-3-audit` are historical routing concepts only. Vera QA depth is decided by Vera/runtime/process, not by GitHub team name.
 
 ### Active Linear bot
 
@@ -70,7 +70,7 @@
 |---|---|
 | Vera as Hermes agent | ✅ Running — 63+ sessions logged under `~/.hermes/profiles/vera/` |
 | `qa-specialist` skill (transitional scaffold) | `bitpod-tools/tools/taylor01/core/agents/vera/skills/qa-specialist/` — installed artifact; repo is the source of truth |
-| `vera-qa` GitHub identity | Active — member of all VeraQA tier teams |
+| `vera-qa` GitHub identity | Active fallback review identity — member of `@BitPod-App/veraqa` unless/until BIT-595/BIT-596 prove a safer app/bot replacement |
 | Honcho memory | ✅ Restored (Option A broker) — Vera broker at `127.0.0.1:8787` |
 
 **What Vera does NOT own:** product priority, scope reshaping, implementation, merge approval authority, rewriting acceptance criteria after work is complete.
@@ -85,11 +85,11 @@
 
 Use this checklist to confirm that CODEOWNERS-based VeraQA routing is active and healthy in any repo:
 
-- [ ] **Check CODEOWNERS file** in the target repo — routing line is present and not commented out (e.g., `* @BitPod-App/veraqa-tier-1`)
-- [ ] **Verify team write access** — `@BitPod-App/veraqa-tier-1` (and tier-2 for sector-feeds / bitregime-core) have write access to the repo (GitHub requires this for CODEOWNERS to take effect)
+- [ ] **Check CODEOWNERS file** in the target repo — routing line is present and not commented out (`* @BitPod-App/veraqa`)
+- [ ] **Verify team write access** — `@BitPod-App/veraqa` has write access to the repo (GitHub requires this for CODEOWNERS to take effect)
 - [ ] **Verify `vera-qa` is active** — confirm `vera-qa` GH account can post reviews and is a member of the VeraQA team on that repo
 - [ ] **Confirm branch protection** — `require_code_owner_reviews: true` is set in branch protection for main; `required_approving_review_count: 1`; `dismiss_stale_reviews: true`; `require_last_push_approval: true`
-- [ ] **Test with a draft PR** — open a draft PR and confirm VeraQA review is requested automatically from the correct tier team
+- [ ] **Test with a PR** — open or update a PR and confirm VeraQA review is requested automatically from `@BitPod-App/veraqa`
 
 ---
 
