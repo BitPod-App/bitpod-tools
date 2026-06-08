@@ -20,58 +20,40 @@ Companion context:
 
 Status: **Active**.
 
-Live-state note — 2026-05-21:
+Live-state note — 2026-06-08:
 
-- Active repo CODEOWNERS files route PR review to VeraQA teams.
-- `sector-feeds` and `bitregime-core` route to `@BitPod-App/veraqa-tier-2`.
-- Other active repos route to `@BitPod-App/veraqa-tier-1`.
-- VeraQA tier teams should contain `vera-qa` only unless CJ explicitly approves adding another reviewer.
-- `taylor-01` must not be a VeraQA team member because Taylor01 PM acceptance is separate from code review.
+- Active repo CODEOWNERS files should route PR review to one VeraQA gate team: `@BitPod-App/veraqa`.
+- Tier-based teams (`veraqa-tier-1`, `veraqa-tier-2`, `veraqa-tier-3-audit`) are superseded as active routing concepts.
+- Vera QA depth is a Vera/runtime/process decision, not a GitHub team-name decision.
+- `@BitPod-App/veraqa` exists as a stable indirection layer so the concrete review identity can change later, for example from the `vera-qa` user to a verified GitHub App/bot actor, without rewriting every repo CODEOWNERS file.
+- `taylor-01` and CJ/admin must not be VeraQA team members by default because PM acceptance and admin bypass are separate from code review.
 
-If routing is found paused or commented out again, re-enable by restoring the active CODEOWNERS line for the correct tier and verifying that the owning VeraQA team has write access on that repo.
+If routing is found paused, commented out, or still pointing at a tier team, re-enable by restoring the active CODEOWNERS line and verifying that `@BitPod-App/veraqa` has write access on that repo.
 
 ## Default routing
 
-Use CODEOWNERS to point PR review toward the right VeraQA lane:
+Use CODEOWNERS to point PR review toward the single VeraQA gate:
 
-- `sector-feeds` -> `@BitPod-App/veraqa-tier-2`
-- `bitregime-core` -> `@BitPod-App/veraqa-tier-2`
-- all other active repos -> `@BitPod-App/veraqa-tier-1`
+```text
+* @BitPod-App/veraqa
+```
 
 Maintainer teams such as `@BitPod-App/core-maintainers` or `@BitPod-App/code-maintainers` should not be the default QA review route.
 
 `@BitPod-App/qa-reviewers` may exist as an older/general QA team, but it is not the default VeraQA CODEOWNERS route.
 
-## Tier meaning
+## QA depth
 
-### T1: normal QA
+Vera decides QA depth at runtime/process level. The old T1/T2/T3 naming can remain as historical shorthand for review depth, but it must not be encoded as separate GitHub CODEOWNERS teams.
 
-Use T1 for ordinary PRs in most repos.
-
-T1 should check the practical quality bar: does the change match the request, are tests/checks credible, and are obvious risks called out.
-
-### T2: high-impact or complex QA
-
-T2 must use a stronger review setting than baseline T1, such as a stronger OpenAI code-review model or a code-specific model with medium/high reasoning (for example, a verified Codex-3-style code model when available). Do not downshift T2 into the same baseline model/settings as T1.
-
-Use T2 by default for:
-
-- `sector-feeds`
-- `bitregime-core`
-
-Use T2 in other repos when a PR is large, complex, risky, or touches sensitive areas such as:
+Use stronger/deeper Vera review when a PR is large, complex, risky, or touches sensitive areas such as:
 
 - `.github/` or workflows
 - deploy, infra, runtime, Cloudflare, or Terraform paths
 - data, migration, security, secret, or production behavior
 - broad refactors or behavior changes with high blast radius
 
-### T3: rare manual deep audit
-
-Use T3 only for exceptional risk, periodic deep audit, or explicit Taylor/CJ/Vera request.
-
-T3 is manual + rare, never default, and not normal merge gating.
-
+Rare deep audits remain explicit Taylor/CJ/Vera requests or intentionally selected assurance samples, never default merge gating.
 
 ## GitHub permission note
 
@@ -108,4 +90,4 @@ Do not build a large bypass registry unless bypasses become frequent enough to n
 
 The durable rule is simple:
 
-> VeraQA owns technical QA review routing. `sector-feeds` and `bitregime-core` default to T2. Other repos default to T1 unless PR size, complexity, or risk justifies T2. T3 is manual + rare, never default.
+> VeraQA owns technical QA review routing through the single `@BitPod-App/veraqa` gate. `sector-feeds` and `bitregime-core` default to escalated Vera review. Other repos default to baseline Vera review unless PR size, complexity, or risk justifies escalation. Rare deep audit is manual, never default.
