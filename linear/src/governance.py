@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional
@@ -52,6 +53,8 @@ class GovernancePolicy:
             return GovernanceDecision(True, policy_class, "dry-run")
         if approver == "none":
             return GovernanceDecision(True, policy_class, "policy allows live execution")
+        if policy_class == "B" and self._guarded_action_is_allowlisted(action):
+            return GovernanceDecision(True, policy_class, "guarded action allowlist approved live execution")
         return GovernanceDecision(False, policy_class, f"requires {approver} approval in live mode")
 
     def allowed_examples(self, policy_class: str) -> List[str]:
@@ -60,3 +63,16 @@ class GovernancePolicy:
         if isinstance(values, Iterable):
             return [str(v) for v in values]
         return []
+
+    def _guarded_action_is_allowlisted(self, action: Action) -> bool:
+        """Return True only for an exact Class-B live rollout action.
+
+        LINEAR_GUARDED_ACTION_ALLOWLIST is intentionally exact-match and narrow:
+        comma-separated `system:kind:target` entries such as
+        `linear:set_status:BIT-505`. It does not support wildcards.
+        """
+
+        key = f"{action.system}:{action.kind}:{action.target}"
+        raw = os.getenv("LINEAR_GUARDED_ACTION_ALLOWLIST", "")
+        entries = {entry.strip() for entry in raw.split(",") if entry.strip()}
+        return key in entries

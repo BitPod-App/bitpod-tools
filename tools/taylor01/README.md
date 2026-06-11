@@ -7,6 +7,8 @@ Current decision:
 - keep Taylor01 in-repo for now
 - avoid a separate repo until the boundary is more stable
 - use this subtree to make future extraction cheaper
+- use Hermes-first runtime coordination for active Taylor01/Vera agent workflow
+- treat OpenClaw as closure/cleanup history only, not a fallback runtime
 
 Subdirectories:
 
@@ -17,8 +19,10 @@ Subdirectories:
 Active example:
 
 - `core/agents/vera/` is the canonical portable home for Vera's first-class QA agent definition
-- `adapters/openai/vera/` contains OpenAI-native execution adapters
-- `adapters/openclaw/vera/` contains the secondary OpenClaw mapping layer
+- `adapters/hermes/` contains the Hermes-first runtime coordination contract
+- `adapters/hermes/vera/` contains the Hermes-first Vera execution-path contract
+- `adapters/openai/vera/` contains current bridge execution adapters
+- `adapters/openclaw/vera/` contains historical OpenClaw closure/mapping residue only
 
 Do not migrate content here casually.
 

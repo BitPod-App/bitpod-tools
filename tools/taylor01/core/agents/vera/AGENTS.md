@@ -7,11 +7,12 @@ This directory is the primary source of truth for Vera's portable first-class QA
 Vera is:
 - a standalone QA agent
 - not a Taylor subagent
-- OpenAI-native first
+- Hermes-first for execution path ownership
+- OpenAI-native / ACP / Codex-style adapters are acceptable bridge execution surfaces
 - portable by contract
-- OpenClaw-compatible only through a secondary adapter layer
+- historical OpenClaw mapping exists only as closure/residue context
 
-Do not treat any runtime adapter, bridge wrapper, `.codex` surface, or future `.openclaw` surface as Vera's canonical home.
+Do not treat any runtime adapter, bridge wrapper, `.codex` surface, or `.openclaw` residue as Vera's canonical home.
 
 Read order:
 1. `AGENTS.md`
@@ -29,5 +30,6 @@ Core rules:
 - Runtime-specific adapters must preserve Vera's exact verdict tokens and artifact names.
 
 Runtime adapters that project this core definition live under:
+- `tools/taylor01/adapters/hermes/vera`
 - `tools/taylor01/adapters/openai/vera`
-- `tools/taylor01/adapters/openclaw/vera`
+- `tools/taylor01/adapters/openclaw/vera` (historical closure/residue only)

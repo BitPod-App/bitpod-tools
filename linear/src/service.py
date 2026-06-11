@@ -12,11 +12,13 @@ from typing import Dict, List, Optional, Tuple
 try:
     from linear.src.engine import Action, format_actions
     from linear.src.governance import GovernancePolicy
+    from linear.src.linear_executor import LinearExecutionError, LinearExecutor
     from linear.src.memory import JsonlFileStore, MemoryEvent, now_iso
     from linear.src.runtime import BotRuntime
 except ModuleNotFoundError:
     from engine import Action, format_actions
     from governance import GovernancePolicy
+    from linear_executor import LinearExecutionError, LinearExecutor
     from memory import JsonlFileStore, MemoryEvent, now_iso
     from runtime import BotRuntime
 
@@ -32,22 +34,37 @@ def get_trace_store() -> JsonlFileStore:
     return JsonlFileStore(os.getenv("TRACE_STORE_PATH", "/tmp/bitpod_linear_runtime_trace.jsonl"))
 
 
-def trace_action(action: Action, outcome: str, detail: str, policy_class: str) -> None:
+def trace_action(
+    action: Action,
+    outcome: str,
+    detail: str,
+    policy_class: str,
+    actor: Optional[Dict[str, str]] = None,
+) -> None:
+    payload = {
+        "outcome": outcome,
+        "detail": detail,
+        "policy_class": policy_class,
+    }
+    if actor:
+        payload["actor_id"] = actor.get("id", "")
+        payload["actor_name"] = actor.get("name", "")
     get_trace_store().append(
         MemoryEvent(
             key=action.target,
             kind=f"action:{action.system}:{action.kind}",
-            payload={
-                "outcome": outcome,
-                "detail": detail,
-                "policy_class": policy_class,
-            },
+            payload=payload,
             at=now_iso(),
         )
     )
 
 
-def apply_actions(actions: List[Action], dry_run: bool = True, policy: Optional[GovernancePolicy] = None) -> None:
+def apply_actions(
+    actions: List[Action],
+    dry_run: bool = True,
+    policy: Optional[GovernancePolicy] = None,
+    linear_executor: Optional[LinearExecutor] = None,
+) -> None:
     policy = policy or GovernancePolicy.default()
     if dry_run:
         print("[DRY_RUN] would apply actions:")
@@ -57,8 +74,8 @@ def apply_actions(actions: List[Action], dry_run: bool = True, policy: Optional[
             trace_action(a, "dry-run", decision.reason, decision.policy_class)
         return
 
-    # Live mode (minimal): GitHub PR comments via gh CLI.
-    # Linear mutations intentionally fail-closed until API executor is configured.
+    # Live mode is still fail-closed: governance must allow the action first,
+    # then Linear live execution must pass its own kill switch + actor checks.
     for a in actions:
         decision = policy.decide(a, dry_run=False)
         if not decision.allowed:
@@ -88,8 +105,16 @@ def apply_actions(actions: List[Action], dry_run: bool = True, policy: Optional[
             continue
 
         if a.system == "linear":
-            print(f"[LIVE][FAIL-CLOSED] linear executor not configured yet; skipped: {a.kind} {a.target}")
-            trace_action(a, "blocked", "linear executor not configured", decision.policy_class)
+            executor = linear_executor or LinearExecutor.from_env()
+            try:
+                result = executor.execute(a)
+            except LinearExecutionError as exc:
+                detail = str(exc)
+                print(f"[LIVE][FAIL-CLOSED] linear {a.kind} {a.target}: {detail}")
+                trace_action(a, "blocked", detail, decision.policy_class)
+                continue
+            print(f"[LIVE] linear {a.kind} {a.target}: {result.detail}")
+            trace_action(a, result.outcome, result.detail, decision.policy_class, actor=result.actor)
             continue
 
         print(f"[LIVE][SKIP] unknown action: {a}")

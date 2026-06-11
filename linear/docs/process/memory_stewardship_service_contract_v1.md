@@ -109,6 +109,8 @@ If contradiction status is `conflict` or approval is missing:
 - do not claim memory was updated
 - emit a review-needed result only
 
+Honcho recovery-specific memory writes and process-doc hydration decisions must also reference `honcho_recovery_packet_2026-06-02.md`: migrate only durable rules/preferences, never bulk-import `linear/docs/process/`, and verify live peer/session truth before claiming recovery is complete.
+
 ## Initial implementation artifacts
 
 - schema: `linear/contracts/memory_write_proposal_schema_v1.json`

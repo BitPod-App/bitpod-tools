@@ -64,6 +64,36 @@ class RuntimeTests(unittest.TestCase):
                 else:
                     os.environ["TRACE_STORE_PATH"] = old
 
+    def test_governance_allows_exact_guarded_linear_action_allowlist(self):
+        old = os.environ.get("LINEAR_GUARDED_ACTION_ALLOWLIST")
+        os.environ["LINEAR_GUARDED_ACTION_ALLOWLIST"] = "linear:set_status:BIT-505"
+        try:
+            action = Action("linear", "set_status", "BIT-505", {"status": "In Review"})
+            decision = GovernancePolicy.default().decide(action, dry_run=False)
+            self.assertTrue(decision.allowed)
+            self.assertEqual(decision.policy_class, "B")
+            self.assertIn("guarded action allowlist", decision.reason)
+        finally:
+            if old is None:
+                os.environ.pop("LINEAR_GUARDED_ACTION_ALLOWLIST", None)
+            else:
+                os.environ["LINEAR_GUARDED_ACTION_ALLOWLIST"] = old
+
+    def test_governance_guarded_allowlist_does_not_expand_to_other_targets(self):
+        old = os.environ.get("LINEAR_GUARDED_ACTION_ALLOWLIST")
+        os.environ["LINEAR_GUARDED_ACTION_ALLOWLIST"] = "linear:set_status:BIT-505"
+        try:
+            action = Action("linear", "set_status", "BIT-559", {"status": "In Progress"})
+            decision = GovernancePolicy.default().decide(action, dry_run=False)
+            self.assertFalse(decision.allowed)
+            self.assertEqual(decision.policy_class, "B")
+            self.assertIn("requires Taylor approval", decision.reason)
+        finally:
+            if old is None:
+                os.environ.pop("LINEAR_GUARDED_ACTION_ALLOWLIST", None)
+            else:
+                os.environ["LINEAR_GUARDED_ACTION_ALLOWLIST"] = old
+
 
 if __name__ == "__main__":
     unittest.main()

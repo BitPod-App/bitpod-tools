@@ -5,7 +5,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$ROOT"
 
 echo "[1/4] unit tests"
-python3 -m unittest linear/tests/test_engine.py linear/tests/test_runtime.py linear/tests/test_e2e_flow.py
+python3 -m unittest linear/tests/test_engine.py linear/tests/test_runtime.py linear/tests/test_linear_executor.py linear/tests/test_e2e_flow.py
 
 echo "[2/4] sample event simulations"
 cd linear/src
