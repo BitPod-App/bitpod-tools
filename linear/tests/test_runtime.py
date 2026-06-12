@@ -7,7 +7,7 @@ from linear.src.engine import Action
 from linear.src.governance import GovernancePolicy
 from linear.src.runtime import BotRuntime
 from linear.src.memory import InMemoryStore, JsonlFileStore
-from linear.src.service import apply_actions, execute_github_check_run
+from linear.src.service import apply_actions, execute_github_check_run, _normalize_private_key
 
 
 class RuntimeTests(unittest.TestCase):
@@ -128,6 +128,19 @@ class RuntimeTests(unittest.TestCase):
                 os.environ.pop("VERA_QA_GATE_LIVE_ENABLED", None)
             else:
                 os.environ["VERA_QA_GATE_LIVE_ENABLED"] = old_enabled
+
+    def test_private_key_normalization_repairs_one_line_pem(self):
+        raw = (
+            "-----BEGIN PRIVATE KEY----- "
+            "YWJj ZGVm"
+            " -----END PRIVATE KEY-----"
+        )
+
+        normalized = _normalize_private_key(raw)
+
+        self.assertIn("-----BEGIN PRIVATE KEY-----\n", normalized)
+        self.assertIn("\n-----END PRIVATE KEY-----", normalized)
+        self.assertIn("YWJjZGVm", normalized)
 
     def test_service_blocks_vera_dispatch_without_kill_switch(self):
         with tempfile.TemporaryDirectory() as tmp:

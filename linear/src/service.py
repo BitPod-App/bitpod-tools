@@ -8,6 +8,7 @@ import os
 import re
 import subprocess
 import tempfile
+import textwrap
 import time
 import urllib.error
 import urllib.request
@@ -42,6 +43,19 @@ def _normalize_private_key(raw: str) -> str:
     value = raw.strip()
     if "\\n" in value and "\n" not in value:
         value = value.replace("\\n", "\n")
+    match = re.search(
+        r"-----BEGIN ([A-Z ]*PRIVATE KEY)-----\s*(.*?)\s*-----END \1-----",
+        value,
+        flags=re.S,
+    )
+    if match:
+        key_type = match.group(1)
+        body = "".join(match.group(2).split())
+        value = (
+            f"-----BEGIN {key_type}-----\n"
+            + "\n".join(textwrap.wrap(body, 64))
+            + f"\n-----END {key_type}-----\n"
+        )
     return value
 
 
