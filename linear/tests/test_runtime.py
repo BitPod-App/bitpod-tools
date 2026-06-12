@@ -7,7 +7,13 @@ from linear.src.engine import Action
 from linear.src.governance import GovernancePolicy
 from linear.src.runtime import BotRuntime
 from linear.src.memory import InMemoryStore, JsonlFileStore
-from linear.src.service import apply_actions, execute_github_check_run, _normalize_private_key
+from linear.src.service import (
+    apply_actions,
+    execute_github_check_run,
+    _github_webhook_secret_from_env,
+    _normalize_private_key,
+    _verify_github_webhook_signature,
+)
 
 
 class RuntimeTests(unittest.TestCase):
@@ -141,6 +147,34 @@ class RuntimeTests(unittest.TestCase):
         self.assertIn("-----BEGIN PRIVATE KEY-----\n", normalized)
         self.assertIn("\n-----END PRIVATE KEY-----", normalized)
         self.assertIn("YWJjZGVm", normalized)
+
+    def test_github_webhook_signature_requires_matching_hmac_when_secret_is_set(self):
+        import hashlib
+        import hmac
+
+        body = b'{"action":"ready_for_review"}'
+        secret = "shared webhook secret"
+        digest = hmac.new(secret.encode("utf-8"), body, hashlib.sha256).hexdigest()
+
+        self.assertTrue(_verify_github_webhook_signature(body, f"sha256={digest}", secret))
+        self.assertFalse(_verify_github_webhook_signature(body, "sha256=bad", secret))
+
+    def test_github_webhook_secret_accepts_vera_gate_field_name(self):
+        old_github = os.environ.get("GITHUB_WEBHOOK_SECRET")
+        old_vera = os.environ.get("VERA_QA_GATE_WEBHOOK_SIGNING_SECRET")
+        os.environ.pop("GITHUB_WEBHOOK_SECRET", None)
+        os.environ["VERA_QA_GATE_WEBHOOK_SIGNING_SECRET"] = "vera-gate-secret"
+        try:
+            self.assertEqual(_github_webhook_secret_from_env(), "vera-gate-secret")
+        finally:
+            if old_github is None:
+                os.environ.pop("GITHUB_WEBHOOK_SECRET", None)
+            else:
+                os.environ["GITHUB_WEBHOOK_SECRET"] = old_github
+            if old_vera is None:
+                os.environ.pop("VERA_QA_GATE_WEBHOOK_SIGNING_SECRET", None)
+            else:
+                os.environ["VERA_QA_GATE_WEBHOOK_SIGNING_SECRET"] = old_vera
 
     def test_service_blocks_vera_dispatch_without_kill_switch(self):
         with tempfile.TemporaryDirectory() as tmp:

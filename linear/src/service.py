@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import argparse
 import base64
+import hashlib
+import hmac
 import json
 import os
 import re
@@ -33,6 +35,23 @@ except ModuleNotFoundError:
 
 def env_truthy(name: str) -> bool:
     return os.getenv(name, "").strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _github_webhook_secret_from_env() -> str:
+    return (
+        os.getenv("GITHUB_WEBHOOK_SECRET", "").strip()
+        or os.getenv("VERA_QA_GATE_WEBHOOK_SIGNING_SECRET", "").strip()
+    )
+
+
+def _verify_github_webhook_signature(body: bytes, signature_header: str, secret: str) -> bool:
+    if not secret:
+        return True
+    prefix = "sha256="
+    if not signature_header.startswith(prefix):
+        return False
+    expected = prefix + hmac.new(secret.encode("utf-8"), body, hashlib.sha256).hexdigest()
+    return hmac.compare_digest(expected, signature_header)
 
 
 def _b64url(data: bytes) -> str:
@@ -351,9 +370,17 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(b)
 
     def do_POST(self):
+        raw_body = b"{}"
         try:
             n = int(self.headers.get("Content-Length", "0"))
-            data = json.loads(self.rfile.read(n) or b"{}")
+            raw_body = self.rfile.read(n) or b"{}"
+            if self.path == "/github":
+                secret = _github_webhook_secret_from_env()
+                signature = self.headers.get("X-Hub-Signature-256", "")
+                if not _verify_github_webhook_signature(raw_body, signature, secret):
+                    self._json(401, {"ok": False, "error": "invalid-github-signature"})
+                    return
+            data = json.loads(raw_body)
         except Exception as e:
             self._json(400, {"ok": False, "error": f"bad-json: {e}"})
             return
