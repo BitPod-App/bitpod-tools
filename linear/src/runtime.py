@@ -35,6 +35,8 @@ class BotRuntime:
             out = self.engine.on_github_pr_opened(event)
         elif action == "ready_for_review":
             out = self.engine.on_github_pr_ready_for_review(event)
+        elif action == "review_requested":
+            out = self.engine.on_github_pr_review_requested(event)
         elif action == "closed" and pr.get("merged") is True:
             out = self.engine.on_github_pr_merged(
                 issue=event.get("linear_issue", {}),
@@ -68,6 +70,12 @@ class BotRuntime:
             )
         elif kind == "issue_ready_gate":
             out = self.engine.on_linear_ready_gate(event.get("issue", {}))
+        elif kind in ("issue_in_review", "issue_status_changed"):
+            issue = event.get("issue", {})
+            if issue.get("status") == self.engine.cfg.in_review_status:
+                out = self.engine.on_linear_issue_in_review(issue)
+            else:
+                out = []
         elif kind in ("pm_label_changed", "acceptance_gate_changed", "pm_review_changed"):
             out = self.engine.on_linear_acceptance_gate_change(
                 issue_key=event.get("issue_key", ""),

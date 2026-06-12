@@ -109,6 +109,7 @@ Implemented in engine/service:
 - GitHub events:
   - `pull_request.opened`
   - `pull_request.ready_for_review`
+  - `pull_request.review_requested` for the `@BitPod-App/veraqa` team or `vera-qa` reviewer
   - `pull_request.closed` with merged=true (gate-completeness check + merge record)
 - Linear events:
   - `Ready` / `In Progress` readiness enforcement trigger
@@ -156,11 +157,12 @@ Recommended env vars:
 - `DRY_RUN=true` (default)
 - `BOT_HOST=127.0.0.1`
 - `BOT_PORT=8787`
-- `GITHUB_APP_ID` (future live mode)
-- `GITHUB_APP_PRIVATE_KEY` (future live mode)
+- `VERA_QA_GATE_GITHUB_TOKEN` short-lived installation token, or `VERA_QA_GATE_GITHUB_APP_ID` / `VERA_QA_GATE_GITHUB_APP_INSTALLATION_ID` / `VERA_QA_GATE_GITHUB_APP_PRIVATE_KEY` for live `vera-qa-gate` check runs
 - `GITHUB_WEBHOOK_SECRET` (future live mode)
 - `LINEAR_API_KEY` or OAuth app creds (guarded live mode)
 - `LINEAR_WEBHOOK_SECRET` (future/live webhook mode)
+- `VERA_QA_DISPATCH_ENABLED=false` (hard kill switch for Hermes Vera Kanban enqueue; default off)
+- `VERA_QA_GATE_LIVE_ENABLED=false` (hard kill switch for GitHub `vera-qa-gate` check runs; default off)
 - `LINEAR_LIVE_EXECUTOR_ENABLED=false` (hard kill switch; default off)
 - `LINEAR_EXPECTED_ACTOR_ID` / `LINEAR_EXPECTED_ACTOR_NAME` / `LINEAR_EXPECTED_ACTOR_EMAIL` (at least one required before live Linear mutations)
 
@@ -170,11 +172,12 @@ Reference template:
 ## Configure webhooks
 
 GitHub webhook events:
-- `pull_request` (opened, ready_for_review, closed)
+- `pull_request` (opened, ready_for_review, review_requested, closed)
+  - `ready_for_review` and VeraQA `review_requested` now plan Vera QA dispatch and a queued `vera-qa-gate` check when the event includes a head SHA.
 
 Linear webhook events:
-- issue updated (state and labels)
-- comment created
+- issue updated (state and labels), including `In Review` transitions for Vera QA dispatch
+- comment created (`QA_RESULT=PASSED|FAILED` can complete/fail `vera-qa-gate` when the payload/comment carries `PR_URL=` and `HEAD_SHA=`)
 
 Schedule:
 - daily aging scan for backlog/icebox transitions.
@@ -216,8 +219,8 @@ Issue creation note (status/state):
 
 `simulate_e2e.py` runs the feature happy-path sequence:
 - PR opened -> In Progress
-- PR ready for review -> `In Review`
-- QA comment token parse (`QA_RESULT=PASSED`) -> `Delivered`
+- PR ready for review -> `In Review`, Hermes `vera` QA enqueue, and queued `vera-qa-gate` when head SHA is available
+- QA comment token parse (`QA_RESULT=PASSED`) -> `Delivered` and completed successful `vera-qa-gate` when `PR_URL=` and `HEAD_SHA=` are available
 - PM review signal (`pm-accepted`) -> `Accepted`
 - PR merged -> final closure to `Done` plus merge record comment when merge-readiness truth is satisfied
 

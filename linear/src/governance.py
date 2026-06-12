@@ -35,7 +35,9 @@ class GovernancePolicy:
         return cls(str(policy_path))
 
     def classify(self, action: Action) -> str:
-        if action.system == "github" and action.kind == "comment":
+        if action.system == "github" and action.kind in {"comment", "check_run"}:
+            return "A"
+        if action.system == "hermes" and action.kind == "enqueue_vera_qa":
             return "A"
         if action.system == "linear" and action.kind == "comment":
             return "A"

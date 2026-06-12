@@ -27,23 +27,26 @@ class E2EFlowTests(unittest.TestCase):
                 "title": "BIT-45 bot happy path",
                 "body": "",
                 "html_url": "https://github.com/BitPod-App/bitpod-tools/pull/7",
-                "head": {"ref": "codex/bit-45-happy"},
+                "head": {"ref": "codex/bit-45-happy", "sha": "abc1234"},
             },
         }
         actions_review = rt.run_github_event(review)
         self.assertTrue(any(a.kind == "set_status" and a.payload.get("status") == "In Review" for a in actions_review))
         self.assertFalse(any(a.kind == "set_label" for a in actions_review))
+        self.assertTrue(any(a.system == "hermes" and a.kind == "enqueue_vera_qa" for a in actions_review))
+        self.assertTrue(any(a.system == "github" and a.kind == "check_run" and a.payload.get("status") == "queued" for a in actions_review))
 
         qa_passed = {
             "type": "comment_created",
             "issue_key": "BIT-45",
-            "comment_body": "QA_RESULT=PASSED\nall checks pass",
+            "comment_body": "QA_RESULT=PASSED\nall checks pass\nPR_URL=https://github.com/BitPod-App/bitpod-tools/pull/7\nHEAD_SHA=abc1234",
             "pr_url": "https://github.com/BitPod-App/bitpod-tools/pull/7",
             "issue_labels": ["Feature"],
         }
         actions_qa = rt.run_linear_event(qa_passed)
         self.assertTrue(any(a.kind == "set_label" and a.payload.get("value") == "qa-passed" for a in actions_qa))
         self.assertTrue(any(a.kind == "set_status" and a.payload.get("status") == "Delivered" for a in actions_qa))
+        self.assertTrue(any(a.system == "github" and a.kind == "check_run" and a.payload.get("conclusion") == "success" for a in actions_qa))
 
         accepted = {
             "type": "acceptance_gate_changed",

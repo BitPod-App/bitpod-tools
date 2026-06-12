@@ -8,6 +8,8 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 ISSUE_KEY_RE = re.compile(r"\b([A-Z]{2,}-\d+)\b")
 QA_TOKEN_RE = re.compile(r"QA_RESULT=(PASSED|FAILED|SKIPPED)")
 PR_URL_TOKEN_RE = re.compile(r"PR_URL=(https?://[^\s]+)")
+HEAD_SHA_TOKEN_RE = re.compile(r"HEAD_SHA=([0-9a-fA-F]{7,64})")
+GITHUB_PR_URL_RE = re.compile(r"https://github\.com/([^/]+)/([^/]+)/pull/(\d+)")
 
 REQUIRED_HEADINGS = [
     "Objective",
@@ -87,6 +89,9 @@ class BotConfig:
     pm_rejected: str = "pm-rejected"
     pm_skipped: str = "pm-skipped"
 
+    vera_qa_gate_name: str = "vera-qa-gate"
+    vera_assignee: str = "vera"
+
 
 class LinearBotEngine:
     def __init__(self, config: Optional[BotConfig] = None) -> None:
@@ -116,6 +121,35 @@ class LinearBotEngine:
     def _extract_pr_url_token(self, comment_body: str) -> str:
         m = PR_URL_TOKEN_RE.search(comment_body or "")
         return m.group(1) if m else ""
+
+    def _extract_head_sha_token(self, comment_body: str) -> str:
+        m = HEAD_SHA_TOKEN_RE.search(comment_body or "")
+        return m.group(1) if m else ""
+
+    def _parse_github_pr_url(self, pr_url: str) -> Tuple[str, str]:
+        m = GITHUB_PR_URL_RE.match(pr_url or "")
+        if not m:
+            return "", ""
+        return f"{m.group(1)}/{m.group(2)}", m.group(3)
+
+    def _extract_issue_pr_url(self, issue: Dict[str, Any]) -> str:
+        direct = str(issue.get("pr_url") or issue.get("prUrl") or issue.get("pullRequestUrl") or "")
+        if direct:
+            return direct
+        for attachment in issue.get("attachments", []) or []:
+            if isinstance(attachment, dict):
+                url = str(attachment.get("url") or "")
+                if GITHUB_PR_URL_RE.match(url):
+                    return url
+        return ""
+
+    def _extract_issue_head_sha(self, issue: Dict[str, Any]) -> str:
+        github = issue.get("github", {})
+        if isinstance(github, dict):
+            sha = str(github.get("head_sha") or github.get("headSha") or "")
+            if sha:
+                return sha
+        return str(issue.get("head_sha") or issue.get("headSha") or "")
 
     def _labels(self, issue_labels: Optional[List[str]]) -> Set[str]:
         return set(issue_labels or [])
@@ -275,6 +309,102 @@ class LinearBotEngine:
             return []
         return [Action("github", "comment", pr_url, {"body": body})]
 
+    def _github_check_run(
+        self,
+        pr_url: str,
+        repo_full_name: str,
+        head_sha: str,
+        status: str,
+        conclusion: str = "",
+        title: str = "",
+        summary: str = "",
+    ) -> List[Action]:
+        if not pr_url or not repo_full_name or not head_sha:
+            return []
+        payload: Dict[str, Any] = {
+            "name": self.cfg.vera_qa_gate_name,
+            "repo_full_name": repo_full_name,
+            "head_sha": head_sha,
+            "status": status,
+            "title": title or self.cfg.vera_qa_gate_name,
+            "summary": summary or "Vera QA gate update from BitPod auto-QA dispatcher.",
+        }
+        if conclusion:
+            payload["conclusion"] = conclusion
+        return [Action("github", "check_run", pr_url, payload)]
+
+    def _vera_dispatch_actions(
+        self,
+        issue_key: str,
+        source_event: str,
+        pr_url: str = "",
+        repo_full_name: str = "",
+        pr_number: str = "",
+        head_sha: str = "",
+        issue_url: str = "",
+    ) -> List[Action]:
+        if not issue_key:
+            return []
+        if pr_url and (not repo_full_name or not pr_number):
+            parsed_repo, parsed_number = self._parse_github_pr_url(pr_url)
+            repo_full_name = repo_full_name or parsed_repo
+            pr_number = pr_number or parsed_number
+        stable_repo = repo_full_name or "unknown-repo"
+        stable_pr = pr_number or "unknown-pr"
+        stable_sha = head_sha or "unknown-sha"
+        idempotency_key = f"vera-qa:{issue_key}:{stable_repo}:{stable_pr}:{stable_sha}"
+        body_lines = [
+            "Vera QA auto-dispatch queued.",
+            "",
+            f"Issue: {issue_url or issue_key}",
+            f"PR: {pr_url or 'unresolved'}",
+            f"Head SHA: {head_sha or 'unresolved'}",
+            "",
+            "Required Vera outputs:",
+            "- verification_report.md",
+            "- manifest.json",
+            "- QA_VERDICT: PASSED|FAILED|NO_VERDICT",
+            "- QA_RESULT=PASSED|FAILED only when a terminal Linear sync is appropriate",
+            "",
+            "Proof flags at dispatch:",
+            "VERA_QA_RAN=false",
+            "GITHUB_NATIVE_GATE_SATISFIED=false",
+            "LINEAR_QA_RESULT_SYNCED=false",
+            "USER_SEAT_REQUIRED=unknown",
+        ]
+        dispatch_payload = {
+            "assignee": self.cfg.vera_assignee,
+            "source_event": source_event,
+            "issue_key": issue_key,
+            "issue_url": issue_url,
+            "pr_url": pr_url,
+            "repo_full_name": repo_full_name,
+            "pr_number": pr_number,
+            "head_sha": head_sha,
+            "gate_name": self.cfg.vera_qa_gate_name,
+            "idempotency_key": idempotency_key,
+            "title": f"Vera QA review: {issue_key}",
+            "body": "\n".join(body_lines),
+        }
+        actions = [
+            Action("hermes", "enqueue_vera_qa", issue_key, dispatch_payload),
+            Action("linear", "comment", issue_key, {"body": "\n".join(body_lines)}),
+        ]
+        actions.extend(
+            self._github_check_run(
+                pr_url,
+                repo_full_name,
+                head_sha,
+                "queued",
+                title="Vera QA queued",
+                summary=(
+                    f"Auto-dispatched Vera QA for {issue_key}. "
+                    "This queued check is not a pass verdict; branch protection should remain blocked until Vera completes QA."
+                ),
+            )
+        )
+        return actions
+
     def on_github_pr_opened(self, event: Dict[str, Any]) -> List[Action]:
         pr = event.get("pull_request", {})
         issue_key = self._linked_issue_from_pr(pr)
@@ -296,15 +426,90 @@ class LinearBotEngine:
                 Action("github", "comment", str(pr.get("number", "")), {"body": self._issue_linking_comment()})
             ]
 
-        return [
+        pr_url = str(pr.get("html_url", ""))
+        repo_full_name, pr_number = self._parse_github_pr_url(pr_url)
+        head = pr.get("head", {}) if isinstance(pr.get("head", {}), dict) else {}
+        head_sha = str(head.get("sha") or pr.get("head_sha") or "")
+        actions = [
             Action("linear", "set_status", issue_key, {"status": self.cfg.in_review_status}),
             Action(
                 "linear",
                 "comment",
                 issue_key,
-                {"body": f"PR in review: {pr.get('html_url', '')}. The current Product Development review gate is now expressed by `In Review`."},
+                {"body": f"PR in review: {pr_url}. The current Product Development review gate is now expressed by `In Review`."},
             ),
         ]
+        actions.extend(
+            self._vera_dispatch_actions(
+                issue_key=issue_key,
+                source_event="github_pr_ready_for_review",
+                pr_url=pr_url,
+                repo_full_name=repo_full_name,
+                pr_number=pr_number,
+                head_sha=head_sha,
+            )
+        )
+        return actions
+
+
+    def _is_vera_review_request(self, event: Dict[str, Any]) -> bool:
+        team = event.get("requested_team") or {}
+        reviewer = event.get("requested_reviewer") or {}
+        team_slug = str(team.get("slug") or team.get("name") or "").casefold()
+        reviewer_login = str(reviewer.get("login") or reviewer.get("name") or "").casefold()
+        return team_slug == "veraqa" or reviewer_login == "vera-qa"
+
+    def on_github_pr_review_requested(self, event: Dict[str, Any]) -> List[Action]:
+        if not self._is_vera_review_request(event):
+            return []
+        pr = event.get("pull_request", {})
+        issue_key = self._linked_issue_from_pr(pr)
+        if not issue_key:
+            return [
+                Action("github", "comment", str(pr.get("number", "")), {"body": self._issue_linking_comment()})
+            ]
+
+        pr_url = str(pr.get("html_url", ""))
+        repo_full_name, pr_number = self._parse_github_pr_url(pr_url)
+        head = pr.get("head", {}) if isinstance(pr.get("head", {}), dict) else {}
+        head_sha = str(head.get("sha") or pr.get("head_sha") or "")
+        actions = [
+            Action("linear", "set_status", issue_key, {"status": self.cfg.in_review_status}),
+            Action(
+                "linear",
+                "comment",
+                issue_key,
+                {"body": f"VeraQA review requested for PR: {pr_url}. Auto-dispatching Vera QA."},
+            ),
+        ]
+        actions.extend(
+            self._vera_dispatch_actions(
+                issue_key=issue_key,
+                source_event="github_pr_review_requested",
+                pr_url=pr_url,
+                repo_full_name=repo_full_name,
+                pr_number=pr_number,
+                head_sha=head_sha,
+            )
+        )
+        return actions
+
+    def on_linear_issue_in_review(self, issue: Dict[str, Any]) -> List[Action]:
+        issue_key = str(issue.get("identifier") or issue.get("issue_key") or "")
+        status_name = str(issue.get("status") or "")
+        if status_name != self.cfg.in_review_status:
+            return []
+        pr_url = self._extract_issue_pr_url(issue)
+        repo_full_name, pr_number = self._parse_github_pr_url(pr_url)
+        return self._vera_dispatch_actions(
+            issue_key=issue_key,
+            source_event="linear_issue_in_review",
+            pr_url=pr_url,
+            repo_full_name=repo_full_name,
+            pr_number=pr_number,
+            head_sha=self._extract_issue_head_sha(issue),
+            issue_url=str(issue.get("url") or ""),
+        )
 
     def on_linear_ready_gate(self, issue: Dict[str, Any]) -> List[Action]:
         issue_key = issue.get("identifier", "")
@@ -479,6 +684,9 @@ class LinearBotEngine:
         issue_ref = issue_url or issue_key
         summary = "\n".join((comment_body or "").splitlines()[:10])
 
+        head_sha = self._extract_head_sha_token(comment_body)
+        repo_full_name, _pr_number = self._parse_github_pr_url(target_pr_url)
+
         if token == "FAILED":
             actions = [
                 Action("linear", "set_label", issue_key, {"group": self.cfg.qa_gate_group, "value": self.cfg.qa_failed}),
@@ -486,6 +694,17 @@ class LinearBotEngine:
             ]
             actions.extend(
                 self._github_comment(target_pr_url, f"QA FAILED. Summary: {summary}. See Linear: {issue_ref}")
+            )
+            actions.extend(
+                self._github_check_run(
+                    target_pr_url,
+                    repo_full_name,
+                    head_sha,
+                    "completed",
+                    "failure",
+                    title="Vera QA failed",
+                    summary=f"Vera QA failed for {issue_key}. See Linear: {issue_ref}",
+                )
             )
             return actions
 
@@ -500,6 +719,30 @@ class LinearBotEngine:
         actions.extend(
             self._github_comment(target_pr_url, f"{result_text}. Linear moved to {next_text}. {issue_ref}")
         )
+        if token == "PASSED":
+            actions.extend(
+                self._github_check_run(
+                    target_pr_url,
+                    repo_full_name,
+                    head_sha,
+                    "completed",
+                    "success",
+                    title="Vera QA passed",
+                    summary=f"Vera QA passed for {issue_key}. See Linear: {issue_ref}",
+                )
+            )
+        elif token == "SKIPPED":
+            actions.extend(
+                self._github_check_run(
+                    target_pr_url,
+                    repo_full_name,
+                    head_sha,
+                    "completed",
+                    "action_required",
+                    title="Vera QA skipped requires override",
+                    summary=f"QA_RESULT=SKIPPED does not satisfy {self.cfg.vera_qa_gate_name}; explicit override evidence is required. See Linear: {issue_ref}",
+                )
+            )
         return actions
 
     def on_linear_acceptance_gate_change(

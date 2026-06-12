@@ -42,9 +42,8 @@ Populate only required values for your mode:
   - `BOT_PORT`
   - `RUNTIME_TRACE_PATH` (durable runtime event sink, example: `/tmp/bitpod_runtime_events.jsonl`)
   - `TRACE_STORE_PATH` (service action trace sink, example: `/tmp/bitpod_linear_runtime_trace.jsonl`)
-- Required for GitHub live comments:
-  - `GITHUB_APP_ID`
-  - `GITHUB_APP_PRIVATE_KEY`
+- Required for live Vera GitHub gate check runs:
+  - `VERA_QA_GATE_GITHUB_TOKEN` short-lived installation token, or `VERA_QA_GATE_GITHUB_APP_ID` / `VERA_QA_GATE_GITHUB_APP_INSTALLATION_ID` / `VERA_QA_GATE_GITHUB_APP_PRIVATE_KEY`
   - `GITHUB_WEBHOOK_SECRET`
 - Required for Linear live mutation wiring (guarded/fail-closed):
   - `LINEAR_API_KEY` or OAuth app credentials
@@ -56,11 +55,11 @@ Populate only required values for your mode:
 
 GitHub webhook:
 - URL: `POST /github` on bot runtime service, or `POST /webhooks/github` on Cloudflare gateway.
-- Events: `pull_request`.
+- Events: `pull_request`; `ready_for_review` and VeraQA `review_requested` enqueue Vera QA and queue `vera-qa-gate` when head SHA is present.
 
 Linear webhook:
 - URL: `POST /linear` on runtime service, or `POST /webhooks/linear` on Cloudflare gateway.
-- Events: issue updated, label updates, comment created.
+- Events: issue updated/state changed, label updates, comment created. `issue_in_review` / `issue_status_changed` with status `In Review` enqueues Vera QA; `QA_RESULT=PASSED|FAILED` plus `PR_URL=` and `HEAD_SHA=` updates `vera-qa-gate`.
 
 ## 4) Cloudflare gateway (optional)
 
@@ -78,10 +77,13 @@ Set Worker secrets/vars:
 
 1. Confirm dry-run action output first.
 2. Confirm PR comments are posted by automation actor (not CJ).  
-3. Keep `LINEAR_LIVE_EXECUTOR_ENABLED=false` until the expected Linear actor is configured.
-4. Turn the kill switch on only for a controlled rollout window.
-5. If logs or traces contain `LINEAR ACTOR WRONG`, turn the kill switch off and fix identity before continuing.
-6. Confirm trace artifacts are being written:
+3. Keep `VERA_QA_DISPATCH_ENABLED=false`, `VERA_QA_GATE_LIVE_ENABLED=false`, and `LINEAR_LIVE_EXECUTOR_ENABLED=false` until the controlled rollout window.
+4. Enable `VERA_QA_DISPATCH_ENABLED=true` only after a dry-run event shows the exact Hermes `vera` Kanban card that would be created.
+5. Enable `VERA_QA_GATE_LIVE_ENABLED=true` only when Vera QA Gate app credentials are injected from a secret store and the target PR head SHA is known.
+6. Keep `LINEAR_LIVE_EXECUTOR_ENABLED=false` until the expected Linear actor is configured.
+7. Turn each kill switch on only for a controlled rollout window.
+8. If logs or traces contain `LINEAR ACTOR WRONG`, turn the kill switch off and fix identity before continuing.
+9. Confirm trace artifacts are being written:
    - runtime events: path from `RUNTIME_TRACE_PATH`
    - service action traces: path from `TRACE_STORE_PATH`
 

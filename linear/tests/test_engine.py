@@ -47,6 +47,102 @@ class EngineTests(unittest.TestCase):
         self.assertEqual(actions[0].system, "github")
         self.assertEqual(actions[0].kind, "comment")
 
+
+    def test_gh_ready_for_review_dispatches_vera_qa_and_queues_gate(self):
+        ev = {
+            "action": "ready_for_review",
+            "pull_request": {
+                "number": 17,
+                "title": "BIT-617 dispatcher proof",
+                "body": "",
+                "html_url": "https://github.com/BitPod-App/bitpod-tools/pull/17",
+                "head": {"ref": "codex/bit-617-proof", "sha": "abc123"},
+            },
+        }
+
+        actions = self.bot.on_github_pr_ready_for_review(ev)
+
+        dispatch = next(a for a in actions if a.system == "hermes" and a.kind == "enqueue_vera_qa")
+        self.assertEqual(dispatch.target, "BIT-617")
+        self.assertEqual(dispatch.payload["source_event"], "github_pr_ready_for_review")
+        self.assertEqual(dispatch.payload["pr_url"], "https://github.com/BitPod-App/bitpod-tools/pull/17")
+        self.assertEqual(dispatch.payload["repo_full_name"], "BitPod-App/bitpod-tools")
+        self.assertEqual(dispatch.payload["head_sha"], "abc123")
+        self.assertIn("vera-qa:BIT-617:BitPod-App/bitpod-tools:17:abc123", dispatch.payload["idempotency_key"])
+
+        check = next(a for a in actions if a.system == "github" and a.kind == "check_run")
+        self.assertEqual(check.target, "https://github.com/BitPod-App/bitpod-tools/pull/17")
+        self.assertEqual(check.payload["name"], "vera-qa-gate")
+        self.assertEqual(check.payload["status"], "queued")
+        self.assertEqual(check.payload["repo_full_name"], "BitPod-App/bitpod-tools")
+        self.assertEqual(check.payload["head_sha"], "abc123")
+
+        comment = next(
+            a
+            for a in actions
+            if a.system == "linear" and a.kind == "comment" and "VERA_QA_RAN" in a.payload.get("body", "")
+        )
+        self.assertIn("VERA_QA_RAN=false", comment.payload["body"])
+        self.assertIn("GITHUB_NATIVE_GATE_SATISFIED=false", comment.payload["body"])
+        self.assertIn("LINEAR_QA_RESULT_SYNCED=false", comment.payload["body"])
+        self.assertIn("USER_SEAT_REQUIRED=unknown", comment.payload["body"])
+
+
+    def test_gh_review_requested_for_veraqa_dispatches_vera_qa(self):
+        ev = {
+            "action": "review_requested",
+            "requested_team": {"slug": "veraqa", "name": "veraqa"},
+            "pull_request": {
+                "number": 18,
+                "title": "BIT-617 dispatcher proof",
+                "body": "",
+                "html_url": "https://github.com/BitPod-App/bitpod-tools/pull/18",
+                "head": {"ref": "codex/bit-617-proof", "sha": "def4567"},
+            },
+        }
+
+        actions = self.bot.on_github_pr_review_requested(ev)
+
+        dispatch = next(a for a in actions if a.system == "hermes" and a.kind == "enqueue_vera_qa")
+        self.assertEqual(dispatch.target, "BIT-617")
+        self.assertEqual(dispatch.payload["source_event"], "github_pr_review_requested")
+        self.assertEqual(dispatch.payload["pr_url"], "https://github.com/BitPod-App/bitpod-tools/pull/18")
+
+    def test_linear_issue_in_review_dispatches_vera_qa_from_attached_pr(self):
+        issue = {
+            "identifier": "BIT-612",
+            "status": "In Review",
+            "url": "https://linear.app/bitpod-app/issue/BIT-612/add-claude-fable-5",
+            "attachments": [
+                {"url": "https://github.com/BitPod-App/taylor01-mind/pull/48", "title": "PR"}
+            ],
+            "github": {"head_sha": "def456"},
+        }
+
+        actions = self.bot.on_linear_issue_in_review(issue)
+
+        dispatch = next(a for a in actions if a.system == "hermes" and a.kind == "enqueue_vera_qa")
+        self.assertEqual(dispatch.target, "BIT-612")
+        self.assertEqual(dispatch.payload["source_event"], "linear_issue_in_review")
+        self.assertEqual(dispatch.payload["pr_url"], "https://github.com/BitPod-App/taylor01-mind/pull/48")
+        self.assertEqual(dispatch.payload["repo_full_name"], "BitPod-App/taylor01-mind")
+        self.assertEqual(dispatch.payload["head_sha"], "def456")
+
+    def test_qa_passed_with_pr_sha_emits_vera_gate_success(self):
+        actions = self.bot.on_linear_comment(
+            issue_key="BIT-617",
+            comment_body="QA_RESULT=PASSED\nQA_VERDICT: PASSED\nPR_URL=https://github.com/BitPod-App/bitpod-tools/pull/17\nHEAD_SHA=abc1234",
+            issue_labels=["Chore"],
+            issue_url="https://linear.app/bitpod-app/issue/BIT-617/test",
+        )
+
+        check = next(a for a in actions if a.system == "github" and a.kind == "check_run")
+        self.assertEqual(check.payload["name"], "vera-qa-gate")
+        self.assertEqual(check.payload["status"], "completed")
+        self.assertEqual(check.payload["conclusion"], "success")
+        self.assertEqual(check.payload["repo_full_name"], "BitPod-App/bitpod-tools")
+        self.assertEqual(check.payload["head_sha"], "abc1234")
+
     def test_ready_gate_missing_type(self):
         issue = {
             "identifier": "BIT-45",
