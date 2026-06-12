@@ -44,6 +44,14 @@ def _github_webhook_secret_from_env() -> str:
     )
 
 
+def _linear_webhook_secret_from_env() -> str:
+    return (
+        os.getenv("LINEAR_WEBHOOK_SECRET", "").strip()
+        or os.getenv("VERA_QA_GATE_LINEAR_WEBHOOK_SECRET", "").strip()
+        or os.getenv("VERA_QA_GATE_WEBHOOK_SIGNING_SECRET", "").strip()
+    )
+
+
 def _verify_github_webhook_signature(body: bytes, signature_header: str, secret: str) -> bool:
     if not secret:
         return True
@@ -51,6 +59,15 @@ def _verify_github_webhook_signature(body: bytes, signature_header: str, secret:
     if not signature_header.startswith(prefix):
         return False
     expected = prefix + hmac.new(secret.encode("utf-8"), body, hashlib.sha256).hexdigest()
+    return hmac.compare_digest(expected, signature_header)
+
+
+def _verify_linear_webhook_signature(body: bytes, signature_header: str, secret: str) -> bool:
+    if not secret:
+        return True
+    if not signature_header:
+        return False
+    expected = hmac.new(secret.encode("utf-8"), body, hashlib.sha256).hexdigest()
     return hmac.compare_digest(expected, signature_header)
 
 
@@ -379,6 +396,12 @@ class Handler(BaseHTTPRequestHandler):
                 signature = self.headers.get("X-Hub-Signature-256", "")
                 if not _verify_github_webhook_signature(raw_body, signature, secret):
                     self._json(401, {"ok": False, "error": "invalid-github-signature"})
+                    return
+            if self.path == "/linear":
+                secret = _linear_webhook_secret_from_env()
+                signature = self.headers.get("Linear-Signature", "")
+                if not _verify_linear_webhook_signature(raw_body, signature, secret):
+                    self._json(401, {"ok": False, "error": "invalid-linear-signature"})
                     return
             data = json.loads(raw_body)
         except Exception as e:

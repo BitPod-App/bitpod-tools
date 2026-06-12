@@ -11,8 +11,10 @@ from linear.src.service import (
     apply_actions,
     execute_github_check_run,
     _github_webhook_secret_from_env,
+    _linear_webhook_secret_from_env,
     _normalize_private_key,
     _verify_github_webhook_signature,
+    _verify_linear_webhook_signature,
 )
 
 
@@ -171,6 +173,40 @@ class RuntimeTests(unittest.TestCase):
                 os.environ.pop("GITHUB_WEBHOOK_SECRET", None)
             else:
                 os.environ["GITHUB_WEBHOOK_SECRET"] = old_github
+            if old_vera is None:
+                os.environ.pop("VERA_QA_GATE_WEBHOOK_SIGNING_SECRET", None)
+            else:
+                os.environ["VERA_QA_GATE_WEBHOOK_SIGNING_SECRET"] = old_vera
+
+    def test_linear_webhook_signature_requires_matching_hmac_when_secret_is_set(self):
+        import hashlib
+        import hmac
+
+        body = b'{"type":"Issue","webhookTimestamp":1781300000000}'
+        secret = "shared webhook secret"
+        digest = hmac.new(secret.encode("utf-8"), body, hashlib.sha256).hexdigest()
+
+        self.assertTrue(_verify_linear_webhook_signature(body, digest, secret))
+        self.assertFalse(_verify_linear_webhook_signature(body, "bad", secret))
+
+    def test_linear_webhook_secret_accepts_vera_gate_field_name(self):
+        old_linear = os.environ.get("LINEAR_WEBHOOK_SECRET")
+        old_vera_linear = os.environ.get("VERA_QA_GATE_LINEAR_WEBHOOK_SECRET")
+        old_vera = os.environ.get("VERA_QA_GATE_WEBHOOK_SIGNING_SECRET")
+        os.environ.pop("LINEAR_WEBHOOK_SECRET", None)
+        os.environ.pop("VERA_QA_GATE_LINEAR_WEBHOOK_SECRET", None)
+        os.environ["VERA_QA_GATE_WEBHOOK_SIGNING_SECRET"] = "vera-gate-secret"
+        try:
+            self.assertEqual(_linear_webhook_secret_from_env(), "vera-gate-secret")
+        finally:
+            if old_linear is None:
+                os.environ.pop("LINEAR_WEBHOOK_SECRET", None)
+            else:
+                os.environ["LINEAR_WEBHOOK_SECRET"] = old_linear
+            if old_vera_linear is None:
+                os.environ.pop("VERA_QA_GATE_LINEAR_WEBHOOK_SECRET", None)
+            else:
+                os.environ["VERA_QA_GATE_LINEAR_WEBHOOK_SECRET"] = old_vera_linear
             if old_vera is None:
                 os.environ.pop("VERA_QA_GATE_WEBHOOK_SIGNING_SECRET", None)
             else:
