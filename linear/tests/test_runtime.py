@@ -57,6 +57,25 @@ class RuntimeTests(unittest.TestCase):
 
         self.assertTrue(any(a.system == "hermes" and a.kind == "enqueue_vera_qa" for a in actions))
 
+    def test_runtime_routes_github_opened_non_draft_to_vera_dispatch(self):
+        rt = BotRuntime()
+        actions = rt.run_github_event(
+            {
+                "action": "opened",
+                "pull_request": {
+                    "number": 50,
+                    "title": "BIT-619 Retire CODEOWNERS",
+                    "body": "",
+                    "draft": False,
+                    "html_url": "https://github.com/BitPod-App/taylor01-mind/pull/50",
+                    "head": {"ref": "codex/bit-619-retire-codeowners-taylor01-mind", "sha": "22cc449"},
+                },
+            }
+        )
+
+        self.assertTrue(any(a.system == "hermes" and a.kind == "enqueue_vera_qa" for a in actions))
+        self.assertTrue(any(a.system == "github" and a.kind == "check_run" and a.payload.get("status") == "queued" for a in actions))
+
     def test_runtime_routes_linear_issue_in_review_to_vera_dispatch(self):
         rt = BotRuntime()
         actions = rt.run_linear_event(

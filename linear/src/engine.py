@@ -413,9 +413,35 @@ class LinearBotEngine:
                 Action("github", "comment", str(pr.get("number", "")), {"body": self._issue_linking_comment()})
             ]
 
+        pr_url = str(pr.get("html_url", ""))
+        if pr.get("draft") is False:
+            repo_full_name, pr_number = self._parse_github_pr_url(pr_url)
+            head = pr.get("head", {}) if isinstance(pr.get("head", {}), dict) else {}
+            head_sha = str(head.get("sha") or pr.get("head_sha") or "")
+            actions = [
+                Action("linear", "set_status", issue_key, {"status": self.cfg.in_review_status}),
+                Action(
+                    "linear",
+                    "comment",
+                    issue_key,
+                    {"body": f"PR opened ready for review: {pr_url}. Auto-dispatching Vera QA."},
+                ),
+            ]
+            actions.extend(
+                self._vera_dispatch_actions(
+                    issue_key=issue_key,
+                    source_event="github_pr_opened_review_ready",
+                    pr_url=pr_url,
+                    repo_full_name=repo_full_name,
+                    pr_number=pr_number,
+                    head_sha=head_sha,
+                )
+            )
+            return actions
+
         return [
             Action("linear", "set_status", issue_key, {"status": self.cfg.in_progress_status}),
-            Action("linear", "comment", issue_key, {"body": f"PR opened: {pr.get('html_url', '')}"}),
+            Action("linear", "comment", issue_key, {"body": f"PR opened: {pr_url}"}),
         ]
 
     def on_github_pr_ready_for_review(self, event: Dict[str, Any]) -> List[Action]:

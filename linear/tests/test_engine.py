@@ -48,6 +48,36 @@ class EngineTests(unittest.TestCase):
         self.assertEqual(actions[0].kind, "comment")
 
 
+    def test_gh_opened_non_draft_dispatches_vera_qa_and_queues_gate(self):
+        ev = {
+            "action": "opened",
+            "pull_request": {
+                "number": 50,
+                "title": "BIT-619 Retire CODEOWNERS",
+                "body": "",
+                "draft": False,
+                "html_url": "https://github.com/BitPod-App/taylor01-mind/pull/50",
+                "head": {"ref": "codex/bit-619-retire-codeowners-taylor01-mind", "sha": "22cc449"},
+            },
+        }
+
+        actions = self.bot.on_github_pr_opened(ev)
+
+        self.assertTrue(any(a.kind == "set_status" and a.payload["status"] == "In Review" for a in actions))
+        dispatch = next(a for a in actions if a.system == "hermes" and a.kind == "enqueue_vera_qa")
+        self.assertEqual(dispatch.target, "BIT-619")
+        self.assertEqual(dispatch.payload["source_event"], "github_pr_opened_review_ready")
+        self.assertEqual(dispatch.payload["pr_url"], "https://github.com/BitPod-App/taylor01-mind/pull/50")
+        self.assertEqual(dispatch.payload["repo_full_name"], "BitPod-App/taylor01-mind")
+        self.assertEqual(dispatch.payload["head_sha"], "22cc449")
+
+        check = next(a for a in actions if a.system == "github" and a.kind == "check_run")
+        self.assertEqual(check.payload["name"], "vera-qa-gate")
+        self.assertEqual(check.payload["status"], "queued")
+        self.assertEqual(check.payload["repo_full_name"], "BitPod-App/taylor01-mind")
+        self.assertEqual(check.payload["head_sha"], "22cc449")
+
+
     def test_gh_ready_for_review_dispatches_vera_qa_and_queues_gate(self):
         ev = {
             "action": "ready_for_review",
