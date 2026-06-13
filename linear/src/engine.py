@@ -537,6 +537,69 @@ class LinearBotEngine:
             issue_url=str(issue.get("url") or ""),
         )
 
+    def on_vera_qa_completed(self, event: Dict[str, Any]) -> List[Action]:
+        issue_key = str(event.get("issue_key") or event.get("identifier") or "")
+        qa_result = str(event.get("qa_result") or event.get("qa_verdict") or "").upper()
+        pr_url = str(event.get("pr_url") or "")
+        head_sha = str(event.get("head_sha") or "")
+        issue_url = str(event.get("issue_url") or issue_key)
+        report_path = str(event.get("report_path") or "verification_report.md")
+        summary = str(event.get("summary") or "Vera QA completed.")
+        repo_full_name, _pr_number = self._parse_github_pr_url(pr_url)
+
+        if not issue_key or qa_result not in {"PASSED", "FAILED"}:
+            return []
+
+        passed = qa_result == "PASSED"
+        label_value = self.cfg.qa_passed if passed else self.cfg.qa_failed
+        next_status = self.cfg.delivered_status if passed else self.cfg.in_progress_status
+        gate_conclusion = "success" if passed else "failure"
+        gate_title = "Vera QA passed" if passed else "Vera QA failed"
+        gate_satisfied = "true" if passed else "false"
+        result_text = "QA PASSED" if passed else "QA FAILED"
+
+        body = "\n".join(
+            [
+                "Vera QA completed.",
+                f"QA_RESULT={qa_result}",
+                f"QA_VERDICT: {qa_result}",
+                f"PR_URL={pr_url}",
+                f"HEAD_SHA={head_sha}",
+                f"Report: {report_path}",
+                f"Summary: {summary}",
+                "",
+                "Proof flags after sync request:",
+                "VERA_QA_RAN=true",
+                f"GITHUB_NATIVE_GATE_SATISFIED={gate_satisfied}",
+                "LINEAR_QA_RESULT_SYNCED=true",
+                "USER_SEAT_REQUIRED=unknown",
+            ]
+        )
+
+        actions = [
+            Action("linear", "set_label", issue_key, {"group": self.cfg.qa_gate_group, "value": label_value}),
+            Action("linear", "set_status", issue_key, {"status": next_status}),
+            Action("linear", "comment", issue_key, {"body": body}),
+        ]
+        actions.extend(
+            self._github_comment(
+                pr_url,
+                f"{result_text}. Summary: {summary}. Report: {report_path}. See Linear: {issue_url}",
+            )
+        )
+        actions.extend(
+            self._github_check_run(
+                pr_url,
+                repo_full_name,
+                head_sha,
+                "completed",
+                gate_conclusion,
+                title=gate_title,
+                summary=f"{gate_title} for {issue_key}. {summary}. See Linear: {issue_url}",
+            )
+        )
+        return actions
+
     def on_linear_ready_gate(self, issue: Dict[str, Any]) -> List[Action]:
         issue_key = issue.get("identifier", "")
         status_name = issue.get("status", "")

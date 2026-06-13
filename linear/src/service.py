@@ -10,12 +10,13 @@ import os
 import re
 import subprocess
 import tempfile
+import threading
 import textwrap
 import time
 import urllib.error
 import urllib.request
 from http.server import BaseHTTPRequestHandler, HTTPServer
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 try:
     from linear.src.engine import Action, format_actions
@@ -258,6 +259,160 @@ def parse_pr_url(pr_url: str) -> Tuple[str, str, str]:
     return m.group(1), m.group(2), m.group(3)
 
 
+def _extract_field(text: str, label: str) -> str:
+    pattern = re.compile(rf"^{re.escape(label)}:\s*(.+?)\s*$", re.MULTILINE)
+    m = pattern.search(text or "")
+    return m.group(1).strip() if m else ""
+
+
+def collect_vera_qa_completed_events(tasks: List[Dict[str, Any]]) -> List[Dict[str, str]]:
+    events: List[Dict[str, str]] = []
+    for task in tasks:
+        if str(task.get("status") or "") != "done":
+            continue
+        if str(task.get("assignee") or "").casefold() != "vera":
+            continue
+        title = str(task.get("title") or "")
+        body = str(task.get("body") or "")
+        if "Vera QA" not in title and "Vera QA" not in body:
+            continue
+        workspace = str(task.get("workspace_path") or "")
+        if not workspace:
+            continue
+        manifest_path = os.path.join(os.path.expanduser(workspace), "manifest.json")
+        if not os.path.exists(manifest_path):
+            continue
+        try:
+            with open(manifest_path, encoding="utf-8") as fh:
+                manifest = json.load(fh)
+        except (OSError, json.JSONDecodeError):
+            continue
+
+        qa_result = str(manifest.get("qa_result") or manifest.get("verdict") or "").upper()
+        if qa_result not in {"PASSED", "FAILED"}:
+            continue
+        issue_key = str(manifest.get("issue") or manifest.get("issue_key") or _extract_field(body, "Issue"))
+        pr_url = str(manifest.get("pr_url") or _extract_field(body, "PR"))
+        head_sha = str(
+            manifest.get("head_sha")
+            or manifest.get("head")
+            or _extract_field(body, "Head SHA")
+        )
+        body_head_sha = _extract_field(body, "Head SHA")
+        if body_head_sha and head_sha and body_head_sha != head_sha:
+            continue
+        if not (issue_key and pr_url and head_sha):
+            continue
+        report_path = os.path.join(os.path.expanduser(workspace), "verification_report.md")
+        summary = str(task.get("result") or manifest.get("summary") or f"Vera QA {qa_result}.")
+        events.append(
+            {
+                "type": "vera_qa_completed",
+                "task_id": str(task.get("id") or ""),
+                "issue_key": issue_key,
+                "qa_result": qa_result,
+                "qa_verdict": str(manifest.get("verdict") or qa_result).upper(),
+                "pr_url": pr_url,
+                "head_sha": head_sha,
+                "report_path": report_path if os.path.exists(report_path) else "verification_report.md",
+                "summary": summary,
+            }
+        )
+    return events
+
+
+def load_completed_vera_qa_tasks() -> List[Dict[str, Any]]:
+    proc = subprocess.run(
+        ["hermes", "kanban", "list", "--assignee", "vera", "--status", "done", "--json"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        check=False,
+    )
+    if proc.returncode != 0:
+        raise RuntimeError(proc.stderr.strip() or proc.stdout.strip() or "hermes kanban list failed")
+    data = json.loads(proc.stdout or "[]")
+    return data if isinstance(data, list) else []
+
+
+def _filter_vera_qa_tasks(tasks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    raw_ids = os.getenv("VERA_QA_RESULT_SYNC_TASK_ID", "")
+    allowed_ids = {item.strip() for item in raw_ids.split(",") if item.strip()}
+    raw_after = os.getenv("VERA_QA_RESULT_SYNC_AFTER_EPOCH", "").strip()
+    after_epoch = int(raw_after) if raw_after.isdigit() else 0
+    out: List[Dict[str, Any]] = []
+    for task in tasks:
+        task_id = str(task.get("id") or "")
+        if allowed_ids and task_id not in allowed_ids:
+            continue
+        completed_at = int(task.get("completed_at") or 0)
+        if after_epoch and completed_at and completed_at < after_epoch:
+            continue
+        out.append(task)
+    return out
+
+
+def _vera_result_synced(task_id: str, trace_store: JsonlFileStore) -> bool:
+    return any(event.kind == "vera_qa_result_synced" for event in trace_store.list_for(task_id))
+
+
+def _mark_vera_result_synced(task_id: str, trace_store: JsonlFileStore) -> None:
+    trace_store.append(
+        MemoryEvent(
+            key=task_id,
+            kind="vera_qa_result_synced",
+            payload={"outcome": "synced"},
+            at=now_iso(),
+        )
+    )
+
+
+def sync_vera_qa_results_once(
+    tasks: Optional[List[Dict[str, Any]]] = None,
+    dry_run: bool = True,
+    runtime: Optional[BotRuntime] = None,
+    policy: Optional[GovernancePolicy] = None,
+    trace_store: Optional[JsonlFileStore] = None,
+    apply_fn=None,
+) -> int:
+    runtime = runtime or BotRuntime()
+    policy = policy or GovernancePolicy.default()
+    trace_store = trace_store or get_trace_store()
+    apply_fn = apply_fn or apply_actions
+    task_list = _filter_vera_qa_tasks(tasks if tasks is not None else load_completed_vera_qa_tasks())
+    synced = 0
+    for event in collect_vera_qa_completed_events(task_list):
+        task_id = event.get("task_id", "")
+        if task_id and _vera_result_synced(task_id, trace_store):
+            continue
+        actions = runtime.run_linear_event(event)
+        if not actions:
+            continue
+        results = apply_fn(actions, dry_run=dry_run, policy=policy)
+        blocked = any(str(result.get("outcome")) == "blocked" for result in (results or []))
+        if not dry_run and not blocked and task_id:
+            _mark_vera_result_synced(task_id, trace_store)
+        synced += 1
+    return synced
+
+
+def start_vera_qa_result_sync_thread(dry_run: bool, policy: GovernancePolicy) -> None:
+    interval = int(os.getenv("VERA_QA_RESULT_SYNC_INTERVAL_SECONDS", "10"))
+
+    def loop() -> None:
+        while True:
+            try:
+                count = sync_vera_qa_results_once(dry_run=dry_run, policy=policy)
+                if count:
+                    print(f"[VERA_QA_RESULT_SYNC] processed={count} dry_run={dry_run}")
+            except Exception as exc:
+                print(f"[VERA_QA_RESULT_SYNC][FAIL-CLOSED] {exc}")
+            time.sleep(max(interval, 1))
+
+    thread = threading.Thread(target=loop, name="vera-qa-result-sync", daemon=True)
+    thread.start()
+
+
 def get_trace_store() -> JsonlFileStore:
     return JsonlFileStore(os.getenv("TRACE_STORE_PATH", "/tmp/bitpod_linear_runtime_trace.jsonl"))
 
@@ -292,15 +447,17 @@ def apply_actions(
     dry_run: bool = True,
     policy: Optional[GovernancePolicy] = None,
     linear_executor: Optional[LinearExecutor] = None,
-) -> None:
+) -> List[Dict[str, str]]:
     policy = policy or GovernancePolicy.default()
+    results: List[Dict[str, str]] = []
     if dry_run:
         print("[DRY_RUN] would apply actions:")
         print(format_actions(actions))
         for a in actions:
             decision = policy.decide(a, dry_run=True)
             trace_action(a, "dry-run", decision.reason, decision.policy_class)
-        return
+            results.append({"system": a.system, "kind": a.kind, "target": a.target, "outcome": "dry-run", "detail": decision.reason})
+        return results
 
     # Live mode is still fail-closed: governance must allow the action first,
     # then Linear live execution must pass its own kill switch + actor checks.
@@ -309,11 +466,12 @@ def apply_actions(
         if not decision.allowed:
             print(f"[LIVE][FAIL-CLOSED] governance blocked {a.kind} {a.target}: {decision.reason}")
             trace_action(a, "blocked", decision.reason, decision.policy_class)
+            results.append({"system": a.system, "kind": a.kind, "target": a.target, "outcome": "blocked", "detail": decision.reason})
             continue
         if a.system == "github" and a.kind == "comment":
             owner, repo, num = parse_pr_url(a.target)
             if owner and repo and num:
-                subprocess.run(
+                proc = subprocess.run(
                     [
                         "gh",
                         "pr",
@@ -326,10 +484,17 @@ def apply_actions(
                     ],
                     check=False,
                 )
-                trace_action(a, "executed", "gh pr comment", decision.policy_class)
+                if proc.returncode == 0:
+                    trace_action(a, "executed", "gh pr comment", decision.policy_class)
+                    results.append({"system": a.system, "kind": a.kind, "target": a.target, "outcome": "executed", "detail": "gh pr comment"})
+                else:
+                    detail = "gh pr comment failed"
+                    trace_action(a, "blocked", detail, decision.policy_class)
+                    results.append({"system": a.system, "kind": a.kind, "target": a.target, "outcome": "blocked", "detail": detail})
                 continue
             print(f"[LIVE][SKIP] invalid github target for comment: {a.target}")
             trace_action(a, "skipped", "invalid github target", decision.policy_class)
+            results.append({"system": a.system, "kind": a.kind, "target": a.target, "outcome": "skipped", "detail": "invalid github target"})
             continue
 
         if a.system == "github" and a.kind == "check_run":
@@ -339,9 +504,11 @@ def apply_actions(
                 detail = str(exc)
                 print(f"[LIVE][FAIL-CLOSED] github check_run {a.target}: {detail}")
                 trace_action(a, "blocked", detail, decision.policy_class)
+                results.append({"system": a.system, "kind": a.kind, "target": a.target, "outcome": "blocked", "detail": detail})
                 continue
             print(f"[LIVE] github check_run {a.target}: {detail}")
             trace_action(a, "executed", detail, decision.policy_class)
+            results.append({"system": a.system, "kind": a.kind, "target": a.target, "outcome": "executed", "detail": detail})
             continue
 
         if a.system == "hermes" and a.kind == "enqueue_vera_qa":
@@ -351,9 +518,11 @@ def apply_actions(
                 detail = str(exc)
                 print(f"[LIVE][FAIL-CLOSED] hermes enqueue_vera_qa {a.target}: {detail}")
                 trace_action(a, "blocked", detail, decision.policy_class)
+                results.append({"system": a.system, "kind": a.kind, "target": a.target, "outcome": "blocked", "detail": detail})
                 continue
             print(f"[LIVE] hermes enqueue_vera_qa {a.target}: {detail}")
             trace_action(a, "executed", detail, decision.policy_class)
+            results.append({"system": a.system, "kind": a.kind, "target": a.target, "outcome": "executed", "detail": detail})
             continue
 
         if a.system == "linear":
@@ -364,13 +533,17 @@ def apply_actions(
                 detail = str(exc)
                 print(f"[LIVE][FAIL-CLOSED] linear {a.kind} {a.target}: {detail}")
                 trace_action(a, "blocked", detail, decision.policy_class)
+                results.append({"system": a.system, "kind": a.kind, "target": a.target, "outcome": "blocked", "detail": detail})
                 continue
             print(f"[LIVE] linear {a.kind} {a.target}: {result.detail}")
             trace_action(a, result.outcome, result.detail, decision.policy_class, actor=result.actor)
+            results.append({"system": a.system, "kind": a.kind, "target": a.target, "outcome": result.outcome, "detail": result.detail})
             continue
 
         print(f"[LIVE][SKIP] unknown action: {a}")
         trace_action(a, "skipped", "unknown action", decision.policy_class)
+        results.append({"system": a.system, "kind": a.kind, "target": a.target, "outcome": "skipped", "detail": "unknown action"})
+    return results
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -432,6 +605,8 @@ class Handler(BaseHTTPRequestHandler):
                 actions = self.runtime.run_linear_event(data)
             elif kind in ("issue_in_review", "issue_status_changed"):
                 actions = self.runtime.run_linear_event(data)
+            elif kind == "vera_qa_completed":
+                actions = self.runtime.run_linear_event(data)
             elif kind in ("pm_label_changed", "acceptance_gate_changed", "pm_review_changed"):
                 actions = self.runtime.run_linear_event(data)
             elif kind == "daily_aging_scan":
@@ -450,10 +625,18 @@ def main() -> int:
     ap.add_argument("--host", default=os.getenv("BOT_HOST", "127.0.0.1"))
     ap.add_argument("--port", type=int, default=int(os.getenv("BOT_PORT", "8787")))
     ap.add_argument("--dry-run", action="store_true", default=os.getenv("DRY_RUN", "true").lower() == "true")
+    ap.add_argument("--sync-vera-results-once", action="store_true", help="scan completed Vera Kanban tasks once and sync QA results")
     args = ap.parse_args()
 
     Handler.dry_run = args.dry_run
     Handler.policy = GovernancePolicy.default()
+    if args.sync_vera_results_once:
+        count = sync_vera_qa_results_once(dry_run=args.dry_run, policy=Handler.policy)
+        print(f"vera QA result sync processed={count} dry_run={args.dry_run}")
+        return 0
+    if env_truthy("VERA_QA_RESULT_SYNC_ENABLED"):
+        os.environ.setdefault("VERA_QA_RESULT_SYNC_AFTER_EPOCH", str(int(time.time())))
+        start_vera_qa_result_sync_thread(args.dry_run, Handler.policy)
     httpd = HTTPServer((args.host, args.port), Handler)
     print(f"listening on http://{args.host}:{args.port} dry_run={args.dry_run}")
     httpd.serve_forever()

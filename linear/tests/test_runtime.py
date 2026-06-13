@@ -1,4 +1,5 @@
 import os
+import json
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -9,7 +10,9 @@ from linear.src.runtime import BotRuntime
 from linear.src.memory import InMemoryStore, JsonlFileStore
 from linear.src.service import (
     apply_actions,
+    collect_vera_qa_completed_events,
     execute_github_check_run,
+    sync_vera_qa_results_once,
     _github_webhook_secret_from_env,
     _linear_webhook_secret_from_env,
     _normalize_private_key,
@@ -93,6 +96,168 @@ class RuntimeTests(unittest.TestCase):
         )
 
         self.assertTrue(any(a.system == "hermes" and a.kind == "enqueue_vera_qa" for a in actions))
+
+    def test_runtime_routes_vera_qa_completed_to_gate_sync(self):
+        rt = BotRuntime()
+        actions = rt.run_linear_event(
+            {
+                "type": "vera_qa_completed",
+                "issue_key": "BIT-619",
+                "qa_result": "PASSED",
+                "qa_verdict": "PASSED",
+                "pr_url": "https://github.com/BitPod-App/taylor01-mind/pull/50",
+                "head_sha": "1a1fb4e8ba14e7374c18740b655148e34579cc2c",
+                "summary": "Vera QA passed after CODEOWNERS retirement fixes.",
+            }
+        )
+
+        self.assertTrue(any(a.system == "github" and a.kind == "check_run" and a.payload.get("conclusion") == "success" for a in actions))
+        self.assertTrue(any(a.system == "linear" and a.kind == "set_label" and a.payload.get("value") == "qa-passed" for a in actions))
+
+    def test_collects_completed_vera_qa_task_from_manifest(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            report_path = os.path.join(tmp, "verification_report.md")
+            manifest_path = os.path.join(tmp, "manifest.json")
+            with open(report_path, "w", encoding="utf-8") as fh:
+                fh.write("QA_RESULT=PASSED\n")
+            with open(manifest_path, "w", encoding="utf-8") as fh:
+                json.dump(
+                    {
+                        "issue": "BIT-619",
+                        "pr": 50,
+                        "head": "1a1fb4e8ba14e7374c18740b655148e34579cc2c",
+                        "qa_result": "PASSED",
+                        "verdict": "PASSED",
+                    },
+                    fh,
+                )
+
+            events = collect_vera_qa_completed_events(
+                [
+                    {
+                        "id": "t_done",
+                        "title": "Vera QA re-review: BIT-619 / PR #50",
+                        "body": "Issue: BIT-619\nPR: https://github.com/BitPod-App/taylor01-mind/pull/50\nHead SHA: 1a1fb4e8ba14e7374c18740b655148e34579cc2c",
+                        "assignee": "vera",
+                        "status": "done",
+                        "workspace_path": tmp,
+                        "result": "Vera finished.",
+                    }
+                ]
+            )
+
+        self.assertEqual(len(events), 1)
+        self.assertEqual(events[0]["type"], "vera_qa_completed")
+        self.assertEqual(events[0]["task_id"], "t_done")
+        self.assertEqual(events[0]["issue_key"], "BIT-619")
+        self.assertEqual(events[0]["qa_result"], "PASSED")
+        self.assertEqual(events[0]["pr_url"], "https://github.com/BitPod-App/taylor01-mind/pull/50")
+        self.assertEqual(events[0]["head_sha"], "1a1fb4e8ba14e7374c18740b655148e34579cc2c")
+
+    def test_collector_skips_stale_task_when_body_head_differs_from_manifest(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with open(os.path.join(tmp, "manifest.json"), "w", encoding="utf-8") as fh:
+                json.dump(
+                    {
+                        "issue": "BIT-619",
+                        "pr_url": "https://github.com/BitPod-App/taylor01-mind/pull/50",
+                        "head": "1a1fb4e8ba14e7374c18740b655148e34579cc2c",
+                        "qa_result": "PASSED",
+                    },
+                    fh,
+                )
+
+            events = collect_vera_qa_completed_events(
+                [
+                    {
+                        "id": "t_stale",
+                        "title": "Vera QA review: BIT-619",
+                        "body": "Issue: BIT-619\nPR: https://github.com/BitPod-App/taylor01-mind/pull/50\nHead SHA: 22cc449cf586109d4c0f324657032781e880cd75",
+                        "assignee": "vera",
+                        "status": "done",
+                        "workspace_path": tmp,
+                        "result": "QA_RESULT=FAILED",
+                    }
+                ]
+            )
+
+        self.assertEqual(events, [])
+
+    def test_sync_vera_qa_results_once_marks_completed_task_after_actions(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with open(os.path.join(tmp, "verification_report.md"), "w", encoding="utf-8") as fh:
+                fh.write("QA_RESULT=PASSED\n")
+            with open(os.path.join(tmp, "manifest.json"), "w", encoding="utf-8") as fh:
+                json.dump(
+                    {
+                        "issue": "BIT-619",
+                        "pr_url": "https://github.com/BitPod-App/taylor01-mind/pull/50",
+                        "head": "1a1fb4e8ba14e7374c18740b655148e34579cc2c",
+                        "qa_result": "PASSED",
+                    },
+                    fh,
+                )
+            trace = JsonlFileStore(os.path.join(tmp, "trace.jsonl"))
+            calls = []
+
+            def fake_apply(actions, dry_run=True, policy=None, linear_executor=None):
+                calls.append(actions)
+                return [{"outcome": "executed", "kind": a.kind} for a in actions]
+
+            tasks = [
+                {
+                    "id": "t_sync",
+                    "title": "Vera QA review: BIT-619",
+                    "body": "Issue: BIT-619\nPR: https://github.com/BitPod-App/taylor01-mind/pull/50\nHead SHA: 1a1fb4e8ba14e7374c18740b655148e34579cc2c",
+                    "assignee": "vera",
+                    "status": "done",
+                    "workspace_path": tmp,
+                    "result": "Vera passed.",
+                }
+            ]
+
+            first = sync_vera_qa_results_once(tasks=tasks, dry_run=False, trace_store=trace, apply_fn=fake_apply)
+            second = sync_vera_qa_results_once(tasks=tasks, dry_run=False, trace_store=trace, apply_fn=fake_apply)
+
+        self.assertEqual(first, 1)
+        self.assertEqual(second, 0)
+        self.assertEqual(len(calls), 1)
+        self.assertTrue(any(a.system == "github" and a.kind == "check_run" for a in calls[0]))
+
+    def test_sync_vera_qa_results_once_can_filter_to_one_task_id(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with open(os.path.join(tmp, "manifest.json"), "w", encoding="utf-8") as fh:
+                json.dump(
+                    {
+                        "issue": "BIT-619",
+                        "pr_url": "https://github.com/BitPod-App/taylor01-mind/pull/50",
+                        "head": "1a1fb4e8ba14e7374c18740b655148e34579cc2c",
+                        "qa_result": "PASSED",
+                    },
+                    fh,
+                )
+            trace = JsonlFileStore(os.path.join(tmp, "trace.jsonl"))
+            calls = []
+
+            def fake_apply(actions, dry_run=True, policy=None, linear_executor=None):
+                calls.append(actions)
+                return [{"outcome": "executed", "kind": a.kind} for a in actions]
+
+            base_task = {
+                "title": "Vera QA review: BIT-619",
+                "body": "Issue: BIT-619\nPR: https://github.com/BitPod-App/taylor01-mind/pull/50\nHead SHA: 1a1fb4e8ba14e7374c18740b655148e34579cc2c",
+                "assignee": "vera",
+                "status": "done",
+                "workspace_path": tmp,
+                "result": "Vera passed.",
+            }
+            tasks = [dict(base_task, id="t_skip"), dict(base_task, id="t_keep")]
+
+            with patch.dict(os.environ, {"VERA_QA_RESULT_SYNC_TASK_ID": "t_keep"}):
+                count = sync_vera_qa_results_once(tasks=tasks, dry_run=False, trace_store=trace, apply_fn=fake_apply)
+
+        self.assertEqual(count, 1)
+        self.assertEqual(len(calls), 1)
 
     def test_runtime_can_write_durable_trace_store(self):
         with tempfile.TemporaryDirectory() as tmp:

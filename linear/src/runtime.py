@@ -76,6 +76,8 @@ class BotRuntime:
                 out = self.engine.on_linear_issue_in_review(issue)
             else:
                 out = []
+        elif kind == "vera_qa_completed":
+            out = self.engine.on_vera_qa_completed(event)
         elif kind in ("pm_label_changed", "acceptance_gate_changed", "pm_review_changed"):
             out = self.engine.on_linear_acceptance_gate_change(
                 issue_key=event.get("issue_key", ""),
