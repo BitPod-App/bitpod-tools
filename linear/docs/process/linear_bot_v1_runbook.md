@@ -46,7 +46,7 @@ Populate only required values for your mode:
   - `VERA_QA_GATE_GITHUB_TOKEN` short-lived installation token, or `VERA_QA_GATE_GITHUB_APP_ID` / `VERA_QA_GATE_GITHUB_APP_INSTALLATION_ID` / `VERA_QA_GATE_GITHUB_APP_PRIVATE_KEY`
   - `GITHUB_WEBHOOK_SECRET`
 - Required for Linear live mutation wiring (guarded/fail-closed):
-  - `LINEAR_API_KEY` or OAuth app credentials
+  - `LINEAR_OAUTH_ACCESS_TOKEN` from the approved OAuth/MCP/token-broker path; `LINEAR_API_KEY` is legacy personal-script fallback only
   - `LINEAR_WEBHOOK_SECRET`
   - `LINEAR_LIVE_EXECUTOR_ENABLED=false|true` (hard kill switch; default false)
   - at least one of `LINEAR_EXPECTED_ACTOR_ID`, `LINEAR_EXPECTED_ACTOR_NAME`, or `LINEAR_EXPECTED_ACTOR_EMAIL`

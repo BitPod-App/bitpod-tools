@@ -28,6 +28,7 @@ class LinearActorWrong(LinearExecutionError):
 class LinearExecutorConfig:
     enabled: bool = False
     api_key: str = ""
+    oauth_access_token: str = ""
     api_url: str = "https://api.linear.app/graphql"
     expected_actor_id: str = ""
     expected_actor_name: str = ""
@@ -38,6 +39,10 @@ class LinearExecutorConfig:
         return cls(
             enabled=os.getenv("LINEAR_LIVE_EXECUTOR_ENABLED", "false").strip().lower() == "true",
             api_key=os.getenv("LINEAR_API_KEY", "").strip(),
+            oauth_access_token=(
+                os.getenv("LINEAR_OAUTH_ACCESS_TOKEN", "").strip()
+                or os.getenv("LINEAR_ACCESS_TOKEN", "").strip()
+            ),
             api_url=os.getenv("LINEAR_API_URL", "https://api.linear.app/graphql").strip(),
             expected_actor_id=os.getenv("LINEAR_EXPECTED_ACTOR_ID", "").strip(),
             expected_actor_name=os.getenv("LINEAR_EXPECTED_ACTOR_NAME", "").strip(),
@@ -102,8 +107,8 @@ class LinearExecutor:
             raise LinearExecutionError(f"unsupported linear action: {action.kind}; allowed={sorted(self.ALLOWED_KINDS)}")
         if not self.config.enabled:
             raise LinearExecutionError("linear live executor kill switch is off; set LINEAR_LIVE_EXECUTOR_ENABLED=true to enable")
-        if not self.config.api_key and self._transport is None:
-            raise LinearExecutionError("LINEAR_API_KEY is required for live Linear execution")
+        if not (self.config.api_key or self.config.oauth_access_token) and self._transport is None:
+            raise LinearExecutionError("LINEAR_OAUTH_ACCESS_TOKEN or LINEAR_API_KEY is required for live Linear execution")
         if not any(
             [
                 self.config.expected_actor_id,
@@ -158,7 +163,7 @@ class LinearExecutor:
                 self.config.api_url,
                 data=body,
                 headers={
-                    "Authorization": self.config.api_key,
+                    "Authorization": self._authorization_header(),
                     "Content-Type": "application/json",
                 },
                 method="POST",
@@ -178,6 +183,11 @@ class LinearExecutor:
         if not isinstance(data, dict) or "data" not in data:
             raise LinearExecutionError("Linear GraphQL response missing data")
         return data
+
+    def _authorization_header(self) -> str:
+        if self.config.oauth_access_token:
+            return f"Bearer {self.config.oauth_access_token}"
+        return self.config.api_key
 
     def _get_issue(self, issue_ref: str) -> Dict[str, Any]:
         data = self._graphql(

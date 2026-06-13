@@ -22,7 +22,7 @@ Use this as a single approval batch when enabling live mode.
   - read issues/projects/labels/comments
   - write issues/status/labels/comments
 - Provide:
-  - `LINEAR_API_KEY` or OAuth credentials
+  - `LINEAR_OAUTH_ACCESS_TOKEN` from the approved OAuth/MCP/token-broker path; `LINEAR_API_KEY` is legacy personal-script fallback only
   - `LINEAR_WEBHOOK_SECRET`
 
 ## Cloudflare (if gateway enabled)

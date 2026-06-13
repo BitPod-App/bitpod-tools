@@ -24,7 +24,7 @@ Live Linear execution requires all of the following:
    - Class A comments are allowed by the current policy matrix.
    - Class B status/label mutations require an exact rollout allowlist entry in `LINEAR_GUARDED_ACTION_ALLOWLIST`; they are not silently promoted by the executor.
 3. The hard Linear executor kill switch is explicitly on: `LINEAR_LIVE_EXECUTOR_ENABLED=true`.
-4. `LINEAR_API_KEY` is present in machine-local runtime configuration.
+4. `LINEAR_OAUTH_ACCESS_TOKEN` is present in machine-local runtime configuration from the approved Linear OAuth/MCP/token-broker path. `LINEAR_API_KEY` remains a legacy personal-script fallback only and should not be preferred for agent/app actors.
 5. At least one expected actor field is configured:
    - `LINEAR_EXPECTED_ACTOR_ID`
    - `LINEAR_EXPECTED_ACTOR_NAME`
@@ -48,7 +48,8 @@ That phrase is intentional. Operators should search traces and logs for `LINEAR 
 ```bash
 DRY_RUN=false
 LINEAR_LIVE_EXECUTOR_ENABLED=true
-LINEAR_API_KEY=...
+LINEAR_OAUTH_ACCESS_TOKEN=...
+# LINEAR_API_KEY=...  # legacy fallback only
 LINEAR_GUARDED_ACTION_ALLOWLIST=linear:set_status:BIT-505
 LINEAR_EXPECTED_ACTOR_ID=...
 # Optional additional checks:

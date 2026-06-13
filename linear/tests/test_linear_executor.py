@@ -1,6 +1,7 @@
 import os
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from linear.src.engine import Action
 from linear.src.governance import GovernancePolicy
@@ -87,6 +88,22 @@ def enabled_config(**overrides):
 
 
 class LinearExecutorTests(unittest.TestCase):
+    def test_config_supports_oauth_bearer_token_from_env(self):
+        with patch.dict(
+            os.environ,
+            {
+                "LINEAR_LIVE_EXECUTOR_ENABLED": "true",
+                "LINEAR_OAUTH_ACCESS_TOKEN": "oauth-token",
+                "LINEAR_EXPECTED_ACTOR_ID": "actor-1",
+            },
+            clear=False,
+        ):
+            config = LinearExecutorConfig.from_env()
+
+        self.assertEqual(config.oauth_access_token, "oauth-token")
+        executor = LinearExecutor(config, transport=FakeLinearTransport())
+        self.assertEqual(executor._authorization_header(), "Bearer oauth-token")
+
     def test_kill_switch_blocks_live_linear_comment(self):
         executor = LinearExecutor(LinearExecutorConfig(enabled=False), transport=FakeLinearTransport())
         with self.assertRaises(LinearExecutionError) as ctx:

@@ -159,10 +159,11 @@ Recommended env vars:
 - `BOT_PORT=8787`
 - `VERA_QA_GATE_GITHUB_TOKEN` short-lived installation token, or `VERA_QA_GATE_GITHUB_APP_ID` / `VERA_QA_GATE_GITHUB_APP_INSTALLATION_ID` / `VERA_QA_GATE_GITHUB_APP_PRIVATE_KEY` for live `vera-qa-gate` check runs
 - `GITHUB_WEBHOOK_SECRET` (future live mode)
-- `LINEAR_API_KEY` or OAuth app creds (guarded live mode)
+- `LINEAR_OAUTH_ACCESS_TOKEN` from the approved OAuth/MCP/token-broker path for guarded live Linear mutations; `LINEAR_API_KEY` is a legacy personal-script fallback, not the preferred agent path
 - `LINEAR_WEBHOOK_SECRET` (future/live webhook mode)
 - `VERA_QA_DISPATCH_ENABLED=false` (hard kill switch for Hermes Vera Kanban enqueue; default off)
 - `VERA_QA_GATE_LIVE_ENABLED=false` (hard kill switch for GitHub `vera-qa-gate` check runs; default off)
+- `VERA_QA_RESULT_SYNC_ENABLED=false` (hard kill switch for polling completed Vera Kanban tasks and syncing PASS/FAIL to GitHub + Linear; default off)
 - `LINEAR_LIVE_EXECUTOR_ENABLED=false` (hard kill switch; default off)
 - `LINEAR_EXPECTED_ACTOR_ID` / `LINEAR_EXPECTED_ACTOR_NAME` / `LINEAR_EXPECTED_ACTOR_EMAIL` (at least one required before live Linear mutations)
 
@@ -173,11 +174,14 @@ Reference template:
 
 GitHub webhook events:
 - `pull_request` (opened, ready_for_review, review_requested, closed)
-  - `ready_for_review` and VeraQA `review_requested` now plan Vera QA dispatch and a queued `vera-qa-gate` check when the event includes a head SHA.
+  - non-draft `opened`, `ready_for_review`, and VeraQA `review_requested` now plan Vera QA dispatch and a queued `vera-qa-gate` check when the event includes a head SHA.
 
 Linear webhook events:
 - issue updated (state and labels), including `In Review` transitions for Vera QA dispatch
 - comment created (`QA_RESULT=PASSED|FAILED` can complete/fail `vera-qa-gate` when the payload/comment carries `PR_URL=` and `HEAD_SHA=`)
+
+Vera result sync:
+- `VERA_QA_RESULT_SYNC_ENABLED=true` lets the service poll completed Vera Kanban tasks, read `manifest.json` / `verification_report.md`, and sync `QA_RESULT=PASSED|FAILED` to Linear labels/status/comments plus the GitHub `vera-qa-gate` check.
 
 Schedule:
 - daily aging scan for backlog/icebox transitions.
