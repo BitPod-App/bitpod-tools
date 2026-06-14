@@ -195,8 +195,8 @@ def scan_issue(
     blockers: List[str] = []
     if cfg.qa_failed in label_set:
         _push_unique(blockers, cfg.qa_failed)
-    if cfg.qa_skipped in label_set:
-        _push_unique(blockers, cfg.qa_skipped)
+    if cfg.qa_override in label_set:
+        _push_unique(blockers, cfg.qa_override)
     elif cfg.qa_passed not in label_set:
         _push_unique(blockers, f"missing {cfg.qa_passed}")
 

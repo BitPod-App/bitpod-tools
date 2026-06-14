@@ -35,7 +35,9 @@ class GovernancePolicy:
         return cls(str(policy_path))
 
     def classify(self, action: Action) -> str:
-        if action.system == "github" and action.kind == "comment":
+        if action.system == "github" and action.kind in {"comment", "check_run"}:
+            return "A"
+        if action.system == "hermes" and action.kind == "enqueue_vera_qa":
             return "A"
         if action.system == "linear" and action.kind == "comment":
             return "A"
@@ -72,7 +74,27 @@ class GovernancePolicy:
         `linear:set_status:BIT-505`. It does not support wildcards.
         """
 
+        if self._vera_qa_result_sync_is_allowed(action):
+            return True
         key = f"{action.system}:{action.kind}:{action.target}"
         raw = os.getenv("LINEAR_GUARDED_ACTION_ALLOWLIST", "")
         entries = {entry.strip() for entry in raw.split(",") if entry.strip()}
         return key in entries
+
+    def _vera_qa_result_sync_is_allowed(self, action: Action) -> bool:
+        if action.system != "linear":
+            return False
+        if str(action.payload.get("source_event") or "") != "vera_qa_completed":
+            return False
+        if action.kind == "set_label":
+            group = str(action.payload.get("group") or "")
+            value = str(action.payload.get("value") or "")
+            if group == "In Review - QA Gate":
+                return value in {"qa-passed", "qa-failed", "qa-override"}
+            if group == "Blocked By":
+                return value == "needs-discussion"
+            return False
+        if action.kind == "set_status":
+            status = str(action.payload.get("status") or "")
+            return status in {"Delivered", "In Progress"}
+        return False

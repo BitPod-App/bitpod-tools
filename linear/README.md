@@ -109,10 +109,11 @@ Implemented in engine/service:
 - GitHub events:
   - `pull_request.opened`
   - `pull_request.ready_for_review`
+  - `pull_request.review_requested` for legacy/manual VeraQA review requests (compatibility trigger, not the required merge gate)
   - `pull_request.closed` with merged=true (gate-completeness check + merge record)
 - Linear events:
   - `Ready` / `In Progress` readiness enforcement trigger
-  - comment-created QA token parser (`QA_RESULT=PASSED|FAILED|SKIPPED`)
+  - comment-created QA token parser (`QA_RESULT=PASSED|FAILED|OVERRIDE|ACTION_REQUIRED`; deprecated `SKIPPED` fails closed)
   - PM review changed (`pm-accepted` / `pm-rejected` / `pm-skipped`)
   - daily aging scan payload handler
 - Gating behavior:
@@ -131,7 +132,7 @@ The canonical operating model is:
 
 - engineering moves work into `In Review`
 - pending QA is expressed by the status itself
-- `qa-passed`, `qa-failed`, and `qa-skipped` are result labels only
+- `qa-passed`, `qa-failed`, and `qa-override` are terminal/authority-bearing QA labels only
 - review-cleared work moves from `In Review` to `Delivered`
 - `pm-accepted`, `pm-rejected`, and `pm-skipped` are result labels only
 - work moves from `Delivered` to `Accepted`, then to `Done`
@@ -145,24 +146,42 @@ Canonical target for the Product Development team workflow reconfiguration:
 ## How to run
 
 ```bash
-cd $WORKSPACE/bitpod-tools/linear/src
-python3 service.py --dry-run
+cd $WORKSPACE/bitpod-tools
+python3 linear/scripts/refresh_vera_qa_gate_runtime_env.py
+linear/scripts/start_vera_qa_gate_dispatcher.sh
 ```
 
 ## Configure secrets
 
-Recommended env vars:
+Permanent Vera QA Gate runtime configuration is generated from the approved
+machine-local 1Password service-account env at
+`~/.hermes/profiles/vera/op-vault-service.env`:
+
+```bash
+cd $WORKSPACE/bitpod-tools
+python3 linear/scripts/refresh_vera_qa_gate_runtime_env.py
+```
+
+The generated file is machine-local (`~/.hermes/profiles/vera/vera-qa-gate-runtime.env`)
+and must not be committed. It contains the live GitHub App material, webhook
+signing secret, Linear OAuth client credentials, actor expectation from the
+Linear viewer probe, and repo-to-Vera workspace map.
+
+Recommended env vars, when inspecting or overriding the generated runtime file:
 
 - `DRY_RUN=true` (default)
 - `BOT_HOST=127.0.0.1`
 - `BOT_PORT=8787`
-- `GITHUB_APP_ID` (future live mode)
-- `GITHUB_APP_PRIVATE_KEY` (future live mode)
+- `VERA_QA_GATE_GITHUB_TOKEN` short-lived installation token, or `VERA_QA_GATE_GITHUB_APP_ID` / `VERA_QA_GATE_GITHUB_APP_INSTALLATION_ID` / `VERA_QA_GATE_GITHUB_APP_PRIVATE_KEY` for live `vera-qa-gate` check runs
 - `GITHUB_WEBHOOK_SECRET` (future live mode)
-- `LINEAR_API_KEY` or OAuth app creds (guarded live mode)
+- `LINEAR_OAUTH_CLIENT_ID` / `LINEAR_OAUTH_CLIENT_SECRET` from the approved Linear OAuth app actor for guarded live Linear mutations; the runtime mints `client_credentials` access tokens. `LINEAR_OAUTH_ACCESS_TOKEN` is a short-lived emergency fallback only; `LINEAR_API_KEY` is a legacy personal-script fallback, not the preferred agent path
 - `LINEAR_WEBHOOK_SECRET` (future/live webhook mode)
+- `VERA_QA_DISPATCH_ENABLED=false` (hard kill switch for Hermes Vera Kanban enqueue; default off)
+- `VERA_QA_GATE_LIVE_ENABLED=false` (hard kill switch for GitHub `vera-qa-gate` check runs; default off)
+- `VERA_QA_RESULT_SYNC_ENABLED=false` (hard kill switch for polling completed Vera Kanban tasks and syncing PASS/FAIL/OVERRIDE/ACTION_REQUIRED to GitHub + Linear; default off)
 - `LINEAR_LIVE_EXECUTOR_ENABLED=false` (hard kill switch; default off)
 - `LINEAR_EXPECTED_ACTOR_ID` / `LINEAR_EXPECTED_ACTOR_NAME` / `LINEAR_EXPECTED_ACTOR_EMAIL` (at least one required before live Linear mutations)
+- `VERA_QA_KANBAN_WORKSPACE_MAP` JSON mapping of GitHub repos to Vera Kanban workspaces; when set, unmapped repos fail closed instead of silently dispatching to `scratch`
 
 Reference template:
 - `./config.example.env`
@@ -170,11 +189,15 @@ Reference template:
 ## Configure webhooks
 
 GitHub webhook events:
-- `pull_request` (opened, ready_for_review, closed)
+- `pull_request` (opened, ready_for_review, review_requested, closed)
+  - non-draft `opened`, `ready_for_review`, and VeraQA `review_requested` now plan Vera QA dispatch and a queued `vera-qa-gate` check when the event includes a head SHA.
 
 Linear webhook events:
-- issue updated (state and labels)
-- comment created
+- issue updated (state and labels), including `In Review` transitions for Vera QA dispatch
+- comment created (`QA_RESULT=PASSED|FAILED|OVERRIDE|ACTION_REQUIRED` can mark `vera-qa-gate` success, mark failure, authorize override, or fail with action required when the payload/comment carries `PR_URL=` and `HEAD_SHA=`; deprecated `SKIPPED` fails closed)
+
+Vera result sync:
+- `VERA_QA_RESULT_SYNC_ENABLED=true` lets the service poll completed Vera Kanban tasks, read `manifest.json` / `verification_report.md`, and sync `QA_RESULT=PASSED|FAILED|OVERRIDE|ACTION_REQUIRED` to Linear labels/status/comments plus the GitHub `vera-qa-gate` check.
 
 Schedule:
 - daily aging scan for backlog/icebox transitions.
@@ -216,8 +239,8 @@ Issue creation note (status/state):
 
 `simulate_e2e.py` runs the feature happy-path sequence:
 - PR opened -> In Progress
-- PR ready for review -> `In Review`
-- QA comment token parse (`QA_RESULT=PASSED`) -> `Delivered`
+- PR ready for review -> `In Review`, Hermes `vera` QA enqueue, and queued `vera-qa-gate` when head SHA is available
+- QA comment token parse (`QA_RESULT=PASSED`) -> `Delivered` and completed successful `vera-qa-gate`; `ACTION_REQUIRED` -> completed failure with action-needed summary when `PR_URL=` and `HEAD_SHA=` are available
 - PM review signal (`pm-accepted`) -> `Accepted`
 - PR merged -> final closure to `Done` plus merge record comment when merge-readiness truth is satisfied
 

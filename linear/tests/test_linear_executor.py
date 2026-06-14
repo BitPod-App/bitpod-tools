@@ -1,6 +1,7 @@
 import os
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from linear.src.engine import Action
 from linear.src.governance import GovernancePolicy
@@ -63,8 +64,8 @@ class FakeLinearTransport:
                 "data": {
                     "issueLabels": {
                         "nodes": [
-                            {"id": "label-target", "name": "qa-passed", "team": {"id": "team-1", "key": "BIT"}, "parent": {"id": "parent-1", "name": "QA Review"}},
-                            {"id": "wrong-team", "name": "qa-passed", "team": {"id": "team-2", "key": "OPS"}, "parent": {"id": "parent-2", "name": "QA Review"}},
+                            {"id": "label-target", "name": "qa-passed", "team": {"id": "team-1", "key": "BIT"}, "parent": {"id": "parent-1", "name": "In Review - QA Gate"}},
+                            {"id": "wrong-team", "name": "qa-passed", "team": {"id": "team-2", "key": "OPS"}, "parent": {"id": "parent-2", "name": "In Review - QA Gate"}},
                         ]
                     }
                 }
@@ -78,6 +79,9 @@ def enabled_config(**overrides):
     base = {
         "enabled": True,
         "api_key": "",
+        "oauth_access_token": "",
+        "oauth_client_id": "",
+        "oauth_client_secret": "",
         "expected_actor_id": "actor-1",
         "expected_actor_name": "",
         "expected_actor_email": "",
@@ -87,6 +91,41 @@ def enabled_config(**overrides):
 
 
 class LinearExecutorTests(unittest.TestCase):
+    def test_config_supports_oauth_bearer_token_from_env(self):
+        with patch.dict(
+            os.environ,
+            {
+                "LINEAR_LIVE_EXECUTOR_ENABLED": "true",
+                "LINEAR_OAUTH_ACCESS_TOKEN": "oauth-token",
+                "LINEAR_EXPECTED_ACTOR_ID": "actor-1",
+            },
+            clear=False,
+        ):
+            config = LinearExecutorConfig.from_env()
+
+        self.assertEqual(config.oauth_access_token, "oauth-token")
+        executor = LinearExecutor(config, transport=FakeLinearTransport())
+        self.assertEqual(executor._authorization_header(), "Bearer oauth-token")
+
+    def test_config_supports_client_credentials_from_env(self):
+        with patch.dict(
+            os.environ,
+            {
+                "LINEAR_LIVE_EXECUTOR_ENABLED": "true",
+                "LINEAR_OAUTH_CLIENT_ID": "client-id",
+                "LINEAR_OAUTH_CLIENT_SECRET": "client-secret",
+                "LINEAR_EXPECTED_ACTOR_ID": "actor-1",
+            },
+            clear=False,
+        ):
+            config = LinearExecutorConfig.from_env()
+
+        self.assertEqual(config.oauth_client_id, "client-id")
+        self.assertEqual(config.oauth_client_secret, "client-secret")
+        executor = LinearExecutor(config, transport=FakeLinearTransport())
+        with patch.object(executor, "_fetch_client_credentials_access_token", return_value=("minted-token", 2591999)):
+            self.assertEqual(executor._authorization_header(), "Bearer minted-token")
+
     def test_kill_switch_blocks_live_linear_comment(self):
         executor = LinearExecutor(LinearExecutorConfig(enabled=False), transport=FakeLinearTransport())
         with self.assertRaises(LinearExecutionError) as ctx:
@@ -128,9 +167,9 @@ class LinearExecutorTests(unittest.TestCase):
     def test_set_label_supported_by_executor_and_preserves_existing_labels(self):
         transport = FakeLinearTransport()
         executor = LinearExecutor(enabled_config(), transport=transport)
-        result = executor.execute(Action("linear", "set_label", "BIT-559", {"group": "QA Review", "value": "qa-passed"}))
+        result = executor.execute(Action("linear", "set_label", "BIT-559", {"group": "In Review - QA Gate", "value": "qa-passed"}))
         self.assertEqual(result.outcome, "executed")
-        self.assertIn("label BIT-559 += QA Review/qa-passed", result.detail)
+        self.assertIn("label BIT-559 += In Review - QA Gate/qa-passed", result.detail)
         self.assertEqual(transport.last_variables, {"id": "issue-uuid", "labelIds": ["label-existing", "label-target"]})
 
     def test_unsupported_linear_action_fails_closed(self):

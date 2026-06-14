@@ -11,9 +11,10 @@ Use this as a single approval batch when enabling live mode.
   - Metadata: Read
 - Install app on target repos (at least `BitPod-App/bitpod-tools` for bootstrap).
 - Provide:
-  - `GITHUB_APP_ID`
-  - `GITHUB_APP_PRIVATE_KEY`
-  - `GITHUB_WEBHOOK_SECRET`
+  - `VERA_QA_GATE_GITHUB_APP_ID`
+  - `VERA_QA_GATE_GITHUB_APP_INSTALLATION_ID`
+  - `VERA_QA_GATE_GITHUB_APP_PRIVATE_KEY`
+  - `VERA_QA_GATE_WEBHOOK_SIGNING_SECRET`
 
 ## Linear
 
@@ -22,8 +23,8 @@ Use this as a single approval batch when enabling live mode.
   - read issues/projects/labels/comments
   - write issues/status/labels/comments
 - Provide:
-  - `LINEAR_API_KEY` or OAuth credentials
-  - `LINEAR_WEBHOOK_SECRET`
+  - `LINEAR_OAUTH_CLIENT_ID` / `LINEAR_OAUTH_CLIENT_SECRET` from the approved Linear OAuth app actor so the runtime mints tokens with `client_credentials`; `LINEAR_OAUTH_ACCESS_TOKEN` is short-lived emergency fallback only and `LINEAR_API_KEY` is legacy personal-script fallback only
+  - `LINEAR_WEBHOOK_SECRET` or the shared `VERA_QA_GATE_WEBHOOK_SIGNING_SECRET` when both webhook sources are intentionally configured to use the same signing secret
 
 ## Cloudflare (if gateway enabled)
 

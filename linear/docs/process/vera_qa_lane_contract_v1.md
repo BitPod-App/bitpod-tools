@@ -124,21 +124,19 @@ Taylor01 may PM-accept CJ-requested work/tickets she created or coordinated. Tay
 
 ## Single-gate routing model (Hermes-aware)
 
-Vera lane remains the dedicated QA authority. GitHub CODEOWNERS should provide one stable VeraQA approval gate, not encode QA depth through team names.
+Vera lane remains the dedicated QA authority. The active GitHub-native gate is the required `vera-qa-gate` check run emitted by the Vera QA Gate GitHub App/bot path. CODEOWNERS is retired as a merge gate because it routes through a paid user seat/team abstraction rather than the actor that produced the QA result.
 
-Membership policy for the VeraQA gate: only verified Vera review identities belong in v1. The current fallback identity is `vera-qa`; BIT-595/BIT-596 decide whether a GitHub App/bot actor can replace or augment it. `taylor-01` and CJ/admin must not be VeraQA gate members because Taylor01 PM acceptance and admin bypass are separate from code review.
+### GitHub `vera-qa-gate` check
 
-### GitHub CODEOWNERS gate
-
-- Name: `VeraQA`
-- Team: `@BitPod-App/veraqa`
-- Trigger: default CODEOWNERS approval gate for active repos.
+- Name: `vera-qa-gate`
+- Actor/source: Vera QA Gate GitHub App / bot-owned result sync
+- Trigger: Vera auto-dispatch from PR review-ready/head-update or Linear `In Review` transitions.
 - Model/depth: chosen by Vera/runtime/process per change risk; not by GitHub team name.
-- Goal: pass/fail + evidence with practical runtime checks.
+- Goal: pass/fail/override/action-required + evidence with practical runtime checks.
 
 ### Superseded tier names
 
-`@BitPod-App/veraqa-tier-1`, `@BitPod-App/veraqa-tier-2`, and `@BitPod-App/veraqa-tier-3-audit` are historical routing concepts only. Do not use them as active CODEOWNERS routes. Escalation depth remains valid as a Vera process decision, but it must not be represented by GitHub team name.
+`@BitPod-App/veraqa`, `@BitPod-App/veraqa-tier-1`, `@BitPod-App/veraqa-tier-2`, and `@BitPod-App/veraqa-tier-3-audit` are historical routing concepts only. Do not use them as active CODEOWNERS routes. Escalation depth remains valid as a Vera process decision, but it must not be represented by GitHub team name.
 
 ## Dynamic escalation policy
 

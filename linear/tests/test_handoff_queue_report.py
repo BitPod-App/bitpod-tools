@@ -20,13 +20,13 @@ class HandoffQueueReportTests(unittest.TestCase):
         self.assertEqual(entry.queue, "QA")
         self.assertIn("missing qa-passed", entry.blockers)
 
-    def test_scan_issue_preserves_qa_skipped_signal(self):
+    def test_scan_issue_preserves_qa_override_signal(self):
         issue = {
             "identifier": "BIT-101",
-            "title": "Skipped QA",
+            "title": "Overridden QA",
             "url": "https://linear.app/bitpod-app/issue/BIT-101",
             "status": "Delivered",
-            "labels": ["🐞 Bug", "qa-skipped"],
+            "labels": ["🐞 Bug", "qa-override"],
             "assignee": "CJ Argüello",
             "project": "Taylor01",
             "team": "Product Development",
@@ -34,7 +34,7 @@ class HandoffQueueReportTests(unittest.TestCase):
         entry = scan_issue(issue)
         self.assertIsNotNone(entry)
         self.assertEqual(entry.queue, "PM")
-        self.assertIn("qa-skipped", entry.blockers)
+        self.assertIn("qa-override", entry.blockers)
         self.assertIn("missing pm-accepted", entry.blockers)
         self.assertNotIn("missing qa-passed", entry.blockers)
 
@@ -108,7 +108,7 @@ class HandoffQueueReportTests(unittest.TestCase):
                 "title": "PM pending",
                 "url": "https://linear.app/bitpod-app/issue/BIT-301",
                 "status": "Delivered",
-                "labels": ["⚙️ Chore", "qa-skipped"],
+                "labels": ["⚙️ Chore", "qa-override"],
                 "assignee": "CJ Argüello",
                 "project": "Taylor01",
                 "team": "Product Development",
@@ -120,7 +120,7 @@ class HandoffQueueReportTests(unittest.TestCase):
         self.assertIn("QA queue (In Review): 1 ticket(s)", report)
         self.assertIn("PM queue (Delivered): 1 ticket(s)", report)
         self.assertIn("missing qa-passed", report)
-        self.assertIn("qa-skipped", report)
+        self.assertIn("qa-override", report)
 
 
 if __name__ == "__main__":

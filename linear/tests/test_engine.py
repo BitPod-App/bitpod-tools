@@ -47,6 +47,271 @@ class EngineTests(unittest.TestCase):
         self.assertEqual(actions[0].system, "github")
         self.assertEqual(actions[0].kind, "comment")
 
+
+    def test_gh_opened_non_draft_dispatches_vera_qa_and_queues_gate(self):
+        ev = {
+            "action": "opened",
+            "pull_request": {
+                "number": 50,
+                "title": "BIT-619 Retire CODEOWNERS",
+                "body": "",
+                "draft": False,
+                "html_url": "https://github.com/BitPod-App/taylor01-mind/pull/50",
+                "head": {"ref": "codex/bit-619-retire-codeowners-taylor01-mind", "sha": "22cc449"},
+            },
+        }
+
+        actions = self.bot.on_github_pr_opened(ev)
+
+        self.assertTrue(any(a.kind == "set_status" and a.payload["status"] == "In Review" for a in actions))
+        dispatch = next(a for a in actions if a.system == "hermes" and a.kind == "enqueue_vera_qa")
+        self.assertEqual(dispatch.target, "BIT-619")
+        self.assertEqual(dispatch.payload["source_event"], "github_pr_opened_review_ready")
+        self.assertEqual(dispatch.payload["pr_url"], "https://github.com/BitPod-App/taylor01-mind/pull/50")
+        self.assertEqual(dispatch.payload["repo_full_name"], "BitPod-App/taylor01-mind")
+        self.assertEqual(dispatch.payload["head_sha"], "22cc449")
+
+        check = next(a for a in actions if a.system == "github" and a.kind == "check_run")
+        self.assertEqual(check.payload["name"], "vera-qa-gate")
+        self.assertEqual(check.payload["status"], "queued")
+        self.assertEqual(check.payload["repo_full_name"], "BitPod-App/taylor01-mind")
+        self.assertEqual(check.payload["head_sha"], "22cc449")
+
+
+    def test_gh_ready_for_review_dispatches_vera_qa_and_queues_gate(self):
+        ev = {
+            "action": "ready_for_review",
+            "pull_request": {
+                "number": 17,
+                "title": "BIT-617 dispatcher proof",
+                "body": "",
+                "html_url": "https://github.com/BitPod-App/bitpod-tools/pull/17",
+                "head": {"ref": "codex/bit-617-proof", "sha": "abc123"},
+            },
+        }
+
+        actions = self.bot.on_github_pr_ready_for_review(ev)
+
+        dispatch = next(a for a in actions if a.system == "hermes" and a.kind == "enqueue_vera_qa")
+        self.assertEqual(dispatch.target, "BIT-617")
+        self.assertEqual(dispatch.payload["source_event"], "github_pr_ready_for_review")
+        self.assertEqual(dispatch.payload["pr_url"], "https://github.com/BitPod-App/bitpod-tools/pull/17")
+        self.assertEqual(dispatch.payload["repo_full_name"], "BitPod-App/bitpod-tools")
+        self.assertEqual(dispatch.payload["head_sha"], "abc123")
+        self.assertIn("vera-qa:BIT-617:BitPod-App/bitpod-tools:17:abc123", dispatch.payload["idempotency_key"])
+
+        check = next(a for a in actions if a.system == "github" and a.kind == "check_run")
+        self.assertEqual(check.target, "https://github.com/BitPod-App/bitpod-tools/pull/17")
+        self.assertEqual(check.payload["name"], "vera-qa-gate")
+        self.assertEqual(check.payload["status"], "queued")
+        self.assertEqual(check.payload["repo_full_name"], "BitPod-App/bitpod-tools")
+        self.assertEqual(check.payload["head_sha"], "abc123")
+
+        comment = next(
+            a
+            for a in actions
+            if a.system == "linear" and a.kind == "comment" and "VERA_QA_RAN" in a.payload.get("body", "")
+        )
+        self.assertIn("VERA_QA_RAN=false", comment.payload["body"])
+        self.assertIn("GITHUB_NATIVE_GATE_SATISFIED=false", comment.payload["body"])
+        self.assertIn("LINEAR_QA_RESULT_SYNCED=false", comment.payload["body"])
+        self.assertIn("USER_SEAT_REQUIRED=unknown", comment.payload["body"])
+        self.assertIn("QA_VERDICT: PASSED|FAILED|OVERRIDE|ACTION_REQUIRED", comment.payload["body"])
+        self.assertIn("QA_RESULT=PASSED|FAILED|OVERRIDE|ACTION_REQUIRED", comment.payload["body"])
+        self.assertNotIn("NO_VERDICT", comment.payload["body"])
+
+
+    def test_gh_synchronize_non_draft_dispatches_vera_qa_for_latest_head(self):
+        ev = {
+            "action": "synchronize",
+            "pull_request": {
+                "number": 120,
+                "title": "BIT-617 dispatcher proof",
+                "body": "",
+                "draft": False,
+                "html_url": "https://github.com/BitPod-App/bitpod-tools/pull/120",
+                "head": {"ref": "codex/bit-617-proof", "sha": "feed617"},
+            },
+        }
+
+        actions = self.bot.on_github_pr_synchronize(ev)
+
+        dispatch = next(a for a in actions if a.system == "hermes" and a.kind == "enqueue_vera_qa")
+        self.assertEqual(dispatch.target, "BIT-617")
+        self.assertEqual(dispatch.payload["source_event"], "github_pr_synchronize_review_ready")
+        self.assertEqual(dispatch.payload["head_sha"], "feed617")
+        check = next(a for a in actions if a.system == "github" and a.kind == "check_run")
+        self.assertEqual(check.payload["status"], "queued")
+        self.assertEqual(check.payload["head_sha"], "feed617")
+
+    def test_gh_review_requested_for_veraqa_dispatches_vera_qa(self):
+        ev = {
+            "action": "review_requested",
+            "requested_team": {"slug": "veraqa", "name": "veraqa"},
+            "pull_request": {
+                "number": 18,
+                "title": "BIT-617 dispatcher proof",
+                "body": "",
+                "html_url": "https://github.com/BitPod-App/bitpod-tools/pull/18",
+                "head": {"ref": "codex/bit-617-proof", "sha": "def4567"},
+            },
+        }
+
+        actions = self.bot.on_github_pr_review_requested(ev)
+
+        dispatch = next(a for a in actions if a.system == "hermes" and a.kind == "enqueue_vera_qa")
+        self.assertEqual(dispatch.target, "BIT-617")
+        self.assertEqual(dispatch.payload["source_event"], "github_pr_review_requested")
+        self.assertEqual(dispatch.payload["pr_url"], "https://github.com/BitPod-App/bitpod-tools/pull/18")
+
+    def test_linear_issue_in_review_dispatches_vera_qa_from_attached_pr(self):
+        issue = {
+            "identifier": "BIT-612",
+            "status": "In Review",
+            "url": "https://linear.app/bitpod-app/issue/BIT-612/add-claude-fable-5",
+            "attachments": [
+                {"url": "https://github.com/BitPod-App/taylor01-mind/pull/48", "title": "PR"}
+            ],
+            "github": {"head_sha": "def456"},
+        }
+
+        actions = self.bot.on_linear_issue_in_review(issue)
+
+        dispatch = next(a for a in actions if a.system == "hermes" and a.kind == "enqueue_vera_qa")
+        self.assertEqual(dispatch.target, "BIT-612")
+        self.assertEqual(dispatch.payload["source_event"], "linear_issue_in_review")
+        self.assertEqual(dispatch.payload["pr_url"], "https://github.com/BitPod-App/taylor01-mind/pull/48")
+        self.assertEqual(dispatch.payload["repo_full_name"], "BitPod-App/taylor01-mind")
+        self.assertEqual(dispatch.payload["head_sha"], "def456")
+
+    def test_qa_passed_with_pr_sha_emits_vera_gate_success(self):
+        actions = self.bot.on_linear_comment(
+            issue_key="BIT-617",
+            comment_body="QA_RESULT=PASSED\nQA_VERDICT: PASSED\nPR_URL=https://github.com/BitPod-App/bitpod-tools/pull/17\nHEAD_SHA=abc1234",
+            issue_labels=["Chore"],
+            issue_url="https://linear.app/bitpod-app/issue/BIT-617/test",
+        )
+
+        check = next(a for a in actions if a.system == "github" and a.kind == "check_run")
+        self.assertEqual(check.payload["name"], "vera-qa-gate")
+        self.assertEqual(check.payload["status"], "completed")
+        self.assertEqual(check.payload["conclusion"], "success")
+        self.assertEqual(check.payload["repo_full_name"], "BitPod-App/bitpod-tools")
+        self.assertEqual(check.payload["head_sha"], "abc1234")
+
+    def test_vera_qa_completed_passed_syncs_linear_and_github_gate(self):
+        actions = self.bot.on_vera_qa_completed(
+            {
+                "issue_key": "BIT-619",
+                "qa_result": "PASSED",
+                "qa_verdict": "PASSED",
+                "pr_url": "https://github.com/BitPod-App/taylor01-mind/pull/50",
+                "head_sha": "1a1fb4e8ba14e7374c18740b655148e34579cc2c",
+                "issue_url": "https://linear.app/bitpod-app/issue/BIT-619/test",
+                "report_path": "verification_report.md",
+                "summary": "Vera QA passed after CODEOWNERS retirement fixes.",
+            }
+        )
+
+        self.assertTrue(any(a.system == "linear" and a.kind == "set_label" and a.payload["value"] == "qa-passed" for a in actions))
+        label = next(a for a in actions if a.system == "linear" and a.kind == "set_label")
+        status = next(a for a in actions if a.system == "linear" and a.kind == "set_status")
+        self.assertEqual(label.payload["group"], "In Review - QA Gate")
+        self.assertEqual(label.payload["source_event"], "vera_qa_completed")
+        self.assertEqual(status.payload["source_event"], "vera_qa_completed")
+        self.assertTrue(any(a.system == "linear" and a.kind == "set_status" and a.payload["status"] == "Delivered" for a in actions))
+        comment = next(a for a in actions if a.system == "linear" and a.kind == "comment")
+        self.assertIn("QA_RESULT=PASSED", comment.payload["body"])
+        self.assertIn("VERA_QA_RAN=true", comment.payload["body"])
+        self.assertIn("GITHUB_NATIVE_GATE_SATISFIED=true", comment.payload["body"])
+        self.assertIn("LINEAR_QA_RESULT_SYNCED=true", comment.payload["body"])
+
+        check = next(a for a in actions if a.system == "github" and a.kind == "check_run")
+        self.assertEqual(check.payload["name"], "vera-qa-gate")
+        self.assertEqual(check.payload["status"], "completed")
+        self.assertEqual(check.payload["conclusion"], "success")
+        self.assertEqual(check.payload["repo_full_name"], "BitPod-App/taylor01-mind")
+        self.assertEqual(check.payload["head_sha"], "1a1fb4e8ba14e7374c18740b655148e34579cc2c")
+
+    def test_vera_qa_completed_failed_blocks_linear_and_github_gate(self):
+        actions = self.bot.on_vera_qa_completed(
+            {
+                "issue_key": "BIT-619",
+                "qa_result": "FAILED",
+                "qa_verdict": "FAILED",
+                "pr_url": "https://github.com/BitPod-App/taylor01-mind/pull/50",
+                "head_sha": "22cc449cf586109d4c0f324657032781e880cd75",
+                "issue_url": "https://linear.app/bitpod-app/issue/BIT-619/test",
+                "report_path": "verification_report.md",
+                "summary": "Test still reads deleted CODEOWNERS.",
+            }
+        )
+
+        self.assertTrue(any(a.system == "linear" and a.kind == "set_label" and a.payload["value"] == "qa-failed" for a in actions))
+        label = next(a for a in actions if a.system == "linear" and a.kind == "set_label")
+        status = next(a for a in actions if a.system == "linear" and a.kind == "set_status")
+        self.assertEqual(label.payload["group"], "In Review - QA Gate")
+        self.assertEqual(label.payload["source_event"], "vera_qa_completed")
+        self.assertEqual(status.payload["source_event"], "vera_qa_completed")
+        self.assertTrue(any(a.system == "linear" and a.kind == "set_status" and a.payload["status"] == "In Progress" for a in actions))
+        comment = next(a for a in actions if a.system == "linear" and a.kind == "comment")
+        self.assertIn("QA_RESULT=FAILED", comment.payload["body"])
+        self.assertIn("VERA_QA_RAN=true", comment.payload["body"])
+        self.assertIn("GITHUB_NATIVE_GATE_SATISFIED=false", comment.payload["body"])
+        self.assertIn("LINEAR_QA_RESULT_SYNCED=true", comment.payload["body"])
+
+        check = next(a for a in actions if a.system == "github" and a.kind == "check_run")
+        self.assertEqual(check.payload["status"], "completed")
+        self.assertEqual(check.payload["conclusion"], "failure")
+        self.assertEqual(check.payload["repo_full_name"], "BitPod-App/taylor01-mind")
+        self.assertEqual(check.payload["head_sha"], "22cc449cf586109d4c0f324657032781e880cd75")
+
+    def test_vera_qa_completed_override_marks_success_with_override_label_and_summary(self):
+        actions = self.bot.on_vera_qa_completed(
+            {
+                "issue_key": "BIT-620",
+                "qa_result": "OVERRIDE",
+                "qa_verdict": "OVERRIDE",
+                "pr_url": "https://github.com/BitPod-App/taylor01-mind/pull/51",
+                "head_sha": "376a9b3c4e48f45cba9382ff7c8e973e5acfe68a",
+                "issue_url": "https://linear.app/bitpod-app/issue/BIT-620/test",
+                "report_path": "verification_report.md",
+                "summary": "CJ authorized QA override: docs-only emergency.",
+            }
+        )
+
+        self.assertTrue(any(a.system == "linear" and a.kind == "set_label" and a.payload["value"] == "qa-override" for a in actions))
+        self.assertTrue(any(a.system == "linear" and a.kind == "set_status" and a.payload["status"] == "Delivered" for a in actions))
+        check = next(a for a in actions if a.system == "github" and a.kind == "check_run")
+        self.assertEqual(check.payload["status"], "completed")
+        self.assertEqual(check.payload["conclusion"], "success")
+        self.assertIn("override", check.payload["title"].lower())
+        self.assertIn("authorized", check.payload["summary"].lower())
+
+    def test_vera_qa_completed_action_required_blocks_with_failure_without_qa_label(self):
+        actions = self.bot.on_vera_qa_completed(
+            {
+                "issue_key": "BIT-620",
+                "qa_result": "ACTION_REQUIRED",
+                "qa_verdict": "ACTION_REQUIRED",
+                "pr_url": "https://github.com/BitPod-App/taylor01-mind/pull/51",
+                "head_sha": "376a9b3c4e48f45cba9382ff7c8e973e5acfe68a",
+                "issue_url": "https://linear.app/bitpod-app/issue/BIT-620/test",
+                "report_path": "verification_report.md",
+                "summary": "Missing acceptance fixture; attach screenshot before Vera can finish QA.",
+            }
+        )
+
+        self.assertFalse(any(a.system == "linear" and a.kind == "set_label" and a.payload.get("group") == "In Review - QA Gate" for a in actions))
+        self.assertTrue(any(a.system == "linear" and a.kind == "set_label" and a.payload.get("value") == "needs-discussion" for a in actions))
+        self.assertTrue(any(a.system == "linear" and a.kind == "comment" and "ACTION_REQUIRED" in a.payload["body"] for a in actions))
+        check = next(a for a in actions if a.system == "github" and a.kind == "check_run")
+        self.assertEqual(check.payload["status"], "completed")
+        self.assertEqual(check.payload["conclusion"], "failure")
+        self.assertEqual(check.payload["title"], "Vera QA action required")
+        self.assertIn("cannot complete QA until", check.payload["summary"])
+        self.assertNotEqual(check.payload["conclusion"], "action_required")
+
     def test_ready_gate_missing_type(self):
         issue = {
             "identifier": "BIT-45",
@@ -82,7 +347,7 @@ class EngineTests(unittest.TestCase):
         self.assertFalse(any(a.kind == "set_status" for a in actions))
         self.assertFalse(any(a.kind == "set_label" and a.payload.get("value") == "qa-skipped" for a in actions))
 
-    def test_ready_gate_design_autosets_qa_skipped(self):
+    def test_ready_gate_design_autosets_qa_override(self):
         issue = {
             "identifier": "BIT-45",
             "status": "Ready",
@@ -91,8 +356,8 @@ class EngineTests(unittest.TestCase):
             "description": "Linear Classification\n- Output: design artifact\n- Behavior change: no\n- Broken existing behavior: no\n- Evidence: design acceptance\n- Children expected: no\n- PM-testable: yes\n\nObjective\nScope\nRequired outputs\nVerification plan\nRollback note\nAcceptance / closure criteria",
         }
         actions = self.bot.on_linear_ready_gate(issue)
-        self.assertTrue(any(a.kind == "set_label" and a.payload.get("value") == "qa-skipped" for a in actions))
-        self.assertTrue(any(a.kind == "comment" and "QA=skip" in a.payload["body"] for a in actions))
+        self.assertTrue(any(a.kind == "set_label" and a.payload.get("value") == "qa-override" for a in actions))
+        self.assertTrue(any(a.kind == "comment" and "QA=override" in a.payload["body"] for a in actions))
 
     def test_ready_gate_plan_parent_requires_estimate(self):
         issue = {
@@ -214,15 +479,46 @@ class EngineTests(unittest.TestCase):
         )
         self.assertEqual(actions[1].payload["status"], "Delivered")
 
-    def test_linear_comment_skipped_sets_skip_gate(self):
+    def test_linear_comment_override_sets_override_gate(self):
         actions = self.bot.on_linear_comment(
             "BIT-45",
-            "QA_RESULT=SKIPPED\napproved skip",
+            "QA_RESULT=OVERRIDE\nAuthorized by CJ: emergency docs-only merge\nPR_URL=https://github.com/BitPod-App/bitpod-tools/pull/17\nHEAD_SHA=abc1234",
+            "https://github.com/BitPod-App/bitpod-tools/pull/17",
+            issue_labels=["Plan"],
+        )
+        self.assertEqual(actions[0].payload["value"], "qa-override")
+        self.assertEqual(actions[1].payload["status"], "Delivered")
+        check = next(a for a in actions if a.system == "github" and a.kind == "check_run")
+        self.assertEqual(check.payload["conclusion"], "success")
+        self.assertIn("override", check.payload["title"].lower())
+
+    def test_linear_comment_action_required_uses_failure_not_github_action_required(self):
+        actions = self.bot.on_linear_comment(
+            "BIT-45",
+            "QA_RESULT=ACTION_REQUIRED\nMissing acceptance fixture\nPR_URL=https://github.com/BitPod-App/bitpod-tools/pull/17\nHEAD_SHA=abc1234",
+            "https://github.com/BitPod-App/bitpod-tools/pull/17",
+            issue_labels=["Plan"],
+        )
+
+        self.assertFalse(any(a.kind == "set_label" and a.payload.get("value") in {"qa-passed", "qa-failed", "qa-override"} for a in actions))
+        self.assertTrue(any(a.kind == "set_label" and a.payload.get("value") == "needs-discussion" for a in actions))
+        check = next(a for a in actions if a.system == "github" and a.kind == "check_run")
+        self.assertEqual(check.payload["status"], "completed")
+        self.assertEqual(check.payload["conclusion"], "failure")
+        self.assertEqual(check.payload["title"], "Vera QA action required")
+        self.assertNotEqual(check.payload["conclusion"], "action_required")
+
+    def test_linear_comment_skipped_is_deprecated_and_fails_closed(self):
+        actions = self.bot.on_linear_comment(
+            "BIT-45",
+            "QA_RESULT=SKIPPED\nlegacy skip",
             "",
             issue_labels=["Plan"],
         )
-        self.assertEqual(actions[0].payload["value"], "qa-skipped")
-        self.assertEqual(actions[1].payload["status"], "Delivered")
+
+        self.assertFalse(any(a.kind == "set_label" for a in actions))
+        self.assertFalse(any(a.kind == "set_status" for a in actions))
+        self.assertTrue(any(a.system == "linear" and a.kind == "comment" and "deprecated" in a.payload["body"].lower() for a in actions))
 
     def test_linear_comment_without_pr_link_still_updates_linear(self):
         actions = self.bot.on_linear_comment(

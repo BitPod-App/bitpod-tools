@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import json
 import os
+import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, Iterable, List, Mapping, Optional
@@ -28,6 +30,11 @@ class LinearActorWrong(LinearExecutionError):
 class LinearExecutorConfig:
     enabled: bool = False
     api_key: str = ""
+    oauth_access_token: str = ""
+    oauth_client_id: str = ""
+    oauth_client_secret: str = ""
+    oauth_scope: str = "read write"
+    oauth_token_url: str = "https://api.linear.app/oauth/token"
     api_url: str = "https://api.linear.app/graphql"
     expected_actor_id: str = ""
     expected_actor_name: str = ""
@@ -38,6 +45,14 @@ class LinearExecutorConfig:
         return cls(
             enabled=os.getenv("LINEAR_LIVE_EXECUTOR_ENABLED", "false").strip().lower() == "true",
             api_key=os.getenv("LINEAR_API_KEY", "").strip(),
+            oauth_access_token=(
+                os.getenv("LINEAR_OAUTH_ACCESS_TOKEN", "").strip()
+                or os.getenv("LINEAR_ACCESS_TOKEN", "").strip()
+            ),
+            oauth_client_id=os.getenv("LINEAR_OAUTH_CLIENT_ID", "").strip(),
+            oauth_client_secret=os.getenv("LINEAR_OAUTH_CLIENT_SECRET", "").strip(),
+            oauth_scope=os.getenv("LINEAR_OAUTH_SCOPE", "read write").strip(),
+            oauth_token_url=os.getenv("LINEAR_OAUTH_TOKEN_URL", "https://api.linear.app/oauth/token").strip(),
             api_url=os.getenv("LINEAR_API_URL", "https://api.linear.app/graphql").strip(),
             expected_actor_id=os.getenv("LINEAR_EXPECTED_ACTOR_ID", "").strip(),
             expected_actor_name=os.getenv("LINEAR_EXPECTED_ACTOR_NAME", "").strip(),
@@ -55,10 +70,11 @@ class LinearExecutionResult:
 class LinearExecutor:
     """Minimal fail-closed Linear GraphQL executor.
 
-    Live mutations are disabled unless LINEAR_LIVE_EXECUTOR_ENABLED=true, an API
-    key is present, and at least one expected actor field is configured and
-    matches the authenticated Linear viewer. Only the first rollout actions are
-    supported: comment, set_status, and set_label.
+    Live mutations are disabled unless LINEAR_LIVE_EXECUTOR_ENABLED=true, an
+    OAuth app-actor client credential pair (preferred), short-lived OAuth bearer
+    token, or legacy API key is present, and at least one expected actor field
+    is configured and matches the authenticated Linear viewer. Only the first
+    rollout actions are supported: comment, set_status, and set_label.
     """
 
     ALLOWED_KINDS = {"comment", "set_status", "set_label"}
@@ -71,6 +87,7 @@ class LinearExecutor:
         self.config = config or LinearExecutorConfig.from_env()
         self._transport = transport
         self._actor_cache: Optional[Dict[str, str]] = None
+        self._oauth_token_cache: Optional[Dict[str, Any]] = None
 
     @classmethod
     def from_env(cls) -> "LinearExecutor":
@@ -102,8 +119,12 @@ class LinearExecutor:
             raise LinearExecutionError(f"unsupported linear action: {action.kind}; allowed={sorted(self.ALLOWED_KINDS)}")
         if not self.config.enabled:
             raise LinearExecutionError("linear live executor kill switch is off; set LINEAR_LIVE_EXECUTOR_ENABLED=true to enable")
-        if not self.config.api_key and self._transport is None:
-            raise LinearExecutionError("LINEAR_API_KEY is required for live Linear execution")
+        if not (
+            self.config.api_key
+            or self.config.oauth_access_token
+            or (self.config.oauth_client_id and self.config.oauth_client_secret)
+        ) and self._transport is None:
+            raise LinearExecutionError("LINEAR_OAUTH_CLIENT_ID/SECRET, LINEAR_OAUTH_ACCESS_TOKEN, or LINEAR_API_KEY is required for live Linear execution")
         if not any(
             [
                 self.config.expected_actor_id,
@@ -158,7 +179,7 @@ class LinearExecutor:
                 self.config.api_url,
                 data=body,
                 headers={
-                    "Authorization": self.config.api_key,
+                    "Authorization": self._authorization_header(),
                     "Content-Type": "application/json",
                 },
                 method="POST",
@@ -178,6 +199,55 @@ class LinearExecutor:
         if not isinstance(data, dict) or "data" not in data:
             raise LinearExecutionError("Linear GraphQL response missing data")
         return data
+
+    def _authorization_header(self) -> str:
+        if self.config.oauth_access_token:
+            return f"Bearer {self.config.oauth_access_token}"
+        if self.config.oauth_client_id and self.config.oauth_client_secret:
+            token = self._client_credentials_access_token()
+            return f"Bearer {token}"
+        return self.config.api_key
+
+    def _client_credentials_access_token(self) -> str:
+        now = time.time()
+        if self._oauth_token_cache:
+            token = str(self._oauth_token_cache.get("access_token") or "")
+            expires_at = float(self._oauth_token_cache.get("expires_at") or 0)
+            if token and expires_at > now + 60:
+                return token
+        token, expires_in = self._fetch_client_credentials_access_token()
+        if not token:
+            raise LinearExecutionError("Linear OAuth client_credentials response missing access_token")
+        self._oauth_token_cache = {
+            "access_token": token,
+            "expires_at": now + max(int(expires_in or 0), 0),
+        }
+        return token
+
+    def _fetch_client_credentials_access_token(self) -> tuple[str, int]:
+        body = urllib.parse.urlencode(
+            {
+                "grant_type": "client_credentials",
+                "client_id": self.config.oauth_client_id,
+                "client_secret": self.config.oauth_client_secret,
+                "scope": self.config.oauth_scope,
+            }
+        ).encode("utf-8")
+        request = urllib.request.Request(
+            self.config.oauth_token_url,
+            data=body,
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+            method="POST",
+        )
+        try:
+            with urllib.request.urlopen(request, timeout=20) as response:
+                data = json.loads(response.read().decode("utf-8"))
+        except urllib.error.HTTPError as exc:
+            detail = exc.read().decode("utf-8", errors="replace")
+            raise LinearExecutionError(f"Linear OAuth token HTTP {exc.code}: {detail}") from exc
+        except (urllib.error.URLError, TimeoutError) as exc:
+            raise LinearExecutionError(f"Linear OAuth token request failed: {exc}") from exc
+        return str(data.get("access_token") or ""), int(data.get("expires_in") or 0)
 
     def _get_issue(self, issue_ref: str) -> Dict[str, Any]:
         data = self._graphql(

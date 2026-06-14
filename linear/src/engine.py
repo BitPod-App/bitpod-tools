@@ -6,8 +6,10 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 ISSUE_KEY_RE = re.compile(r"\b([A-Z]{2,}-\d+)\b")
-QA_TOKEN_RE = re.compile(r"QA_RESULT=(PASSED|FAILED|SKIPPED)")
+QA_TOKEN_RE = re.compile(r"QA_RESULT=(PASSED|FAILED|OVERRIDE|ACTION_REQUIRED|SKIPPED)")
 PR_URL_TOKEN_RE = re.compile(r"PR_URL=(https?://[^\s]+)")
+HEAD_SHA_TOKEN_RE = re.compile(r"HEAD_SHA=([0-9a-fA-F]{7,64})")
+GITHUB_PR_URL_RE = re.compile(r"https://github\.com/([^/]+)/([^/]+)/pull/(\d+)")
 
 REQUIRED_HEADINGS = [
     "Objective",
@@ -72,7 +74,7 @@ class BotConfig:
     type_group: str = "Issue Type"
     blocked_group: str = "Blocked By"
     blocked_label: str = "blocked"
-    qa_gate_group: str = "QA Review"
+    qa_gate_group: str = "In Review - QA Gate"
     acceptance_gate_group: str = "PM Review"
 
     blocked_needs_specs: str = "needs-specs"
@@ -81,11 +83,15 @@ class BotConfig:
 
     qa_passed: str = "qa-passed"
     qa_failed: str = "qa-failed"
-    qa_skipped: str = "qa-skipped"
+    qa_override: str = "qa-override"
+    blocker_action_required: str = "needs-discussion"
 
     pm_accepted: str = "pm-accepted"
     pm_rejected: str = "pm-rejected"
     pm_skipped: str = "pm-skipped"
+
+    vera_qa_gate_name: str = "vera-qa-gate"
+    vera_assignee: str = "vera"
 
 
 class LinearBotEngine:
@@ -116,6 +122,35 @@ class LinearBotEngine:
     def _extract_pr_url_token(self, comment_body: str) -> str:
         m = PR_URL_TOKEN_RE.search(comment_body or "")
         return m.group(1) if m else ""
+
+    def _extract_head_sha_token(self, comment_body: str) -> str:
+        m = HEAD_SHA_TOKEN_RE.search(comment_body or "")
+        return m.group(1) if m else ""
+
+    def _parse_github_pr_url(self, pr_url: str) -> Tuple[str, str]:
+        m = GITHUB_PR_URL_RE.match(pr_url or "")
+        if not m:
+            return "", ""
+        return f"{m.group(1)}/{m.group(2)}", m.group(3)
+
+    def _extract_issue_pr_url(self, issue: Dict[str, Any]) -> str:
+        direct = str(issue.get("pr_url") or issue.get("prUrl") or issue.get("pullRequestUrl") or "")
+        if direct:
+            return direct
+        for attachment in issue.get("attachments", []) or []:
+            if isinstance(attachment, dict):
+                url = str(attachment.get("url") or "")
+                if GITHUB_PR_URL_RE.match(url):
+                    return url
+        return ""
+
+    def _extract_issue_head_sha(self, issue: Dict[str, Any]) -> str:
+        github = issue.get("github", {})
+        if isinstance(github, dict):
+            sha = str(github.get("head_sha") or github.get("headSha") or "")
+            if sha:
+                return sha
+        return str(issue.get("head_sha") or issue.get("headSha") or "")
 
     def _labels(self, issue_labels: Optional[List[str]]) -> Set[str]:
         return set(issue_labels or [])
@@ -275,6 +310,102 @@ class LinearBotEngine:
             return []
         return [Action("github", "comment", pr_url, {"body": body})]
 
+    def _github_check_run(
+        self,
+        pr_url: str,
+        repo_full_name: str,
+        head_sha: str,
+        status: str,
+        conclusion: str = "",
+        title: str = "",
+        summary: str = "",
+    ) -> List[Action]:
+        if not pr_url or not repo_full_name or not head_sha:
+            return []
+        payload: Dict[str, Any] = {
+            "name": self.cfg.vera_qa_gate_name,
+            "repo_full_name": repo_full_name,
+            "head_sha": head_sha,
+            "status": status,
+            "title": title or self.cfg.vera_qa_gate_name,
+            "summary": summary or "Vera QA gate update from BitPod auto-QA dispatcher.",
+        }
+        if conclusion:
+            payload["conclusion"] = conclusion
+        return [Action("github", "check_run", pr_url, payload)]
+
+    def _vera_dispatch_actions(
+        self,
+        issue_key: str,
+        source_event: str,
+        pr_url: str = "",
+        repo_full_name: str = "",
+        pr_number: str = "",
+        head_sha: str = "",
+        issue_url: str = "",
+    ) -> List[Action]:
+        if not issue_key:
+            return []
+        if pr_url and (not repo_full_name or not pr_number):
+            parsed_repo, parsed_number = self._parse_github_pr_url(pr_url)
+            repo_full_name = repo_full_name or parsed_repo
+            pr_number = pr_number or parsed_number
+        stable_repo = repo_full_name or "unknown-repo"
+        stable_pr = pr_number or "unknown-pr"
+        stable_sha = head_sha or "unknown-sha"
+        idempotency_key = f"vera-qa:{issue_key}:{stable_repo}:{stable_pr}:{stable_sha}"
+        body_lines = [
+            "Vera QA auto-dispatch queued.",
+            "",
+            f"Issue: {issue_url or issue_key}",
+            f"PR: {pr_url or 'unresolved'}",
+            f"Head SHA: {head_sha or 'unresolved'}",
+            "",
+            "Required Vera outputs:",
+            "- verification_report.md",
+            "- manifest.json",
+            "- QA_VERDICT: PASSED|FAILED|OVERRIDE|ACTION_REQUIRED",
+            "- QA_RESULT=PASSED|FAILED|OVERRIDE|ACTION_REQUIRED when a terminal GitHub/Linear sync is appropriate",
+            "",
+            "Proof flags at dispatch:",
+            "VERA_QA_RAN=false",
+            "GITHUB_NATIVE_GATE_SATISFIED=false",
+            "LINEAR_QA_RESULT_SYNCED=false",
+            "USER_SEAT_REQUIRED=unknown",
+        ]
+        dispatch_payload = {
+            "assignee": self.cfg.vera_assignee,
+            "source_event": source_event,
+            "issue_key": issue_key,
+            "issue_url": issue_url,
+            "pr_url": pr_url,
+            "repo_full_name": repo_full_name,
+            "pr_number": pr_number,
+            "head_sha": head_sha,
+            "gate_name": self.cfg.vera_qa_gate_name,
+            "idempotency_key": idempotency_key,
+            "title": f"Vera QA review: {issue_key}",
+            "body": "\n".join(body_lines),
+        }
+        actions = [
+            Action("hermes", "enqueue_vera_qa", issue_key, dispatch_payload),
+            Action("linear", "comment", issue_key, {"body": "\n".join(body_lines)}),
+        ]
+        actions.extend(
+            self._github_check_run(
+                pr_url,
+                repo_full_name,
+                head_sha,
+                "queued",
+                title="Vera QA queued",
+                summary=(
+                    f"Auto-dispatched Vera QA for {issue_key}. "
+                    "This queued check is not a pass verdict; branch protection should remain blocked until Vera completes QA."
+                ),
+            )
+        )
+        return actions
+
     def on_github_pr_opened(self, event: Dict[str, Any]) -> List[Action]:
         pr = event.get("pull_request", {})
         issue_key = self._linked_issue_from_pr(pr)
@@ -283,9 +414,35 @@ class LinearBotEngine:
                 Action("github", "comment", str(pr.get("number", "")), {"body": self._issue_linking_comment()})
             ]
 
+        pr_url = str(pr.get("html_url", ""))
+        if pr.get("draft") is False:
+            repo_full_name, pr_number = self._parse_github_pr_url(pr_url)
+            head = pr.get("head", {}) if isinstance(pr.get("head", {}), dict) else {}
+            head_sha = str(head.get("sha") or pr.get("head_sha") or "")
+            actions = [
+                Action("linear", "set_status", issue_key, {"status": self.cfg.in_review_status}),
+                Action(
+                    "linear",
+                    "comment",
+                    issue_key,
+                    {"body": f"PR opened ready for review: {pr_url}. Auto-dispatching Vera QA."},
+                ),
+            ]
+            actions.extend(
+                self._vera_dispatch_actions(
+                    issue_key=issue_key,
+                    source_event="github_pr_opened_review_ready",
+                    pr_url=pr_url,
+                    repo_full_name=repo_full_name,
+                    pr_number=pr_number,
+                    head_sha=head_sha,
+                )
+            )
+            return actions
+
         return [
             Action("linear", "set_status", issue_key, {"status": self.cfg.in_progress_status}),
-            Action("linear", "comment", issue_key, {"body": f"PR opened: {pr.get('html_url', '')}"}),
+            Action("linear", "comment", issue_key, {"body": f"PR opened: {pr_url}"}),
         ]
 
     def on_github_pr_ready_for_review(self, event: Dict[str, Any]) -> List[Action]:
@@ -296,15 +453,237 @@ class LinearBotEngine:
                 Action("github", "comment", str(pr.get("number", "")), {"body": self._issue_linking_comment()})
             ]
 
-        return [
+        pr_url = str(pr.get("html_url", ""))
+        repo_full_name, pr_number = self._parse_github_pr_url(pr_url)
+        head = pr.get("head", {}) if isinstance(pr.get("head", {}), dict) else {}
+        head_sha = str(head.get("sha") or pr.get("head_sha") or "")
+        actions = [
             Action("linear", "set_status", issue_key, {"status": self.cfg.in_review_status}),
             Action(
                 "linear",
                 "comment",
                 issue_key,
-                {"body": f"PR in review: {pr.get('html_url', '')}. The current Product Development review gate is now expressed by `In Review`."},
+                {"body": f"PR in review: {pr_url}. The current Product Development review gate is now expressed by `In Review`."},
             ),
         ]
+        actions.extend(
+            self._vera_dispatch_actions(
+                issue_key=issue_key,
+                source_event="github_pr_ready_for_review",
+                pr_url=pr_url,
+                repo_full_name=repo_full_name,
+                pr_number=pr_number,
+                head_sha=head_sha,
+            )
+        )
+        return actions
+
+    def on_github_pr_synchronize(self, event: Dict[str, Any]) -> List[Action]:
+        pr = event.get("pull_request", {})
+        if pr.get("draft") is True:
+            return []
+        issue_key = self._linked_issue_from_pr(pr)
+        if not issue_key:
+            return [
+                Action("github", "comment", str(pr.get("number", "")), {"body": self._issue_linking_comment()})
+            ]
+
+        pr_url = str(pr.get("html_url", ""))
+        repo_full_name, pr_number = self._parse_github_pr_url(pr_url)
+        head = pr.get("head", {}) if isinstance(pr.get("head", {}), dict) else {}
+        head_sha = str(head.get("sha") or pr.get("head_sha") or "")
+        actions = [
+            Action("linear", "set_status", issue_key, {"status": self.cfg.in_review_status}),
+            Action(
+                "linear",
+                "comment",
+                issue_key,
+                {"body": f"PR head updated while in review: {pr_url}. Re-dispatching Vera QA for the latest head."},
+            ),
+        ]
+        actions.extend(
+            self._vera_dispatch_actions(
+                issue_key=issue_key,
+                source_event="github_pr_synchronize_review_ready",
+                pr_url=pr_url,
+                repo_full_name=repo_full_name,
+                pr_number=pr_number,
+                head_sha=head_sha,
+            )
+        )
+        return actions
+
+
+    def _is_vera_review_request(self, event: Dict[str, Any]) -> bool:
+        team = event.get("requested_team") or {}
+        reviewer = event.get("requested_reviewer") or {}
+        team_slug = str(team.get("slug") or team.get("name") or "").casefold()
+        reviewer_login = str(reviewer.get("login") or reviewer.get("name") or "").casefold()
+        return team_slug == "veraqa" or reviewer_login == "vera-qa"
+
+    def on_github_pr_review_requested(self, event: Dict[str, Any]) -> List[Action]:
+        if not self._is_vera_review_request(event):
+            return []
+        pr = event.get("pull_request", {})
+        issue_key = self._linked_issue_from_pr(pr)
+        if not issue_key:
+            return [
+                Action("github", "comment", str(pr.get("number", "")), {"body": self._issue_linking_comment()})
+            ]
+
+        pr_url = str(pr.get("html_url", ""))
+        repo_full_name, pr_number = self._parse_github_pr_url(pr_url)
+        head = pr.get("head", {}) if isinstance(pr.get("head", {}), dict) else {}
+        head_sha = str(head.get("sha") or pr.get("head_sha") or "")
+        actions = [
+            Action("linear", "set_status", issue_key, {"status": self.cfg.in_review_status}),
+            Action(
+                "linear",
+                "comment",
+                issue_key,
+                {"body": f"VeraQA review requested for PR: {pr_url}. Auto-dispatching Vera QA."},
+            ),
+        ]
+        actions.extend(
+            self._vera_dispatch_actions(
+                issue_key=issue_key,
+                source_event="github_pr_review_requested",
+                pr_url=pr_url,
+                repo_full_name=repo_full_name,
+                pr_number=pr_number,
+                head_sha=head_sha,
+            )
+        )
+        return actions
+
+    def on_linear_issue_in_review(self, issue: Dict[str, Any]) -> List[Action]:
+        issue_key = str(issue.get("identifier") or issue.get("issue_key") or "")
+        status_name = str(issue.get("status") or "")
+        if status_name != self.cfg.in_review_status:
+            return []
+        pr_url = self._extract_issue_pr_url(issue)
+        repo_full_name, pr_number = self._parse_github_pr_url(pr_url)
+        return self._vera_dispatch_actions(
+            issue_key=issue_key,
+            source_event="linear_issue_in_review",
+            pr_url=pr_url,
+            repo_full_name=repo_full_name,
+            pr_number=pr_number,
+            head_sha=self._extract_issue_head_sha(issue),
+            issue_url=str(issue.get("url") or ""),
+        )
+
+    def on_vera_qa_completed(self, event: Dict[str, Any]) -> List[Action]:
+        issue_key = str(event.get("issue_key") or event.get("identifier") or "")
+        qa_result = str(event.get("qa_result") or event.get("qa_verdict") or "").upper()
+        pr_url = str(event.get("pr_url") or "")
+        head_sha = str(event.get("head_sha") or "")
+        issue_url = str(event.get("issue_url") or issue_key)
+        report_path = str(event.get("report_path") or "verification_report.md")
+        summary = str(event.get("summary") or "Vera QA completed.")
+        repo_full_name, _pr_number = self._parse_github_pr_url(pr_url)
+
+        if not issue_key or qa_result not in {"PASSED", "FAILED", "OVERRIDE", "ACTION_REQUIRED"}:
+            return []
+
+        if qa_result == "PASSED":
+            label_value = self.cfg.qa_passed
+            next_status = self.cfg.delivered_status
+            gate_conclusion = "success"
+            gate_title = "Vera QA passed"
+            gate_satisfied = "true"
+            result_text = "QA PASSED"
+        elif qa_result == "FAILED":
+            label_value = self.cfg.qa_failed
+            next_status = self.cfg.in_progress_status
+            gate_conclusion = "failure"
+            gate_title = "Vera QA failed"
+            gate_satisfied = "false"
+            result_text = "QA FAILED"
+        elif qa_result == "OVERRIDE":
+            label_value = self.cfg.qa_override
+            next_status = self.cfg.delivered_status
+            gate_conclusion = "success"
+            gate_title = "Vera QA override authorized"
+            gate_satisfied = "true"
+            result_text = "QA OVERRIDE"
+        else:
+            label_value = ""
+            next_status = ""
+            gate_conclusion = "failure"
+            gate_title = "Vera QA action required"
+            gate_satisfied = "false"
+            result_text = "QA ACTION REQUIRED"
+
+        body = "\n".join(
+            [
+                "Vera QA completed.",
+                f"QA_RESULT={qa_result}",
+                f"QA_VERDICT: {qa_result}",
+                f"PR_URL={pr_url}",
+                f"HEAD_SHA={head_sha}",
+                f"Report: {report_path}",
+                f"Summary: {summary}",
+                "",
+                "Proof flags after sync request:",
+                "VERA_QA_RAN=true",
+                f"GITHUB_NATIVE_GATE_SATISFIED={gate_satisfied}",
+                "LINEAR_QA_RESULT_SYNCED=true",
+                "USER_SEAT_REQUIRED=unknown",
+            ]
+        )
+
+        actions = []
+        if label_value:
+            actions.append(
+                Action(
+                    "linear",
+                    "set_label",
+                    issue_key,
+                    {"group": self.cfg.qa_gate_group, "value": label_value, "source_event": "vera_qa_completed"},
+                )
+            )
+        if next_status:
+            actions.append(
+                Action(
+                    "linear",
+                    "set_status",
+                    issue_key,
+                    {"status": next_status, "source_event": "vera_qa_completed"},
+                )
+            )
+        if qa_result == "ACTION_REQUIRED":
+            actions.append(
+                Action(
+                    "linear",
+                    "set_label",
+                    issue_key,
+                    {"group": self.cfg.blocked_group, "value": self.cfg.blocker_action_required, "source_event": "vera_qa_completed"},
+                )
+            )
+        actions.append(Action("linear", "comment", issue_key, {"body": body}))
+        actions.extend(
+            self._github_comment(
+                pr_url,
+                f"{result_text}. Summary: {summary}. Report: {report_path}. See Linear: {issue_url}",
+            )
+        )
+        actions.extend(
+            self._github_check_run(
+                pr_url,
+                repo_full_name,
+                head_sha,
+                "completed",
+                gate_conclusion,
+                title=gate_title,
+                summary=(
+                    f"Vera cannot complete QA until: {summary}. See Linear: {issue_url}"
+                    if qa_result == "ACTION_REQUIRED"
+                    else f"{gate_title} for {issue_key}. {summary}. See Linear: {issue_url}"
+                ),
+            )
+        )
+        return actions
 
     def on_linear_ready_gate(self, issue: Dict[str, Any]) -> List[Action]:
         issue_key = issue.get("identifier", "")
@@ -436,6 +815,7 @@ class LinearBotEngine:
         # At this point the issue has a valid classifier intake + canonical type.
         # Surface routing defaults with minimal safe automation.
         qa_route, pm_route, route_reason = self.classify_route(actual_type, intake)
+        qa_route_display = "override" if qa_route == "skip" else qa_route
         out: List[Action] = [
             Action(
                 "linear",
@@ -444,7 +824,7 @@ class LinearBotEngine:
                 {
                     "body": (
                         "Routing recommendation (from `linear_type_classifier_v1.json`): "
-                        f"QA={qa_route}, PM={pm_route}. Reason: {route_reason}"
+                        f"QA={qa_route_display}, PM={pm_route}. Reason: {route_reason}"
                     )
                 },
             )
@@ -456,7 +836,7 @@ class LinearBotEngine:
                     "linear",
                     "set_label",
                     issue_key,
-                    {"group": self.cfg.qa_gate_group, "value": self.cfg.qa_skipped},
+                    {"group": self.cfg.qa_gate_group, "value": self.cfg.qa_override},
                 ),
             )
         return out
@@ -479,6 +859,9 @@ class LinearBotEngine:
         issue_ref = issue_url or issue_key
         summary = "\n".join((comment_body or "").splitlines()[:10])
 
+        head_sha = self._extract_head_sha_token(comment_body)
+        repo_full_name, _pr_number = self._parse_github_pr_url(target_pr_url)
+
         if token == "FAILED":
             actions = [
                 Action("linear", "set_label", issue_key, {"group": self.cfg.qa_gate_group, "value": self.cfg.qa_failed}),
@@ -487,20 +870,100 @@ class LinearBotEngine:
             actions.extend(
                 self._github_comment(target_pr_url, f"QA FAILED. Summary: {summary}. See Linear: {issue_ref}")
             )
+            actions.extend(
+                self._github_check_run(
+                    target_pr_url,
+                    repo_full_name,
+                    head_sha,
+                    "completed",
+                    "failure",
+                    title="Vera QA failed",
+                    summary=f"Vera QA failed for {issue_key}. See Linear: {issue_ref}",
+                )
+            )
             return actions
 
-        gate_value = self.cfg.qa_skipped if token == "SKIPPED" else self.cfg.qa_passed
-        next_status = self.cfg.delivered_status
-        result_text = "QA SKIPPED" if token == "SKIPPED" else "QA PASSED"
-        next_text = "Delivered"
-        actions = [
-            Action("linear", "set_label", issue_key, {"group": self.cfg.qa_gate_group, "value": gate_value}),
-            Action("linear", "set_status", issue_key, {"status": next_status}),
-        ]
-        actions.extend(
-            self._github_comment(target_pr_url, f"{result_text}. Linear moved to {next_text}. {issue_ref}")
-        )
-        return actions
+        if token == "PASSED":
+            actions = [
+                Action("linear", "set_label", issue_key, {"group": self.cfg.qa_gate_group, "value": self.cfg.qa_passed}),
+                Action("linear", "set_status", issue_key, {"status": self.cfg.delivered_status}),
+            ]
+            actions.extend(
+                self._github_comment(target_pr_url, f"QA PASSED. Linear moved to Delivered. {issue_ref}")
+            )
+            actions.extend(
+                self._github_check_run(
+                    target_pr_url,
+                    repo_full_name,
+                    head_sha,
+                    "completed",
+                    "success",
+                    title="Vera QA passed",
+                    summary=f"Vera QA passed for {issue_key}. See Linear: {issue_ref}",
+                )
+            )
+            return actions
+
+        if token == "OVERRIDE":
+            actions = [
+                Action("linear", "set_label", issue_key, {"group": self.cfg.qa_gate_group, "value": self.cfg.qa_override}),
+                Action("linear", "set_status", issue_key, {"status": self.cfg.delivered_status}),
+            ]
+            actions.extend(
+                self._github_comment(target_pr_url, f"QA OVERRIDE authorized. Linear moved to Delivered. {issue_ref}")
+            )
+            actions.extend(
+                self._github_check_run(
+                    target_pr_url,
+                    repo_full_name,
+                    head_sha,
+                    "completed",
+                    "success",
+                    title="Vera QA override authorized",
+                    summary=f"Authorized QA override for {issue_key}. Reason/evidence: {summary}. See Linear: {issue_ref}",
+                )
+            )
+            return actions
+
+        if token == "ACTION_REQUIRED":
+            actions = [
+                Action("linear", "set_label", issue_key, {"group": self.cfg.blocked_group, "value": self.cfg.blocker_action_required}),
+                Action(
+                    "linear",
+                    "comment",
+                    issue_key,
+                    {"body": f"QA_RESULT=ACTION_REQUIRED. Vera cannot complete QA until: {summary}"},
+                ),
+            ]
+            actions.extend(
+                self._github_comment(target_pr_url, f"QA ACTION REQUIRED. Vera cannot complete QA until: {summary}. See Linear: {issue_ref}")
+            )
+            actions.extend(
+                self._github_check_run(
+                    target_pr_url,
+                    repo_full_name,
+                    head_sha,
+                    "completed",
+                    "failure",
+                    title="Vera QA action required",
+                    summary=f"Vera cannot complete QA until: {summary}. See Linear: {issue_ref}",
+                )
+            )
+            return actions
+
+        if token == "SKIPPED":
+            return [
+                Action(
+                    "linear",
+                    "comment",
+                    issue_key,
+                    {
+                        "body": "Deprecated QA_RESULT=SKIPPED ignored. Use QA_RESULT=OVERRIDE with explicit actor, reason, and evidence for an authorized QA bypass."
+                    },
+                )
+            ]
+
+        return []
 
     def on_linear_acceptance_gate_change(
         self,
@@ -564,7 +1027,7 @@ class LinearBotEngine:
     def on_github_pr_merged(self, issue: Dict[str, Any], pr_url: str, merge_sha: str) -> List[Action]:
         issue_key = issue.get("identifier", "")
         labels = self._labels(issue.get("labels", []))
-        qa_ok = bool({self.cfg.qa_passed, self.cfg.qa_skipped}.intersection(labels))
+        qa_ok = bool({self.cfg.qa_passed, self.cfg.qa_override}.intersection(labels))
         acceptance_ok = bool({self.cfg.pm_accepted, self.cfg.pm_skipped}.intersection(labels))
         status_ok = issue.get("status", "") == self.cfg.accepted_status
         blocked = self._has_blocker_signal(issue, labels)
@@ -583,7 +1046,7 @@ class LinearBotEngine:
 
         reasons: List[str] = []
         if not qa_ok:
-            reasons.append("missing qa-passed/qa-skipped")
+            reasons.append("missing qa-passed/qa-override")
         if not acceptance_ok:
             reasons.append("missing pm-accepted/pm-skipped")
         if not status_ok:
