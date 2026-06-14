@@ -109,7 +109,7 @@ Implemented in engine/service:
 - GitHub events:
   - `pull_request.opened`
   - `pull_request.ready_for_review`
-  - `pull_request.review_requested` for the `@BitPod-App/veraqa` team or `vera-qa` reviewer
+  - `pull_request.review_requested` for legacy/manual VeraQA review requests (compatibility trigger, not the required merge gate)
   - `pull_request.closed` with merged=true (gate-completeness check + merge record)
 - Linear events:
   - `Ready` / `In Progress` readiness enforcement trigger

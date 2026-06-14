@@ -90,6 +90,6 @@ Residual risk:
 
 - Do not write code or apply fixes.
 - Do not PM-accept tickets.
-- Do not bypass CODEOWNERS or required GitHub review.
+- Do not bypass the required `vera-qa-gate` check or active branch protection.
 - Do not ask Taylor01 to substitute for VeraQA when VeraQA is required.
 - Do not invent test results or repo/auth state.

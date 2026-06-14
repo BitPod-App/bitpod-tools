@@ -4,7 +4,7 @@
 **Owner:** Taylor01  
 **Linked issue:** [BIT-497 — Vera QA policy index — consolidate active vs. legacy docs](https://linear.app/bitpod-app/issue/BIT-497/vera-qa-policy-index-consolidate-active-vs-legacy-docs)
 
-> **Quick answer:** The current Vera QA policy is `vera_qa_lane_contract_v1.md`. Routing is via CODEOWNERS → `@BitPod-App/veraqa` as the single GitHub-native VeraQA gate. Vera decides QA depth at runtime/process level; GitHub team names must not encode tiers. Vera runs as a Hermes agent. Start there.
+> **Quick answer (updated 2026-06-14 / BIT-617):** The current Vera QA policy is `vera_qa_lane_contract_v1.md`. The active GitHub-native merge gate is the required `vera-qa-gate` check run emitted by the Vera QA Gate GitHub App/bot path. CODEOWNERS / `@BitPod-App/veraqa` review routing is retired as a merge gate because it creates actor/seat ambiguity and blocks the bot-owned QA lane.
 
 ---
 
@@ -13,17 +13,17 @@
 | File | Status | What it governs |
 |---|---|---|
 | [`vera_qa_lane_contract_v1.md`](./vera_qa_lane_contract_v1.md) | ✅ Working baseline (PRIMARY) | Full QA lane contract: role boundaries, verdict authority, required artifacts, flow, single-gate routing model, independence rules |
-| [`veraqa_review_routing_guide_v1.md`](./veraqa_review_routing_guide_v1.md) | ✅ Active guidance | CODEOWNERS single-gate routing defaults, escalation rules, bypass guidance |
-| [`github_team_purpose_reviewer_routing_v1.md`](./github_team_purpose_reviewer_routing_v1.md) | ✅ Active | GitHub team purpose, single VeraQA gate policy, escalation scoring |
+| [`veraqa_review_routing_guide_v1.md`](./veraqa_review_routing_guide_v1.md) | 📚 Historical / superseded by BIT-617 | Former CODEOWNERS routing model; retained for migration/audit only |
+| [`github_team_purpose_reviewer_routing_v1.md`](./github_team_purpose_reviewer_routing_v1.md) | 📚 Historical / superseded by BIT-617 | Former team/CODEOWNERS model; retained for migration/audit only |
 | [`qa_authority_model_v1.md`](./qa_authority_model_v1.md) | ✅ Working baseline | QA independence rules, verdict authority, gate policy |
 
-### Active GitHub team
+### Active GitHub gate
 
-| Team | Members | Default use |
+| Gate | Actor / source | Default use |
 |---|---|---|
-| `@BitPod-App/veraqa` | verified Vera review identities only; currently `vera-qa` unless/until BIT-595/BIT-596 prove a safer GitHub App/bot replacement | Single GitHub-native CODEOWNERS approval gate for active repos |
+| `vera-qa-gate` | Vera QA Gate GitHub App / bot-owned result sync | Single required GitHub-native QA check for active repos |
 
-**Membership rule:** Only verified Vera review identities belong in the VeraQA gate team. `taylor-01` and CJ/admin must not be default VeraQA team members — PM acceptance and admin bypass are separate from code review.
+**Retired team route:** `@BitPod-App/veraqa` / the `vera-qa` user seat are not the active merge gate. Keep them only as temporary compatibility surfaces until BIT-619 removes the paid user-seat path. PM acceptance and admin bypass remain separate from QA.
 
 **Superseded routing:** `@BitPod-App/veraqa-tier-1`, `@BitPod-App/veraqa-tier-2`, and `@BitPod-App/veraqa-tier-3-audit` are historical routing concepts only. Vera QA depth is decided by Vera/runtime/process, not by GitHub team name.
 
@@ -35,13 +35,13 @@
 
 ---
 
-## 2. Paused — Built But Not Currently Active
+## 2. Retired — Do Not Re-enable as Merge Gate
 
-| What | Status | Why paused | Re-enable condition |
-|---|---|---|---|
-| CODEOWNERS routing in most repos | ⚠️ **State ambiguous** — see note | Was commented out pending Vera being a real agent (per BIT-497, 2026-05-20); routing guide updated 2026-05-21 says routing is now active | Verify actual CODEOWNERS state per repo before relying on automated routing |
+| What | Status | Replacement |
+|---|---|---|
+| CODEOWNERS routing / `@BitPod-App/veraqa` review requirement | ❌ Retired by BIT-617 direction on 2026-06-14 | Required `vera-qa-gate` check run |
 
-> ⚠️ **CODEOWNERS state note (2026-05-28):** BIT-497 (created 2026-05-20) says CODEOWNERS routing was commented out. `veraqa_review_routing_guide_v1.md` was updated 2026-05-21 and says routing IS active. These may reflect a re-enable that happened between those dates — or the routing guide was updated aspirationally. **Do a live check of CODEOWNERS in each repo before trusting automated routing.**
+> CODEOWNERS caused attribution ambiguity and a paid `vera-qa` user-seat dependency while not representing the bot/app actor that actually owns the QA result. Do not re-enable CODEOWNERS as the default Vera gate. If a human wants optional review, request it explicitly outside branch protection.
 
 ---
 
@@ -70,26 +70,26 @@
 |---|---|
 | Vera as Hermes agent | ✅ Running — 63+ sessions logged under `~/.hermes/profiles/vera/` |
 | `qa-specialist` skill (transitional scaffold) | `bitpod-tools/tools/taylor01/core/agents/vera/skills/qa-specialist/` — installed artifact; repo is the source of truth |
-| `vera-qa` GitHub identity | Active fallback review identity — member of `@BitPod-App/veraqa` unless/until BIT-595/BIT-596 prove a safer app/bot replacement |
+| `vera-qa` GitHub identity | Retiring compatibility identity — do not rely on for merge gating; BIT-619 owns seat removal |
 | Honcho memory | ✅ Restored (Option A broker) — Vera broker at `127.0.0.1:8787` |
 
 **What Vera does NOT own:** product priority, scope reshaping, implementation, merge approval authority, rewriting acceptance criteria after work is complete.
 
 **Linear bot label path:** `QA_RESULT=PASSED` in a Linear comment → bot applies `qa-passed`. `QA_RESULT=FAILED` → `qa-failed`.
 
-**Required QA artifact:** Every dedicated Vera QA execution must produce a `verification_report.md`-style artifact. Verdict line must be `QA_VERDICT: PASSED`, `QA_VERDICT: FAILED`, or `QA_VERDICT: SKIPPED`.
+**Required QA artifact:** Every dedicated Vera QA execution must produce `verification_report.md` and `manifest.json`. Verdict/result vocabulary is `PASSED`, `FAILED`, `OVERRIDE`, or `ACTION_REQUIRED`; legacy `SKIPPED` is deprecated/fail-closed.
 
 ---
 
-## 6. Re-Enable Checklist for CODEOWNERS Routing
+## 6. Vera Gate Checklist
 
-Use this checklist to confirm that CODEOWNERS-based VeraQA routing is active and healthy in any repo:
+Use this checklist to confirm the custom Vera gate is active and healthy in any repo:
 
-- [ ] **Check CODEOWNERS file** in the target repo — routing line is present and not commented out (`* @BitPod-App/veraqa`)
-- [ ] **Verify team write access** — `@BitPod-App/veraqa` has write access to the repo (GitHub requires this for CODEOWNERS to take effect)
-- [ ] **Verify `vera-qa` is active** — confirm `vera-qa` GH account can post reviews and is a member of the VeraQA team on that repo
-- [ ] **Confirm branch protection** — `require_code_owner_reviews: true` is set in branch protection for main; `required_approving_review_count: 1`; `dismiss_stale_reviews: true`; `require_last_push_approval: true`
-- [ ] **Test with a PR** — open or update a PR and confirm VeraQA review is requested automatically from `@BitPod-App/veraqa`
+- [ ] Branch protection requires `vera-qa-gate` as a status check.
+- [ ] Branch protection does not require CODEOWNERS / PR reviews as the default QA gate.
+- [ ] Vera auto-dispatch creates a task for the current PR head SHA.
+- [ ] Vera produces `verification_report.md` + `manifest.json`.
+- [ ] Result sync updates GitHub `vera-qa-gate` and Linear QA label/status from the Vera result.
 
 ---
 
@@ -99,7 +99,7 @@ The following items look stale or inconsistent across existing docs. **Not silen
 
 1. **QA_VERDICT vs QA_RESULT:** The lane contract specifies `QA_VERDICT: PASSED/FAILED` as the required artifact final line. BIT-497 describes the Linear bot as parsing `QA_RESULT=PASSED/FAILED`. These tokens differ. Verify `bitpod-tools/linear/src/engine.py` and align the contract + bot to use the same token.
 
-2. **CODEOWNERS active/paused state:** As noted above — BIT-497 (2026-05-20) says routing was commented out; routing guide (2026-05-21) says it's active. No single source of truth for live CODEOWNERS state per repo. A live check per repo would resolve this.
+2. **CODEOWNERS state:** CODEOWNERS routing is retired as the default Vera gate. Any remaining CODEOWNERS references are historical/migration cleanup targets, not active policy.
 
 3. **BIT-497 says BIT-94 is "unstarted"** — BIT-94 refers to Vera Hermes agent embodiment. Vera is now running as a Hermes agent (BIT-99 is Done). BIT-94 should be checked for whether its ACs are now met or if it tracks something different from BIT-99.
 

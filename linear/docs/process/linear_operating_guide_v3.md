@@ -33,7 +33,7 @@ Maintenance update — 2026-05-20:
 - make comments an audit trail and pointer surface, not a substitute source of truth
 - require agents to update stale descriptions when a comment or external review changes material ticket truth
 - require QA/review to read the current description and linked PR/artifact, not reconstruct acceptance criteria from comment history
-- codify VeraQA (`vera-qa`) as the permanent official GitHub QA/code-review gate when requested by CODEOWNERS or branch protection
+- codify `vera-qa-gate` as the official GitHub QA gate; do not rely on CODEOWNERS / `vera-qa` user-seat review as the default merge gate
 - codify Taylor01 PM acceptance as a separate product/orchestration gate after QA, not a GitHub code-review substitute
 - constrain spawned workers to observation/advisory checks unless they are explicitly operating through a real gate identity
 
@@ -146,10 +146,10 @@ Maintenance update — 2026-05-20:
 
 12. QA and PM truth must be honest
 - QA and PM reviewers should be able to use the current issue description plus linked PR/artifact as the acceptance source. Do not require reviewers to reconstruct acceptance criteria from comment history.
-- Official GitHub code review / QA is VeraQA's lane when CODEOWNERS or branch protection requests `@BitPod-App/veraqa`. The expected review identity is a verified Vera review identity, currently `vera-qa` unless/until a GitHub App/bot actor is proven, not the PR author and not an advisory worker.
-- Treat verified Vera GitHub reviews as real QA/code reviews. Do not require a second human or worker pass merely to make the QA review “real”; request deeper Vera review only when the change risk or Vera's own verdict calls for it.
-- Vera never authors PRs. That separation is what makes Vera the correct permanent QA gate. VeraQA gate membership should contain only verified Vera review identities unless CJ explicitly approves another reviewer.
-- Spawned workers are not the official code-review gate by default. Use them to observe PR/check/review state, run bounded advisory checks, or report when QA passes/rejects; do not treat them as a substitute for `vera-qa` approval.
+- Official GitHub QA is Vera's lane when the required `vera-qa-gate` check is present. The expected gate actor/source is the Vera QA Gate GitHub App / bot-owned result sync, not the PR author, not CODEOWNERS, and not an advisory worker.
+- Treat verified `vera-qa-gate` results as real QA. Do not require a second human or worker pass merely to make the QA review “real”; request deeper Vera review only when the change risk or Vera's own verdict calls for it.
+- Vera never authors PRs. That separation is what makes Vera the correct permanent QA gate.
+- Spawned workers are not the official code-review gate by default. Use them to observe PR/check/review state, run bounded advisory checks, or report when QA passes/rejects; do not treat them as a substitute for `vera-qa-gate`.
 - QA outcome translation to Linear:
   - Vera approval / QA pass -> move forward according to workflow, normally toward `Delivered` with `qa-passed` when the issue's description/acceptance criteria are satisfied.
   - Vera requested changes / QA reject -> move back to `In Progress` with `qa-failed` / QA-rejected evidence and link to the GitHub requested changes.

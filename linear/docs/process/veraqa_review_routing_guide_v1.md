@@ -1,46 +1,28 @@
 # VeraQA Review Routing Guide v1
 
-Status: Active guidance  
-Owner: BitPod GitHub governance / Vera QA lane  
-Scope: active BitPod-App repos, main-branch PR review routing
+Status: Historical / superseded by BIT-617 on 2026-06-14
+Owner: BitPod GitHub governance / Vera QA lane
+Scope: retained only to explain the former CODEOWNERS model
 
-## Purpose
+## Current status
 
-Keep VeraQA review routing simple, understandable, and easy to override when operator judgment requires it.
+CODEOWNERS-based VeraQA routing is retired as the default merge gate. Active repos should require the GitHub check run `vera-qa-gate` instead of requiring `@BitPod-App/veraqa` review.
 
-This guide replaces the heavier rule-of-record framing. It is guidance for default routing and escalation, not a constitutional enforcement layer.
+Reasons for retirement:
 
-Companion context:
+- CODEOWNERS routes through a GitHub user/team review abstraction, not the bot/app actor that produced the QA verdict.
+- The `vera-qa` user seat costs money and creates attribution ambiguity.
+- Required CODEOWNERS review can block PRs even when the real custom Vera QA gate has passed.
 
-- [github_team_purpose_reviewer_routing_v1.md](./github_team_purpose_reviewer_routing_v1.md)
-- [vera_qa_lane_contract_v1.md](./vera_qa_lane_contract_v1.md)
+## Active replacement
 
-
-## Current rollout status
-
-Status: **Active**.
-
-Live-state note — 2026-06-08:
-
-- Active repo CODEOWNERS files should route PR review to one VeraQA gate team: `@BitPod-App/veraqa`.
-- Tier-based teams (`veraqa-tier-1`, `veraqa-tier-2`, `veraqa-tier-3-audit`) are superseded as active routing concepts.
-- Vera QA depth is a Vera/runtime/process decision, not a GitHub team-name decision.
-- `@BitPod-App/veraqa` exists as a stable indirection layer so the concrete review identity can change later, for example from the `vera-qa` user to a verified GitHub App/bot actor, without rewriting every repo CODEOWNERS file.
-- `taylor-01` and CJ/admin must not be VeraQA team members by default because PM acceptance and admin bypass are separate from code review.
-
-If routing is found paused, commented out, or still pointing at a tier team, re-enable by restoring the active CODEOWNERS line and verifying that `@BitPod-App/veraqa` has write access on that repo.
-
-## Default routing
-
-Use CODEOWNERS to point PR review toward the single VeraQA gate:
+Use branch protection / rulesets to require:
 
 ```text
-* @BitPod-App/veraqa
+vera-qa-gate
 ```
 
-Maintainer teams such as `@BitPod-App/core-maintainers` or `@BitPod-App/code-maintainers` should not be the default QA review route.
-
-`@BitPod-App/qa-reviewers` may exist as an older/general QA team, but it is not the default VeraQA CODEOWNERS route.
+Do not require CODEOWNERS / PR reviews as the default Vera QA gate. Optional human review may still be requested manually, but it must not be the merge-blocking QA lane.
 
 ## QA depth
 
@@ -57,28 +39,27 @@ Rare deep audits remain explicit Taylor/CJ/Vera requests or intentionally select
 
 ## GitHub permission note
 
-GitHub only treats a team as a valid CODEOWNERS owner when that team has write access to the repository. For VeraQA teams, write access is a GitHub routing requirement, not implementation ownership. The role boundary remains QA review only.
+This section is historical. The active gate no longer depends on team write access for CODEOWNERS. Active repos should require the `vera-qa-gate` status check and keep admin enforcement enabled.
 
 ## Branch protection posture
 
-Keep GitHub branch protection strict enough to make VeraQA real, but lightweight in approval count:
+Current desired baseline:
 
 ```yaml
-required_approving_review_count: 1
-require_code_owner_reviews: true
-dismiss_stale_reviews: true
-require_last_push_approval: true
+required_status_checks:
+  - vera-qa-gate
+required_pull_request_reviews: null
 enforce_admins: true
 restrictions: null
 ```
 
-CODEOWNERS is the VeraQA routing gate. The one required approval is the lightweight merge safety baseline. Dismiss stale reviews and last-push approval prevent post-review changes from slipping through without fresh VeraQA approval; admin enforcement prevents routine admin bypass from becoming the default path.
+CODEOWNERS / PR-review requirements are not the VeraQA merge gate.
 
 ## Bypass guidance
 
-Admins may bypass default routing when urgency, broken tooling, or operator judgment requires it.
+Admins may bypass the custom QA gate when urgency, broken tooling, or operator judgment requires it.
 
-When a bypass skips the expected VeraQA path, leave a short visible note in the PR, issue, or follow-up thread with:
+When a bypass skips the expected `vera-qa-gate` path, leave a short visible note in the PR, issue, or follow-up thread with:
 
 - what was bypassed
 - why it was reasonable
@@ -90,4 +71,4 @@ Do not build a large bypass registry unless bypasses become frequent enough to n
 
 The durable rule is simple:
 
-> VeraQA owns technical QA review routing through the single `@BitPod-App/veraqa` gate. `sector-feeds` and `bitregime-core` default to escalated Vera review. Other repos default to baseline Vera review unless PR size, complexity, or risk justifies escalation. Rare deep audit is manual, never default.
+> VeraQA owns technical QA through the required `vera-qa-gate` check. Repos may request deeper Vera review based on risk, but GitHub team/CODEOWNERS routing is historical, not the active merge gate.
