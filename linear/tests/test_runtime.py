@@ -879,6 +879,49 @@ class RuntimeTests(unittest.TestCase):
                 else:
                     os.environ["VERA_QA_ARTIFACT_ROOT"] = old_artifact_root
 
+    def test_vera_dispatch_fails_closed_when_artifact_root_inside_worktree_reviewed_repo(self):
+        # Regression for BIT-631: the workspace map uses a "worktree:" scheme in
+        # production. The containment guard must strip the scheme and still fail
+        # closed when VERA_QA_ARTIFACT_ROOT resolves inside the reviewed repo.
+        old_enabled = os.environ.get("VERA_QA_DISPATCH_ENABLED")
+        old_map = os.environ.get("VERA_QA_KANBAN_WORKSPACE_MAP")
+        old_artifact_root = os.environ.get("VERA_QA_ARTIFACT_ROOT")
+        with tempfile.TemporaryDirectory() as tmp:
+            reviewed_repo = os.path.join(tmp, "reviewed-repo")
+            os.makedirs(reviewed_repo)
+            try:
+                os.environ["VERA_QA_DISPATCH_ENABLED"] = "true"
+                os.environ["VERA_QA_ARTIFACT_ROOT"] = os.path.join(reviewed_repo, "qa-artifacts")
+                os.environ["VERA_QA_KANBAN_WORKSPACE_MAP"] = json.dumps(
+                    {"BitPod-App/taylor01-mind": f"worktree:{reviewed_repo}"}
+                )
+                action = Action(
+                    "hermes",
+                    "enqueue_vera_qa",
+                    "BIT-631",
+                    {
+                        "issue_key": "BIT-631",
+                        "repo_full_name": "BitPod-App/taylor01-mind",
+                        "pr_number": "44",
+                        "head_sha": "abc123",
+                    },
+                )
+                with self.assertRaisesRegex(RuntimeError, "artifact workspace resolves inside reviewed repo workspace"):
+                    execute_hermes_vera_dispatch(action)
+            finally:
+                if old_enabled is None:
+                    os.environ.pop("VERA_QA_DISPATCH_ENABLED", None)
+                else:
+                    os.environ["VERA_QA_DISPATCH_ENABLED"] = old_enabled
+                if old_map is None:
+                    os.environ.pop("VERA_QA_KANBAN_WORKSPACE_MAP", None)
+                else:
+                    os.environ["VERA_QA_KANBAN_WORKSPACE_MAP"] = old_map
+                if old_artifact_root is None:
+                    os.environ.pop("VERA_QA_ARTIFACT_ROOT", None)
+                else:
+                    os.environ["VERA_QA_ARTIFACT_ROOT"] = old_artifact_root
+
     def test_vera_dispatch_workspace_map_fails_closed_for_unmapped_repo(self):
         old_enabled = os.environ.get("VERA_QA_DISPATCH_ENABLED")
         old_map = os.environ.get("VERA_QA_KANBAN_WORKSPACE_MAP")

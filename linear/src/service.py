@@ -308,6 +308,25 @@ def _path_is_within(child: Path, parent: Path) -> bool:
         return False
 
 
+def _normalize_workspace_path(workspace: str) -> str:
+    """Resolve a Vera workspace string to a real filesystem path.
+
+    Workspace-map values may carry a Hermes scheme prefix such as
+    ``worktree:/abs/path`` (the exact shape this repo's Vera review path
+    uses). The scheme must be stripped before any filesystem containment
+    check; otherwise ``Path("worktree:/...")`` never resolves to a real
+    location, ``.exists()`` is false, and safety guards silently no-op.
+    Returns "" for an empty/blank workspace.
+    """
+    raw = str(workspace or "").strip()
+    if not raw:
+        return ""
+    m = re.match(r"^(?P<scheme>[A-Za-z][A-Za-z0-9+.-]*):(?P<rest>.+)$", raw)
+    if m and m.group("scheme").lower() in {"worktree", "worktrees", "repo", "path", "file"}:
+        raw = m.group("rest").strip()
+    return os.path.expanduser(raw)
+
+
 def _extract_github_pr_number(pr_url: str) -> str:
     _, _, number = parse_pr_url(pr_url)
     return number
@@ -330,8 +349,8 @@ def _vera_qa_artifact_workspace_for_action(action: Action, reviewed_workspace: s
     head_sha = _safe_path_segment(str(payload.get("head_sha") or payload.get("idempotency_key") or "unknown-sha"), "sha")[:40]
     artifact_workspace = root / issue / repo / f"pr-{pr_number}" / head_sha
 
-    reviewed = Path(os.path.expanduser(reviewed_workspace or ""))
-    if reviewed_workspace and reviewed.exists() and _path_is_within(artifact_workspace, reviewed):
+    reviewed_path = _normalize_workspace_path(reviewed_workspace)
+    if reviewed_path and _path_is_within(artifact_workspace, Path(reviewed_path)):
         raise RuntimeError(
             "Vera QA artifact workspace resolves inside reviewed repo workspace; "
             "set VERA_QA_ARTIFACT_ROOT outside the repo checkout"
