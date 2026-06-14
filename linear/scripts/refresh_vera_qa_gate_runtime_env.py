@@ -159,6 +159,7 @@ def build_runtime_env(
         "BOT_HOST": "127.0.0.1",
         "BOT_PORT": "8796",
         "VERA_QA_DISPATCH_ENABLED": "true",
+        "HERMES_CLI_PATH": str(Path.home() / ".local/bin/hermes"),
         "VERA_QA_GATE_LIVE_ENABLED": "true",
         "VERA_QA_RESULT_SYNC_ENABLED": "true",
         "VERA_QA_RESULT_SYNC_INTERVAL_SECONDS": "10",

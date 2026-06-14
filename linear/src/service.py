@@ -8,6 +8,7 @@ import hmac
 import json
 import os
 import re
+import shutil
 import subprocess
 import tempfile
 import threading
@@ -16,6 +17,7 @@ import time
 import urllib.error
 import urllib.request
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 try:
@@ -276,6 +278,23 @@ def _vera_qa_workspace_for_action(action: Action) -> str:
     return str(os.getenv("VERA_QA_KANBAN_WORKSPACE", "scratch") or "scratch")
 
 
+def _hermes_cli_path() -> str:
+    explicit = os.getenv("HERMES_CLI_PATH", "").strip()
+    if explicit:
+        return os.path.expanduser(explicit)
+    discovered = shutil.which("hermes")
+    if discovered:
+        return discovered
+    for candidate in [
+        Path.home() / ".local/bin/hermes",
+        Path("/opt/homebrew/bin/hermes"),
+        Path("/usr/local/bin/hermes"),
+    ]:
+        if candidate.is_file() and os.access(candidate, os.X_OK):
+            return str(candidate)
+    return "hermes"
+
+
 def execute_hermes_vera_dispatch(action: Action) -> str:
     if not env_truthy("VERA_QA_DISPATCH_ENABLED"):
         raise RuntimeError("vera QA dispatch switch is off; set VERA_QA_DISPATCH_ENABLED=true to enqueue Hermes Vera QA tasks")
@@ -285,7 +304,7 @@ def execute_hermes_vera_dispatch(action: Action) -> str:
     idempotency_key = str(action.payload.get("idempotency_key") or f"vera-qa:{action.target}")
     workspace = _vera_qa_workspace_for_action(action)
     cmd = [
-        "hermes",
+        _hermes_cli_path(),
         "kanban",
         "create",
         title,
@@ -299,7 +318,10 @@ def execute_hermes_vera_dispatch(action: Action) -> str:
         workspace,
         "--json",
     ]
-    proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=False)
+    try:
+        proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=False)
+    except FileNotFoundError as exc:
+        raise RuntimeError("hermes CLI not found; set HERMES_CLI_PATH or include hermes on PATH") from exc
     if proc.returncode != 0:
         detail = proc.stderr.strip() or proc.stdout.strip() or "hermes kanban create failed"
         raise RuntimeError(detail)

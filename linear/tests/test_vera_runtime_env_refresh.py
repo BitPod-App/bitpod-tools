@@ -41,6 +41,7 @@ class VeraRuntimeEnvRefreshTests(unittest.TestCase):
         self.assertEqual(env["LINEAR_OAUTH_CLIENT_SECRET"], "linear-client-secret")
         self.assertEqual(env["LINEAR_EXPECTED_ACTOR_ID"], "actor-id")
         self.assertEqual(env["GITHUB_WEBHOOK_SECRET"], "webhook-secret")
+        self.assertTrue(env["HERMES_CLI_PATH"].endswith("/.local/bin/hermes"))
         self.assertTrue(env["TRACE_STORE_PATH"].startswith("/"))
         self.assertNotIn("~", env["TRACE_STORE_PATH"])
         self.assertIn("BitPod-App/taylor01-mind", env["VERA_QA_KANBAN_WORKSPACE_MAP"])

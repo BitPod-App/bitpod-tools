@@ -14,5 +14,7 @@ fi
 # shellcheck disable=SC1090
 source "$RUNTIME_ENV"
 
+export PATH="$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
+
 cd "$REPO_ROOT"
 exec python3 linear/src/service.py

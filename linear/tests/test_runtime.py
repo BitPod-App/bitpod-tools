@@ -633,6 +633,33 @@ class RuntimeTests(unittest.TestCase):
         self.assertFalse(decision.allowed)
         self.assertEqual(decision.policy_class, "B")
 
+    def test_vera_dispatch_uses_configured_hermes_cli_path_under_launchd_path(self):
+        old_enabled = os.environ.get("VERA_QA_DISPATCH_ENABLED")
+        old_cli = os.environ.get("HERMES_CLI_PATH")
+        os.environ["VERA_QA_DISPATCH_ENABLED"] = "true"
+        os.environ["HERMES_CLI_PATH"] = "/tmp/bitpod-hermes-cli"
+        calls = []
+
+        def fake_run(cmd, stdout=None, stderr=None, text=None, check=None):
+            calls.append(cmd)
+            return subprocess.CompletedProcess(cmd, 0, stdout='{ "id": "t_1" }', stderr="")
+
+        try:
+            action = Action("hermes", "enqueue_vera_qa", "BIT-617", {"idempotency_key": "vera-qa:BIT-617"})
+            with patch("linear.src.service.subprocess.run", side_effect=fake_run):
+                execute_hermes_vera_dispatch(action)
+        finally:
+            if old_enabled is None:
+                os.environ.pop("VERA_QA_DISPATCH_ENABLED", None)
+            else:
+                os.environ["VERA_QA_DISPATCH_ENABLED"] = old_enabled
+            if old_cli is None:
+                os.environ.pop("HERMES_CLI_PATH", None)
+            else:
+                os.environ["HERMES_CLI_PATH"] = old_cli
+
+        self.assertEqual(calls[0][0], "/tmp/bitpod-hermes-cli")
+
     def test_vera_dispatch_uses_repo_workspace_map(self):
         old_enabled = os.environ.get("VERA_QA_DISPATCH_ENABLED")
         old_map = os.environ.get("VERA_QA_KANBAN_WORKSPACE_MAP")
