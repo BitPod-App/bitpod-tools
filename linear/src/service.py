@@ -167,11 +167,12 @@ def github_app_installation_token_from_env() -> str:
     if direct_token:
         return direct_token
     app_id = os.getenv("VERA_QA_GATE_GITHUB_APP_ID", "").strip()
+    client_id = os.getenv("VERA_QA_GATE_GITHUB_CLIENT_ID", "").strip()
     installation_id = os.getenv("VERA_QA_GATE_GITHUB_APP_INSTALLATION_ID", "").strip()
     private_key = os.getenv("VERA_QA_GATE_GITHUB_APP_PRIVATE_KEY", "").strip()
     if not (app_id and installation_id and private_key):
         raise RuntimeError("missing Vera QA Gate GitHub App credentials; set VERA_QA_GATE_GITHUB_TOKEN or app id/installation id/private key")
-    jwt_token = _github_app_jwt(app_id, private_key)
+    jwt_token = _github_app_jwt(client_id or app_id, private_key)
     result = _github_json_request("POST", f"/app/installations/{installation_id}/access_tokens", jwt_token, {})
     token = str(result.get("token") or "")
     if not token:
