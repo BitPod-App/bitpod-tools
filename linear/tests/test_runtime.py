@@ -14,6 +14,7 @@ from linear.src.service import (
     collect_vera_qa_completed_events,
     execute_hermes_vera_dispatch,
     execute_github_check_run,
+    github_app_installation_token_from_env,
     load_completed_vera_qa_tasks,
     sync_vera_qa_results_once,
     _github_webhook_secret_from_env,
@@ -421,6 +422,41 @@ class RuntimeTests(unittest.TestCase):
         self.assertIn("-----BEGIN PRIVATE KEY-----\n", normalized)
         self.assertIn("\n-----END PRIVATE KEY-----", normalized)
         self.assertIn("YWJjZGVm", normalized)
+
+    def test_github_installation_token_uses_client_id_as_jwt_issuer_when_available(self):
+        seen = {}
+
+        def fake_jwt(issuer, private_key):
+            seen["issuer"] = issuer
+            seen["private_key"] = private_key
+            return "jwt-token"
+
+        def fake_request(method, path, token, body=None):
+            seen["request"] = (method, path, token, body)
+            return {"token": "ghs_installation_token"}
+
+        with patch.dict(
+            os.environ,
+            {
+                "VERA_QA_GATE_GITHUB_APP_ID": "4007105",
+                "VERA_QA_GATE_GITHUB_CLIENT_ID": "Iv23client",
+                "VERA_QA_GATE_GITHUB_APP_INSTALLATION_ID": "139088756",
+                "VERA_QA_GATE_GITHUB_APP_PRIVATE_KEY": "private-key",
+            },
+            clear=False,
+        ):
+            with patch("linear.src.service._github_app_jwt", side_effect=fake_jwt), patch(
+                "linear.src.service._github_json_request", side_effect=fake_request
+            ):
+                token = github_app_installation_token_from_env()
+
+        self.assertEqual(token, "ghs_installation_token")
+        self.assertEqual(seen["issuer"], "Iv23client")
+        self.assertEqual(seen["private_key"], "private-key")
+        self.assertEqual(
+            seen["request"],
+            ("POST", "/app/installations/139088756/access_tokens", "jwt-token", {}),
+        )
 
     def test_github_webhook_signature_requires_matching_hmac_when_secret_is_set(self):
         import hashlib

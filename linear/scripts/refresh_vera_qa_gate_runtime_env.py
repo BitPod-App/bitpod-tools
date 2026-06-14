@@ -17,7 +17,7 @@ DEFAULT_SERVICE_ACCOUNT_ENV = "~/.hermes/profiles/vera/op-vault-service.env"
 DEFAULT_OUTPUT_ENV = "~/.hermes/profiles/vera/vera-qa-gate-runtime.env"
 DEFAULT_TRACE_STORE = "~/.hermes/profiles/vera/vera-qa-gate-runtime-trace.jsonl"
 DEFAULT_VAULT = "Vera Runtime"
-DEFAULT_GITHUB_ITEM = "Vera Runtime - Vera QA Gate GitHub App Private Key"
+DEFAULT_GITHUB_ITEM = "GitHub App - Vera QA Gate Private Key"
 DEFAULT_LINEAR_ITEM = "Vera Runtime - Linear OAuth Apps"
 DEFAULT_WORKSPACE_MAP = {
     "BitPod-App/.github": "worktree:/Users/taylor01/BitPod-App/.github",
@@ -160,7 +160,15 @@ def build_runtime_env(
     linear_actor: Optional[Mapping[str, str]] = None,
     workspace_map: Optional[Mapping[str, str]] = None,
 ) -> Dict[str, str]:
-    webhook_secret = _required(github_fields, "VERA_QA_GATE_WEBHOOK_SIGNING_SECRET")
+    app_id = _required(github_fields, "APP_ID", "VERA_QA_GATE_GITHUB_APP_ID")
+    client_id = _required(github_fields, "CLIENT_ID", "APP_ID", "VERA_QA_GATE_GITHUB_APP_ID")
+    installation_id = _required(
+        github_fields,
+        "INSTALLATION_ID",
+        "VERA_QA_GATE_GITHUB_APP_INSTALLATION_ID",
+    )
+    private_key = _required(github_fields, "PRIVATE_KEY", "VERA_QA_GATE_GITHUB_APP_PRIVATE_KEY")
+    webhook_secret = _required(github_fields, "WEBHOOK_SIGNING_SECRET", "VERA_QA_GATE_WEBHOOK_SIGNING_SECRET")
     env: Dict[str, str] = {
         "DRY_RUN": "false",
         "BOT_HOST": "127.0.0.1",
@@ -170,11 +178,10 @@ def build_runtime_env(
         "VERA_QA_GATE_LIVE_ENABLED": "true",
         "VERA_QA_RESULT_SYNC_ENABLED": "true",
         "VERA_QA_RESULT_SYNC_INTERVAL_SECONDS": "10",
-        "VERA_QA_GATE_GITHUB_APP_ID": _required(github_fields, "VERA_QA_GATE_GITHUB_APP_ID"),
-        "VERA_QA_GATE_GITHUB_APP_INSTALLATION_ID": _required(
-            github_fields, "VERA_QA_GATE_GITHUB_APP_INSTALLATION_ID"
-        ),
-        "VERA_QA_GATE_GITHUB_APP_PRIVATE_KEY": _required(github_fields, "VERA_QA_GATE_GITHUB_APP_PRIVATE_KEY"),
+        "VERA_QA_GATE_GITHUB_APP_ID": app_id,
+        "VERA_QA_GATE_GITHUB_CLIENT_ID": client_id,
+        "VERA_QA_GATE_GITHUB_APP_INSTALLATION_ID": installation_id,
+        "VERA_QA_GATE_GITHUB_APP_PRIVATE_KEY": private_key,
         "VERA_QA_GATE_WEBHOOK_SIGNING_SECRET": webhook_secret,
         "GITHUB_WEBHOOK_SECRET": webhook_secret,
         "LINEAR_WEBHOOK_SECRET": webhook_secret,

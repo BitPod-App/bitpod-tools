@@ -5,6 +5,7 @@ import tempfile
 import unittest
 
 from linear.scripts.refresh_vera_qa_gate_runtime_env import (
+    DEFAULT_GITHUB_ITEM,
     DEFAULT_WORKSPACE_MAP,
     build_runtime_env,
     parse_env_file,
@@ -26,10 +27,11 @@ class VeraRuntimeEnvRefreshTests(unittest.TestCase):
     def test_build_runtime_env_uses_github_app_and_linear_oauth_client_credentials(self):
         env = build_runtime_env(
             github_fields={
-                "VERA_QA_GATE_GITHUB_APP_ID": "app-id",
-                "VERA_QA_GATE_GITHUB_APP_INSTALLATION_ID": "install-id",
-                "VERA_QA_GATE_GITHUB_APP_PRIVATE_KEY": "private-key",
-                "VERA_QA_GATE_WEBHOOK_SIGNING_SECRET": "webhook-secret",
+                "APP_ID": "app-id",
+                "CLIENT_ID": "client-id",
+                "INSTALLATION_ID": "install-id",
+                "PRIVATE_KEY": "private-key",
+                "WEBHOOK_SIGNING_SECRET": "webhook-secret",
             },
             linear_fields={
                 "CLIENT_ID": "linear-client-id",
@@ -42,6 +44,12 @@ class VeraRuntimeEnvRefreshTests(unittest.TestCase):
         self.assertEqual(env["VERA_QA_DISPATCH_ENABLED"], "true")
         self.assertEqual(env["VERA_QA_GATE_LIVE_ENABLED"], "true")
         self.assertEqual(env["VERA_QA_RESULT_SYNC_ENABLED"], "true")
+        self.assertEqual(DEFAULT_GITHUB_ITEM, "GitHub App - Vera QA Gate Private Key")
+        self.assertEqual(env["VERA_QA_GATE_GITHUB_APP_ID"], "app-id")
+        self.assertEqual(env["VERA_QA_GATE_GITHUB_CLIENT_ID"], "client-id")
+        self.assertEqual(env["VERA_QA_GATE_GITHUB_APP_INSTALLATION_ID"], "install-id")
+        self.assertEqual(env["VERA_QA_GATE_GITHUB_APP_PRIVATE_KEY"], "private-key")
+        self.assertEqual(env["VERA_QA_GATE_WEBHOOK_SIGNING_SECRET"], "webhook-secret")
         self.assertEqual(env["LINEAR_LIVE_EXECUTOR_ENABLED"], "true")
         self.assertEqual(env["LINEAR_OAUTH_CLIENT_ID"], "linear-client-id")
         self.assertEqual(env["LINEAR_OAUTH_CLIENT_SECRET"], "linear-client-secret")
@@ -52,6 +60,28 @@ class VeraRuntimeEnvRefreshTests(unittest.TestCase):
         self.assertNotIn("~", env["TRACE_STORE_PATH"])
         self.assertIn("BitPod-App/taylor01-mind", env["VERA_QA_KANBAN_WORKSPACE_MAP"])
         self.assertNotIn("LINEAR_API_KEY", env)
+        self.assertNotIn("GH_TOKEN", env)
+        self.assertNotIn("GITHUB_TOKEN", env)
+
+    def test_build_runtime_env_still_accepts_legacy_vera_field_labels(self):
+        env = build_runtime_env(
+            github_fields={
+                "VERA_QA_GATE_GITHUB_APP_ID": "legacy-app-id",
+                "VERA_QA_GATE_GITHUB_APP_INSTALLATION_ID": "legacy-install-id",
+                "VERA_QA_GATE_GITHUB_APP_PRIVATE_KEY": "legacy-private-key",
+                "VERA_QA_GATE_WEBHOOK_SIGNING_SECRET": "legacy-webhook-secret",
+            },
+            linear_fields={
+                "CLIENT_ID": "linear-client-id",
+                "CLIENT_SECRET": "linear-client-secret",
+            },
+        )
+
+        self.assertEqual(env["VERA_QA_GATE_GITHUB_APP_ID"], "legacy-app-id")
+        self.assertEqual(env["VERA_QA_GATE_GITHUB_CLIENT_ID"], "legacy-app-id")
+        self.assertEqual(env["VERA_QA_GATE_GITHUB_APP_INSTALLATION_ID"], "legacy-install-id")
+        self.assertEqual(env["VERA_QA_GATE_GITHUB_APP_PRIVATE_KEY"], "legacy-private-key")
+        self.assertEqual(env["VERA_QA_GATE_WEBHOOK_SIGNING_SECRET"], "legacy-webhook-secret")
 
     def test_default_workspace_map_covers_all_vera_gate_installed_repos(self):
         expected_repos = {
