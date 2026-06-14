@@ -121,6 +121,29 @@ class EngineTests(unittest.TestCase):
         self.assertNotIn("NO_VERDICT", comment.payload["body"])
 
 
+    def test_gh_synchronize_non_draft_dispatches_vera_qa_for_latest_head(self):
+        ev = {
+            "action": "synchronize",
+            "pull_request": {
+                "number": 120,
+                "title": "BIT-617 dispatcher proof",
+                "body": "",
+                "draft": False,
+                "html_url": "https://github.com/BitPod-App/bitpod-tools/pull/120",
+                "head": {"ref": "codex/bit-617-proof", "sha": "feed617"},
+            },
+        }
+
+        actions = self.bot.on_github_pr_synchronize(ev)
+
+        dispatch = next(a for a in actions if a.system == "hermes" and a.kind == "enqueue_vera_qa")
+        self.assertEqual(dispatch.target, "BIT-617")
+        self.assertEqual(dispatch.payload["source_event"], "github_pr_synchronize_review_ready")
+        self.assertEqual(dispatch.payload["head_sha"], "feed617")
+        check = next(a for a in actions if a.system == "github" and a.kind == "check_run")
+        self.assertEqual(check.payload["status"], "queued")
+        self.assertEqual(check.payload["head_sha"], "feed617")
+
     def test_gh_review_requested_for_veraqa_dispatches_vera_qa(self):
         ev = {
             "action": "review_requested",

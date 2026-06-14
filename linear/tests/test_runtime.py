@@ -81,6 +81,25 @@ class RuntimeTests(unittest.TestCase):
         self.assertTrue(any(a.system == "hermes" and a.kind == "enqueue_vera_qa" for a in actions))
         self.assertTrue(any(a.system == "github" and a.kind == "check_run" and a.payload.get("status") == "queued" for a in actions))
 
+    def test_runtime_routes_github_synchronize_to_vera_dispatch_for_review_ready_pr(self):
+        rt = BotRuntime()
+        actions = rt.run_github_event(
+            {
+                "action": "synchronize",
+                "pull_request": {
+                    "number": 120,
+                    "title": "BIT-617 dispatcher proof",
+                    "body": "",
+                    "draft": False,
+                    "html_url": "https://github.com/BitPod-App/bitpod-tools/pull/120",
+                    "head": {"ref": "codex/bit-617-proof", "sha": "feed617"},
+                },
+            }
+        )
+
+        self.assertTrue(any(a.system == "hermes" and a.kind == "enqueue_vera_qa" for a in actions))
+        self.assertTrue(any(a.system == "github" and a.kind == "check_run" and a.payload.get("head_sha") == "feed617" for a in actions))
+
     def test_runtime_routes_linear_issue_in_review_to_vera_dispatch(self):
         rt = BotRuntime()
         actions = rt.run_linear_event(

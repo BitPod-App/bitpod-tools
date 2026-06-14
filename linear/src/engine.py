@@ -478,6 +478,41 @@ class LinearBotEngine:
         )
         return actions
 
+    def on_github_pr_synchronize(self, event: Dict[str, Any]) -> List[Action]:
+        pr = event.get("pull_request", {})
+        if pr.get("draft") is True:
+            return []
+        issue_key = self._linked_issue_from_pr(pr)
+        if not issue_key:
+            return [
+                Action("github", "comment", str(pr.get("number", "")), {"body": self._issue_linking_comment()})
+            ]
+
+        pr_url = str(pr.get("html_url", ""))
+        repo_full_name, pr_number = self._parse_github_pr_url(pr_url)
+        head = pr.get("head", {}) if isinstance(pr.get("head", {}), dict) else {}
+        head_sha = str(head.get("sha") or pr.get("head_sha") or "")
+        actions = [
+            Action("linear", "set_status", issue_key, {"status": self.cfg.in_review_status}),
+            Action(
+                "linear",
+                "comment",
+                issue_key,
+                {"body": f"PR head updated while in review: {pr_url}. Re-dispatching Vera QA for the latest head."},
+            ),
+        ]
+        actions.extend(
+            self._vera_dispatch_actions(
+                issue_key=issue_key,
+                source_event="github_pr_synchronize_review_ready",
+                pr_url=pr_url,
+                repo_full_name=repo_full_name,
+                pr_number=pr_number,
+                head_sha=head_sha,
+            )
+        )
+        return actions
+
 
     def _is_vera_review_request(self, event: Dict[str, Any]) -> bool:
         team = event.get("requested_team") or {}

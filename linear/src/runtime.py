@@ -35,6 +35,8 @@ class BotRuntime:
             out = self.engine.on_github_pr_opened(event)
         elif action == "ready_for_review":
             out = self.engine.on_github_pr_ready_for_review(event)
+        elif action == "synchronize":
+            out = self.engine.on_github_pr_synchronize(event)
         elif action == "review_requested":
             out = self.engine.on_github_pr_review_requested(event)
         elif action == "closed" and pr.get("merged") is True:

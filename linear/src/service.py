@@ -649,6 +649,8 @@ class Handler(BaseHTTPRequestHandler):
                 actions = self.runtime.run_github_event(data)
             elif action == "ready_for_review":
                 actions = self.runtime.run_github_event(data)
+            elif action == "synchronize":
+                actions = self.runtime.run_github_event(data)
             elif action == "review_requested":
                 actions = self.runtime.run_github_event(data)
             elif action == "closed" and data.get("pull_request", {}).get("merged") is True:
