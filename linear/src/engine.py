@@ -74,7 +74,7 @@ class BotConfig:
     type_group: str = "Issue Type"
     blocked_group: str = "Blocked By"
     blocked_label: str = "blocked"
-    qa_gate_group: str = "QA Review"
+    qa_gate_group: str = "In Review - QA Gate"
     acceptance_gate_group: str = "PM Review"
 
     blocked_needs_specs: str = "needs-specs"
@@ -577,8 +577,18 @@ class LinearBotEngine:
         )
 
         actions = [
-            Action("linear", "set_label", issue_key, {"group": self.cfg.qa_gate_group, "value": label_value}),
-            Action("linear", "set_status", issue_key, {"status": next_status}),
+            Action(
+                "linear",
+                "set_label",
+                issue_key,
+                {"group": self.cfg.qa_gate_group, "value": label_value, "source_event": "vera_qa_completed"},
+            ),
+            Action(
+                "linear",
+                "set_status",
+                issue_key,
+                {"status": next_status, "source_event": "vera_qa_completed"},
+            ),
             Action("linear", "comment", issue_key, {"body": body}),
         ]
         actions.extend(

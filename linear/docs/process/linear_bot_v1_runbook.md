@@ -28,13 +28,22 @@ Expected:
 
 ## 2) Environment setup
 
-Copy template:
+For the Vera QA Gate dispatcher, do not create a repo-local `.env` as the
+primary runtime secret mechanism. Refresh the machine-local runtime env from the
+approved 1Password service-account item instead:
 
 ```bash
-cp $WORKSPACE/bitpod-tools/linear/config.example.env $WORKSPACE/bitpod-tools/linear/.env
+cd $WORKSPACE/bitpod-tools
+python3 linear/scripts/refresh_vera_qa_gate_runtime_env.py
+linear/scripts/start_vera_qa_gate_dispatcher.sh
 ```
 
-Populate only required values for your mode:
+The generated env file lives at
+`~/.hermes/profiles/vera/vera-qa-gate-runtime.env` and must not be committed.
+It includes GitHub App credentials, webhook signing secret, Linear OAuth client
+credentials, expected Linear actor fields, and the Vera workspace map.
+
+Populate only required values for non-Vera modes or controlled overrides:
 
 - Required now:
   - `DRY_RUN=true|false`
@@ -46,10 +55,11 @@ Populate only required values for your mode:
   - `VERA_QA_GATE_GITHUB_TOKEN` short-lived installation token, or `VERA_QA_GATE_GITHUB_APP_ID` / `VERA_QA_GATE_GITHUB_APP_INSTALLATION_ID` / `VERA_QA_GATE_GITHUB_APP_PRIVATE_KEY`
   - `GITHUB_WEBHOOK_SECRET`
 - Required for Linear live mutation wiring (guarded/fail-closed):
-  - `LINEAR_OAUTH_ACCESS_TOKEN` from the approved OAuth/MCP/token-broker path; `LINEAR_API_KEY` is legacy personal-script fallback only
+  - `LINEAR_OAUTH_CLIENT_ID` / `LINEAR_OAUTH_CLIENT_SECRET` from the approved Linear OAuth app actor so the runtime mints tokens with `client_credentials`; `LINEAR_OAUTH_ACCESS_TOKEN` is short-lived emergency fallback only and `LINEAR_API_KEY` is legacy personal-script fallback only
   - `LINEAR_WEBHOOK_SECRET`
   - `LINEAR_LIVE_EXECUTOR_ENABLED=false|true` (hard kill switch; default false)
   - at least one of `LINEAR_EXPECTED_ACTOR_ID`, `LINEAR_EXPECTED_ACTOR_NAME`, or `LINEAR_EXPECTED_ACTOR_EMAIL`
+  - `VERA_QA_KANBAN_WORKSPACE_MAP` when dispatching Vera QA from GitHub PRs across repos; unmapped repos fail closed when the map is present
 
 ## 3) Webhook wiring
 

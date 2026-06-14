@@ -146,26 +146,42 @@ Canonical target for the Product Development team workflow reconfiguration:
 ## How to run
 
 ```bash
-cd $WORKSPACE/bitpod-tools/linear/src
-python3 service.py --dry-run
+cd $WORKSPACE/bitpod-tools
+python3 linear/scripts/refresh_vera_qa_gate_runtime_env.py
+linear/scripts/start_vera_qa_gate_dispatcher.sh
 ```
 
 ## Configure secrets
 
-Recommended env vars:
+Permanent Vera QA Gate runtime configuration is generated from the approved
+machine-local 1Password service-account env at
+`~/.hermes/profiles/vera/op-vault-service.env`:
+
+```bash
+cd $WORKSPACE/bitpod-tools
+python3 linear/scripts/refresh_vera_qa_gate_runtime_env.py
+```
+
+The generated file is machine-local (`~/.hermes/profiles/vera/vera-qa-gate-runtime.env`)
+and must not be committed. It contains the live GitHub App material, webhook
+signing secret, Linear OAuth client credentials, actor expectation from the
+Linear viewer probe, and repo-to-Vera workspace map.
+
+Recommended env vars, when inspecting or overriding the generated runtime file:
 
 - `DRY_RUN=true` (default)
 - `BOT_HOST=127.0.0.1`
 - `BOT_PORT=8787`
 - `VERA_QA_GATE_GITHUB_TOKEN` short-lived installation token, or `VERA_QA_GATE_GITHUB_APP_ID` / `VERA_QA_GATE_GITHUB_APP_INSTALLATION_ID` / `VERA_QA_GATE_GITHUB_APP_PRIVATE_KEY` for live `vera-qa-gate` check runs
 - `GITHUB_WEBHOOK_SECRET` (future live mode)
-- `LINEAR_OAUTH_ACCESS_TOKEN` from the approved OAuth/MCP/token-broker path for guarded live Linear mutations; `LINEAR_API_KEY` is a legacy personal-script fallback, not the preferred agent path
+- `LINEAR_OAUTH_CLIENT_ID` / `LINEAR_OAUTH_CLIENT_SECRET` from the approved Linear OAuth app actor for guarded live Linear mutations; the runtime mints `client_credentials` access tokens. `LINEAR_OAUTH_ACCESS_TOKEN` is a short-lived emergency fallback only; `LINEAR_API_KEY` is a legacy personal-script fallback, not the preferred agent path
 - `LINEAR_WEBHOOK_SECRET` (future/live webhook mode)
 - `VERA_QA_DISPATCH_ENABLED=false` (hard kill switch for Hermes Vera Kanban enqueue; default off)
 - `VERA_QA_GATE_LIVE_ENABLED=false` (hard kill switch for GitHub `vera-qa-gate` check runs; default off)
 - `VERA_QA_RESULT_SYNC_ENABLED=false` (hard kill switch for polling completed Vera Kanban tasks and syncing PASS/FAIL to GitHub + Linear; default off)
 - `LINEAR_LIVE_EXECUTOR_ENABLED=false` (hard kill switch; default off)
 - `LINEAR_EXPECTED_ACTOR_ID` / `LINEAR_EXPECTED_ACTOR_NAME` / `LINEAR_EXPECTED_ACTOR_EMAIL` (at least one required before live Linear mutations)
+- `VERA_QA_KANBAN_WORKSPACE_MAP` JSON mapping of GitHub repos to Vera Kanban workspaces; when set, unmapped repos fail closed instead of silently dispatching to `scratch`
 
 Reference template:
 - `./config.example.env`

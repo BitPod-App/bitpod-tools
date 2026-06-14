@@ -23,8 +23,9 @@ Live Linear execution requires all of the following:
 2. Governance allows the action class.
    - Class A comments are allowed by the current policy matrix.
    - Class B status/label mutations require an exact rollout allowlist entry in `LINEAR_GUARDED_ACTION_ALLOWLIST`; they are not silently promoted by the executor.
+   - Exception: Vera QA result sync actions carrying `source_event=vera_qa_completed` may set only `In Review - QA Gate/qa-passed`, `In Review - QA Gate/qa-failed`, `Delivered`, or `In Progress` without a per-ticket allowlist. This is the permanent Vera gate result path, not a general Linear mutation bypass.
 3. The hard Linear executor kill switch is explicitly on: `LINEAR_LIVE_EXECUTOR_ENABLED=true`.
-4. `LINEAR_OAUTH_ACCESS_TOKEN` is present in machine-local runtime configuration from the approved Linear OAuth/MCP/token-broker path. `LINEAR_API_KEY` remains a legacy personal-script fallback only and should not be preferred for agent/app actors.
+4. `LINEAR_OAUTH_CLIENT_ID` / `LINEAR_OAUTH_CLIENT_SECRET` are present in machine-local runtime configuration so the executor can mint Linear OAuth app-actor tokens with `client_credentials`. `LINEAR_OAUTH_ACCESS_TOKEN` is a short-lived emergency fallback only; `LINEAR_API_KEY` remains a legacy personal-script fallback only and should not be preferred for agent/app actors.
 5. At least one expected actor field is configured:
    - `LINEAR_EXPECTED_ACTOR_ID`
    - `LINEAR_EXPECTED_ACTOR_NAME`
@@ -48,9 +49,13 @@ That phrase is intentional. Operators should search traces and logs for `LINEAR 
 ```bash
 DRY_RUN=false
 LINEAR_LIVE_EXECUTOR_ENABLED=true
-LINEAR_OAUTH_ACCESS_TOKEN=...
+LINEAR_OAUTH_CLIENT_ID=...
+LINEAR_OAUTH_CLIENT_SECRET=...
+LINEAR_OAUTH_SCOPE='read write'
+# LINEAR_OAUTH_ACCESS_TOKEN=...  # short-lived emergency fallback only
 # LINEAR_API_KEY=...  # legacy fallback only
-LINEAR_GUARDED_ACTION_ALLOWLIST=linear:set_status:BIT-505
+# Optional for non-Vera controlled Class-B rollout actions only:
+# LINEAR_GUARDED_ACTION_ALLOWLIST=linear:set_status:BIT-505
 LINEAR_EXPECTED_ACTOR_ID=...
 # Optional additional checks:
 LINEAR_EXPECTED_ACTOR_NAME=...
@@ -76,7 +81,7 @@ Do not store these values in tracked repo files.
    - service trace outcome is `executed` and includes the matched `actor_id` / `actor_name`
    - Linear comment attribution is the automation actor, not CJ
    - no `LINEAR ACTOR WRONG` trace exists
-6. Only after comment attribution is verified, set the narrowest `LINEAR_GUARDED_ACTION_ALLOWLIST` value needed for the governed BIT-505 / BIT-559 status or label proof, for example `linear:set_status:BIT-505`. Do not use wildcards.
+6. Only after comment attribution is verified, set the narrowest `LINEAR_GUARDED_ACTION_ALLOWLIST` value needed for non-Vera governed status or label proofs, for example `linear:set_status:BIT-505`. Do not use wildcards. Do not use this allowlist for Vera QA result sync; Vera result sync has its own source-event-limited policy path.
 7. Turn `LINEAR_LIVE_EXECUTOR_ENABLED=false` immediately after the controlled window unless the operator explicitly keeps it open.
 
 ## Rollback

@@ -1,5 +1,6 @@
 import os
 import json
+import subprocess
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -11,6 +12,7 @@ from linear.src.memory import InMemoryStore, JsonlFileStore
 from linear.src.service import (
     apply_actions,
     collect_vera_qa_completed_events,
+    execute_hermes_vera_dispatch,
     execute_github_check_run,
     sync_vera_qa_results_once,
     _github_webhook_secret_from_env,
@@ -465,6 +467,33 @@ class RuntimeTests(unittest.TestCase):
                 else:
                     os.environ["VERA_QA_GATE_LIVE_ENABLED"] = old_enabled
 
+    def test_github_pr_comment_uses_github_app_installation_token_not_gh_cli(self):
+        calls = []
+
+        def fake_github_request(method, path, token, body=None):
+            calls.append((method, path, token, body))
+            return {"id": 123}
+
+        def fake_subprocess_run(*args, **kwargs):
+            raise AssertionError("gh CLI should not be used for GitHub PR comments")
+
+        action = Action(
+            "github",
+            "comment",
+            "https://github.com/BitPod-App/taylor01-mind/pull/50",
+            {"body": "QA_RESULT=PASSED"},
+        )
+        with patch("linear.src.service.github_app_installation_token_from_env", return_value="installation-token"):
+            with patch("linear.src.service._github_json_request", side_effect=fake_github_request):
+                with patch("linear.src.service.subprocess.run", side_effect=fake_subprocess_run):
+                    results = apply_actions([action], dry_run=False, policy=GovernancePolicy.default())
+
+        self.assertEqual(results[0]["outcome"], "executed")
+        self.assertEqual(calls[0][0], "POST")
+        self.assertEqual(calls[0][1], "/repos/BitPod-App/taylor01-mind/issues/50/comments")
+        self.assertEqual(calls[0][2], "installation-token")
+        self.assertEqual(calls[0][3]["body"], "QA_RESULT=PASSED")
+
     def test_governance_blocks_live_linear_mutation_without_approval(self):
         with tempfile.TemporaryDirectory() as tmp:
             trace_path = os.path.join(tmp, "service_trace.jsonl")
@@ -512,6 +541,105 @@ class RuntimeTests(unittest.TestCase):
                 os.environ.pop("LINEAR_GUARDED_ACTION_ALLOWLIST", None)
             else:
                 os.environ["LINEAR_GUARDED_ACTION_ALLOWLIST"] = old
+
+    def test_governance_allows_vera_qa_completed_linear_result_sync_without_per_ticket_allowlist(self):
+        policy = GovernancePolicy.default()
+        passed_label = Action(
+            "linear",
+            "set_label",
+            "BIT-619",
+            {"group": "In Review - QA Gate", "value": "qa-passed", "source_event": "vera_qa_completed"},
+        )
+        failed_status = Action(
+            "linear",
+            "set_status",
+            "BIT-614",
+            {"status": "In Progress", "source_event": "vera_qa_completed"},
+        )
+
+        label_decision = policy.decide(passed_label, dry_run=False)
+        status_decision = policy.decide(failed_status, dry_run=False)
+
+        self.assertTrue(label_decision.allowed)
+        self.assertEqual(label_decision.policy_class, "B")
+        self.assertTrue(status_decision.allowed)
+        self.assertEqual(status_decision.policy_class, "B")
+
+    def test_governance_rejects_non_vera_qa_source_for_same_linear_label_shape(self):
+        action = Action(
+            "linear",
+            "set_label",
+            "BIT-619",
+            {"group": "In Review - QA Gate", "value": "qa-passed", "source_event": "manual"},
+        )
+
+        decision = GovernancePolicy.default().decide(action, dry_run=False)
+
+        self.assertFalse(decision.allowed)
+        self.assertEqual(decision.policy_class, "B")
+
+    def test_vera_dispatch_uses_repo_workspace_map(self):
+        old_enabled = os.environ.get("VERA_QA_DISPATCH_ENABLED")
+        old_map = os.environ.get("VERA_QA_KANBAN_WORKSPACE_MAP")
+        old_workspace = os.environ.get("VERA_QA_KANBAN_WORKSPACE")
+        os.environ["VERA_QA_DISPATCH_ENABLED"] = "true"
+        os.environ["VERA_QA_KANBAN_WORKSPACE_MAP"] = json.dumps(
+            {"BitPod-App/taylor01-mind": "worktree:/Users/taylor01/BitPod-App/taylor01-mind"}
+        )
+        os.environ.pop("VERA_QA_KANBAN_WORKSPACE", None)
+        calls = []
+
+        def fake_run(cmd, stdout=None, stderr=None, text=None, check=None):
+            calls.append(cmd)
+            return subprocess.CompletedProcess(cmd, 0, stdout='{"id":"t_1"}', stderr="")
+
+        try:
+            action = Action(
+                "hermes",
+                "enqueue_vera_qa",
+                "BIT-619",
+                {"repo_full_name": "BitPod-App/taylor01-mind", "idempotency_key": "vera-qa:BIT-619:sha"},
+            )
+            with patch("linear.src.service.subprocess.run", side_effect=fake_run):
+                execute_hermes_vera_dispatch(action)
+        finally:
+            if old_enabled is None:
+                os.environ.pop("VERA_QA_DISPATCH_ENABLED", None)
+            else:
+                os.environ["VERA_QA_DISPATCH_ENABLED"] = old_enabled
+            if old_map is None:
+                os.environ.pop("VERA_QA_KANBAN_WORKSPACE_MAP", None)
+            else:
+                os.environ["VERA_QA_KANBAN_WORKSPACE_MAP"] = old_map
+            if old_workspace is None:
+                os.environ.pop("VERA_QA_KANBAN_WORKSPACE", None)
+            else:
+                os.environ["VERA_QA_KANBAN_WORKSPACE"] = old_workspace
+
+        self.assertEqual(calls[0][calls[0].index("--workspace") + 1], "worktree:/Users/taylor01/BitPod-App/taylor01-mind")
+
+    def test_vera_dispatch_workspace_map_fails_closed_for_unmapped_repo(self):
+        old_enabled = os.environ.get("VERA_QA_DISPATCH_ENABLED")
+        old_map = os.environ.get("VERA_QA_KANBAN_WORKSPACE_MAP")
+        os.environ["VERA_QA_DISPATCH_ENABLED"] = "true"
+        os.environ["VERA_QA_KANBAN_WORKSPACE_MAP"] = json.dumps(
+            {"BitPod-App/taylor01-mind": "worktree:/Users/taylor01/BitPod-App/taylor01-mind"}
+        )
+        try:
+            action = Action("hermes", "enqueue_vera_qa", "BIT-617", {"repo_full_name": "BitPod-App/bitpod-tools"})
+            with self.assertRaises(RuntimeError) as ctx:
+                execute_hermes_vera_dispatch(action)
+        finally:
+            if old_enabled is None:
+                os.environ.pop("VERA_QA_DISPATCH_ENABLED", None)
+            else:
+                os.environ["VERA_QA_DISPATCH_ENABLED"] = old_enabled
+            if old_map is None:
+                os.environ.pop("VERA_QA_KANBAN_WORKSPACE_MAP", None)
+            else:
+                os.environ["VERA_QA_KANBAN_WORKSPACE_MAP"] = old_map
+
+        self.assertIn("missing Vera QA workspace mapping", str(ctx.exception))
 
 
 if __name__ == "__main__":

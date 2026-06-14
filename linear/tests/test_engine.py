@@ -188,6 +188,11 @@ class EngineTests(unittest.TestCase):
         )
 
         self.assertTrue(any(a.system == "linear" and a.kind == "set_label" and a.payload["value"] == "qa-passed" for a in actions))
+        label = next(a for a in actions if a.system == "linear" and a.kind == "set_label")
+        status = next(a for a in actions if a.system == "linear" and a.kind == "set_status")
+        self.assertEqual(label.payload["group"], "In Review - QA Gate")
+        self.assertEqual(label.payload["source_event"], "vera_qa_completed")
+        self.assertEqual(status.payload["source_event"], "vera_qa_completed")
         self.assertTrue(any(a.system == "linear" and a.kind == "set_status" and a.payload["status"] == "Delivered" for a in actions))
         comment = next(a for a in actions if a.system == "linear" and a.kind == "comment")
         self.assertIn("QA_RESULT=PASSED", comment.payload["body"])
@@ -217,6 +222,11 @@ class EngineTests(unittest.TestCase):
         )
 
         self.assertTrue(any(a.system == "linear" and a.kind == "set_label" and a.payload["value"] == "qa-failed" for a in actions))
+        label = next(a for a in actions if a.system == "linear" and a.kind == "set_label")
+        status = next(a for a in actions if a.system == "linear" and a.kind == "set_status")
+        self.assertEqual(label.payload["group"], "In Review - QA Gate")
+        self.assertEqual(label.payload["source_event"], "vera_qa_completed")
+        self.assertEqual(status.payload["source_event"], "vera_qa_completed")
         self.assertTrue(any(a.system == "linear" and a.kind == "set_status" and a.payload["status"] == "In Progress" for a in actions))
         comment = next(a for a in actions if a.system == "linear" and a.kind == "comment")
         self.assertIn("QA_RESULT=FAILED", comment.payload["body"])

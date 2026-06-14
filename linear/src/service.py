@@ -223,6 +223,59 @@ def execute_github_check_run(action: Action) -> str:
     return f"github check_run create {repo}@{head_sha} {name} id={result.get('id', '')} status={status}"
 
 
+def execute_github_pr_comment(action: Action) -> str:
+    owner, repo, num = parse_pr_url(action.target)
+    if not owner or not repo or not num:
+        raise RuntimeError("invalid github target for comment")
+    body = str(action.payload.get("body") or "")
+    if not body:
+        raise RuntimeError("github comment body is required")
+    token = github_app_installation_token_from_env()
+    result = _github_json_request(
+        "POST",
+        f"/repos/{owner}/{repo}/issues/{num}/comments",
+        token,
+        {"body": body},
+    )
+    return f"github app comment {owner}/{repo}#{num} id={result.get('id', '')}"
+
+
+def _parse_vera_workspace_map(raw: str) -> Dict[str, str]:
+    value = (raw or "").strip()
+    if not value:
+        return {}
+    try:
+        parsed = json.loads(value)
+    except json.JSONDecodeError:
+        parsed = None
+    if isinstance(parsed, dict):
+        return {str(key).strip(): str(val).strip() for key, val in parsed.items() if str(key).strip() and str(val).strip()}
+
+    mapping: Dict[str, str] = {}
+    for entry in value.split(";"):
+        if not entry.strip() or "=" not in entry:
+            continue
+        key, val = entry.split("=", 1)
+        key = key.strip()
+        val = val.strip()
+        if key and val:
+            mapping[key] = val
+    return mapping
+
+
+def _vera_qa_workspace_for_action(action: Action) -> str:
+    workspace_map = _parse_vera_workspace_map(os.getenv("VERA_QA_KANBAN_WORKSPACE_MAP", ""))
+    if workspace_map:
+        repo_full_name = str(action.payload.get("repo_full_name") or "").strip()
+        if not repo_full_name:
+            raise RuntimeError("missing Vera QA workspace mapping: repo_full_name is required when VERA_QA_KANBAN_WORKSPACE_MAP is set")
+        workspace = workspace_map.get(repo_full_name, "")
+        if not workspace:
+            raise RuntimeError(f"missing Vera QA workspace mapping for repo {repo_full_name}")
+        return workspace
+    return str(os.getenv("VERA_QA_KANBAN_WORKSPACE", "scratch") or "scratch")
+
+
 def execute_hermes_vera_dispatch(action: Action) -> str:
     if not env_truthy("VERA_QA_DISPATCH_ENABLED"):
         raise RuntimeError("vera QA dispatch switch is off; set VERA_QA_DISPATCH_ENABLED=true to enqueue Hermes Vera QA tasks")
@@ -230,7 +283,7 @@ def execute_hermes_vera_dispatch(action: Action) -> str:
     body = str(action.payload.get("body") or "")
     assignee = str(action.payload.get("assignee") or "vera")
     idempotency_key = str(action.payload.get("idempotency_key") or f"vera-qa:{action.target}")
-    workspace = str(os.getenv("VERA_QA_KANBAN_WORKSPACE", "scratch") or "scratch")
+    workspace = _vera_qa_workspace_for_action(action)
     cmd = [
         "hermes",
         "kanban",
@@ -469,32 +522,17 @@ def apply_actions(
             results.append({"system": a.system, "kind": a.kind, "target": a.target, "outcome": "blocked", "detail": decision.reason})
             continue
         if a.system == "github" and a.kind == "comment":
-            owner, repo, num = parse_pr_url(a.target)
-            if owner and repo and num:
-                proc = subprocess.run(
-                    [
-                        "gh",
-                        "pr",
-                        "comment",
-                        num,
-                        "-R",
-                        f"{owner}/{repo}",
-                        "--body",
-                        a.payload.get("body", ""),
-                    ],
-                    check=False,
-                )
-                if proc.returncode == 0:
-                    trace_action(a, "executed", "gh pr comment", decision.policy_class)
-                    results.append({"system": a.system, "kind": a.kind, "target": a.target, "outcome": "executed", "detail": "gh pr comment"})
-                else:
-                    detail = "gh pr comment failed"
-                    trace_action(a, "blocked", detail, decision.policy_class)
-                    results.append({"system": a.system, "kind": a.kind, "target": a.target, "outcome": "blocked", "detail": detail})
+            try:
+                detail = execute_github_pr_comment(a)
+            except Exception as exc:
+                detail = str(exc)
+                print(f"[LIVE][FAIL-CLOSED] github comment {a.target}: {detail}")
+                trace_action(a, "blocked", detail, decision.policy_class)
+                results.append({"system": a.system, "kind": a.kind, "target": a.target, "outcome": "blocked", "detail": detail})
                 continue
-            print(f"[LIVE][SKIP] invalid github target for comment: {a.target}")
-            trace_action(a, "skipped", "invalid github target", decision.policy_class)
-            results.append({"system": a.system, "kind": a.kind, "target": a.target, "outcome": "skipped", "detail": "invalid github target"})
+            print(f"[LIVE] github comment {a.target}: {detail}")
+            trace_action(a, "executed", detail, decision.policy_class)
+            results.append({"system": a.system, "kind": a.kind, "target": a.target, "outcome": "executed", "detail": detail})
             continue
 
         if a.system == "github" and a.kind == "check_run":
