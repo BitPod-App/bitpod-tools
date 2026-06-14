@@ -363,7 +363,12 @@ def collect_vera_qa_completed_events(tasks: List[Dict[str, Any]]) -> List[Dict[s
         except (OSError, json.JSONDecodeError):
             continue
 
-        qa_result = str(manifest.get("qa_result") or manifest.get("verdict") or "").upper()
+        qa_result = str(
+            manifest.get("qa_result")
+            or manifest.get("verdict")
+            or manifest.get("qa_verdict")
+            or ""
+        ).upper()
         if qa_result not in {"PASSED", "FAILED", "OVERRIDE", "ACTION_REQUIRED"}:
             continue
         issue_key = str(manifest.get("issue") or manifest.get("issue_key") or _extract_field(body, "Issue"))
@@ -371,6 +376,7 @@ def collect_vera_qa_completed_events(tasks: List[Dict[str, Any]]) -> List[Dict[s
         head_sha = str(
             manifest.get("head_sha")
             or manifest.get("head")
+            or manifest.get("sha")
             or _extract_field(body, "Head SHA")
         )
         body_head_sha = _extract_field(body, "Head SHA")
@@ -386,7 +392,7 @@ def collect_vera_qa_completed_events(tasks: List[Dict[str, Any]]) -> List[Dict[s
                 "task_id": str(task.get("id") or ""),
                 "issue_key": issue_key,
                 "qa_result": qa_result,
-                "qa_verdict": str(manifest.get("verdict") or qa_result).upper(),
+                "qa_verdict": str(manifest.get("verdict") or manifest.get("qa_verdict") or qa_result).upper(),
                 "pr_url": pr_url,
                 "head_sha": head_sha,
                 "report_path": report_path if os.path.exists(report_path) else "verification_report.md",

@@ -176,6 +176,40 @@ class RuntimeTests(unittest.TestCase):
         self.assertEqual(events[0]["pr_url"], "https://github.com/BitPod-App/taylor01-mind/pull/50")
         self.assertEqual(events[0]["head_sha"], "1a1fb4e8ba14e7374c18740b655148e34579cc2c")
 
+    def test_collects_vera_manifest_aliases_from_current_artifact_shape(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with open(os.path.join(tmp, "manifest.json"), "w", encoding="utf-8") as fh:
+                json.dump(
+                    {
+                        "issue": "BIT-617",
+                        "pr": 120,
+                        "sha": "4a2c11e4a9abcb2e24feec697c74d3564fc48168",
+                        "qa_verdict": "PASSED",
+                    },
+                    fh,
+                )
+
+            events = collect_vera_qa_completed_events(
+                [
+                    {
+                        "id": "t_current_shape",
+                        "title": "Vera QA review: BIT-617",
+                        "body": "Issue: BIT-617\nPR: https://github.com/BitPod-App/bitpod-tools/pull/120\nHead SHA: 4a2c11e4a9abcb2e24feec697c74d3564fc48168",
+                        "assignee": "vera",
+                        "status": "done",
+                        "workspace_path": tmp,
+                        "result": "QA_RESULT=PASSED",
+                    }
+                ]
+            )
+
+        self.assertEqual(len(events), 1)
+        self.assertEqual(events[0]["issue_key"], "BIT-617")
+        self.assertEqual(events[0]["qa_result"], "PASSED")
+        self.assertEqual(events[0]["qa_verdict"], "PASSED")
+        self.assertEqual(events[0]["pr_url"], "https://github.com/BitPod-App/bitpod-tools/pull/120")
+        self.assertEqual(events[0]["head_sha"], "4a2c11e4a9abcb2e24feec697c74d3564fc48168")
+
     def test_collector_accepts_override_and_action_required_results(self):
         with tempfile.TemporaryDirectory() as tmp:
             tasks = []
