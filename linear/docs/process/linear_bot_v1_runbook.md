@@ -69,7 +69,7 @@ GitHub webhook:
 
 Linear webhook:
 - URL: `POST /linear` on runtime service, or `POST /webhooks/linear` on Cloudflare gateway.
-- Events: issue updated/state changed, label updates, comment created. `issue_in_review` / `issue_status_changed` with status `In Review` enqueues Vera QA; `QA_RESULT=PASSED|FAILED` plus `PR_URL=` and `HEAD_SHA=` updates `vera-qa-gate`.
+- Events: issue updated/state changed, label updates, comment created. `issue_in_review` / `issue_status_changed` with status `In Review` enqueues Vera QA; `QA_RESULT=PASSED|FAILED|OVERRIDE|ACTION_REQUIRED` plus `PR_URL=` and `HEAD_SHA=` updates `vera-qa-gate`.
 
 ## 4) Cloudflare gateway (optional)
 

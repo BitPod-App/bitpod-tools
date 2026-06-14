@@ -342,7 +342,7 @@ def collect_vera_qa_completed_events(tasks: List[Dict[str, Any]]) -> List[Dict[s
             continue
 
         qa_result = str(manifest.get("qa_result") or manifest.get("verdict") or "").upper()
-        if qa_result not in {"PASSED", "FAILED"}:
+        if qa_result not in {"PASSED", "FAILED", "OVERRIDE", "ACTION_REQUIRED"}:
             continue
         issue_key = str(manifest.get("issue") or manifest.get("issue_key") or _extract_field(body, "Issue"))
         pr_url = str(manifest.get("pr_url") or _extract_field(body, "PR"))

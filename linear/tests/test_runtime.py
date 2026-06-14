@@ -156,6 +156,38 @@ class RuntimeTests(unittest.TestCase):
         self.assertEqual(events[0]["pr_url"], "https://github.com/BitPod-App/taylor01-mind/pull/50")
         self.assertEqual(events[0]["head_sha"], "1a1fb4e8ba14e7374c18740b655148e34579cc2c")
 
+    def test_collector_accepts_override_and_action_required_results(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tasks = []
+            for task_id, result in [("t_override", "OVERRIDE"), ("t_action", "ACTION_REQUIRED")]:
+                workspace = os.path.join(tmp, task_id)
+                os.mkdir(workspace)
+                with open(os.path.join(workspace, "manifest.json"), "w", encoding="utf-8") as fh:
+                    json.dump(
+                        {
+                            "issue": "BIT-620",
+                            "pr_url": "https://github.com/BitPod-App/taylor01-mind/pull/51",
+                            "head": "376a9b3c4e48f45cba9382ff7c8e973e5acfe68a",
+                            "qa_result": result,
+                        },
+                        fh,
+                    )
+                tasks.append(
+                    {
+                        "id": task_id,
+                        "title": "Vera QA review: BIT-620",
+                        "body": "Issue: BIT-620\nPR: https://github.com/BitPod-App/taylor01-mind/pull/51\nHead SHA: 376a9b3c4e48f45cba9382ff7c8e973e5acfe68a",
+                        "assignee": "vera",
+                        "status": "done",
+                        "workspace_path": workspace,
+                        "result": f"QA_RESULT={result}",
+                    }
+                )
+
+            events = collect_vera_qa_completed_events(tasks)
+
+        self.assertEqual([event["qa_result"] for event in events], ["OVERRIDE", "ACTION_REQUIRED"])
+
     def test_collector_skips_stale_task_when_body_head_differs_from_manifest(self):
         with tempfile.TemporaryDirectory() as tmp:
             with open(os.path.join(tmp, "manifest.json"), "w", encoding="utf-8") as fh:
@@ -564,6 +596,29 @@ class RuntimeTests(unittest.TestCase):
         self.assertEqual(label_decision.policy_class, "B")
         self.assertTrue(status_decision.allowed)
         self.assertEqual(status_decision.policy_class, "B")
+
+    def test_governance_allows_vera_override_and_action_required_blocker_sync_without_per_ticket_allowlist(self):
+        policy = GovernancePolicy.default()
+        override_label = Action(
+            "linear",
+            "set_label",
+            "BIT-620",
+            {"group": "In Review - QA Gate", "value": "qa-override", "source_event": "vera_qa_completed"},
+        )
+        action_required_blocker = Action(
+            "linear",
+            "set_label",
+            "BIT-620",
+            {"group": "Blocked By", "value": "needs-discussion", "source_event": "vera_qa_completed"},
+        )
+
+        override_decision = policy.decide(override_label, dry_run=False)
+        blocker_decision = policy.decide(action_required_blocker, dry_run=False)
+
+        self.assertTrue(override_decision.allowed)
+        self.assertEqual(override_decision.policy_class, "B")
+        self.assertTrue(blocker_decision.allowed)
+        self.assertEqual(blocker_decision.policy_class, "B")
 
     def test_governance_rejects_non_vera_qa_source_for_same_linear_label_shape(self):
         action = Action(

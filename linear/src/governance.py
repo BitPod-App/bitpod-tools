@@ -89,7 +89,11 @@ class GovernancePolicy:
         if action.kind == "set_label":
             group = str(action.payload.get("group") or "")
             value = str(action.payload.get("value") or "")
-            return group == "In Review - QA Gate" and value in {"qa-passed", "qa-failed"}
+            if group == "In Review - QA Gate":
+                return value in {"qa-passed", "qa-failed", "qa-override"}
+            if group == "Blocked By":
+                return value == "needs-discussion"
+            return False
         if action.kind == "set_status":
             status = str(action.payload.get("status") or "")
             return status in {"Delivered", "In Progress"}

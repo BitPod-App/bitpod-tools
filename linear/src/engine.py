@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 ISSUE_KEY_RE = re.compile(r"\b([A-Z]{2,}-\d+)\b")
-QA_TOKEN_RE = re.compile(r"QA_RESULT=(PASSED|FAILED|SKIPPED)")
+QA_TOKEN_RE = re.compile(r"QA_RESULT=(PASSED|FAILED|OVERRIDE|ACTION_REQUIRED|SKIPPED)")
 PR_URL_TOKEN_RE = re.compile(r"PR_URL=(https?://[^\s]+)")
 HEAD_SHA_TOKEN_RE = re.compile(r"HEAD_SHA=([0-9a-fA-F]{7,64})")
 GITHUB_PR_URL_RE = re.compile(r"https://github\.com/([^/]+)/([^/]+)/pull/(\d+)")
@@ -83,7 +83,8 @@ class BotConfig:
 
     qa_passed: str = "qa-passed"
     qa_failed: str = "qa-failed"
-    qa_skipped: str = "qa-skipped"
+    qa_override: str = "qa-override"
+    blocker_action_required: str = "needs-discussion"
 
     pm_accepted: str = "pm-accepted"
     pm_rejected: str = "pm-rejected"
@@ -363,8 +364,8 @@ class LinearBotEngine:
             "Required Vera outputs:",
             "- verification_report.md",
             "- manifest.json",
-            "- QA_VERDICT: PASSED|FAILED|NO_VERDICT",
-            "- QA_RESULT=PASSED|FAILED only when a terminal Linear sync is appropriate",
+            "- QA_VERDICT: PASSED|FAILED|OVERRIDE|ACTION_REQUIRED",
+            "- QA_RESULT=PASSED|FAILED|OVERRIDE|ACTION_REQUIRED when a terminal GitHub/Linear sync is appropriate",
             "",
             "Proof flags at dispatch:",
             "VERA_QA_RAN=false",
@@ -547,16 +548,37 @@ class LinearBotEngine:
         summary = str(event.get("summary") or "Vera QA completed.")
         repo_full_name, _pr_number = self._parse_github_pr_url(pr_url)
 
-        if not issue_key or qa_result not in {"PASSED", "FAILED"}:
+        if not issue_key or qa_result not in {"PASSED", "FAILED", "OVERRIDE", "ACTION_REQUIRED"}:
             return []
 
-        passed = qa_result == "PASSED"
-        label_value = self.cfg.qa_passed if passed else self.cfg.qa_failed
-        next_status = self.cfg.delivered_status if passed else self.cfg.in_progress_status
-        gate_conclusion = "success" if passed else "failure"
-        gate_title = "Vera QA passed" if passed else "Vera QA failed"
-        gate_satisfied = "true" if passed else "false"
-        result_text = "QA PASSED" if passed else "QA FAILED"
+        if qa_result == "PASSED":
+            label_value = self.cfg.qa_passed
+            next_status = self.cfg.delivered_status
+            gate_conclusion = "success"
+            gate_title = "Vera QA passed"
+            gate_satisfied = "true"
+            result_text = "QA PASSED"
+        elif qa_result == "FAILED":
+            label_value = self.cfg.qa_failed
+            next_status = self.cfg.in_progress_status
+            gate_conclusion = "failure"
+            gate_title = "Vera QA failed"
+            gate_satisfied = "false"
+            result_text = "QA FAILED"
+        elif qa_result == "OVERRIDE":
+            label_value = self.cfg.qa_override
+            next_status = self.cfg.delivered_status
+            gate_conclusion = "success"
+            gate_title = "Vera QA override authorized"
+            gate_satisfied = "true"
+            result_text = "QA OVERRIDE"
+        else:
+            label_value = ""
+            next_status = ""
+            gate_conclusion = "failure"
+            gate_title = "Vera QA action required"
+            gate_satisfied = "false"
+            result_text = "QA ACTION REQUIRED"
 
         body = "\n".join(
             [
@@ -576,21 +598,35 @@ class LinearBotEngine:
             ]
         )
 
-        actions = [
-            Action(
-                "linear",
-                "set_label",
-                issue_key,
-                {"group": self.cfg.qa_gate_group, "value": label_value, "source_event": "vera_qa_completed"},
-            ),
-            Action(
-                "linear",
-                "set_status",
-                issue_key,
-                {"status": next_status, "source_event": "vera_qa_completed"},
-            ),
-            Action("linear", "comment", issue_key, {"body": body}),
-        ]
+        actions = []
+        if label_value:
+            actions.append(
+                Action(
+                    "linear",
+                    "set_label",
+                    issue_key,
+                    {"group": self.cfg.qa_gate_group, "value": label_value, "source_event": "vera_qa_completed"},
+                )
+            )
+        if next_status:
+            actions.append(
+                Action(
+                    "linear",
+                    "set_status",
+                    issue_key,
+                    {"status": next_status, "source_event": "vera_qa_completed"},
+                )
+            )
+        if qa_result == "ACTION_REQUIRED":
+            actions.append(
+                Action(
+                    "linear",
+                    "set_label",
+                    issue_key,
+                    {"group": self.cfg.blocked_group, "value": self.cfg.blocker_action_required, "source_event": "vera_qa_completed"},
+                )
+            )
+        actions.append(Action("linear", "comment", issue_key, {"body": body}))
         actions.extend(
             self._github_comment(
                 pr_url,
@@ -605,7 +641,11 @@ class LinearBotEngine:
                 "completed",
                 gate_conclusion,
                 title=gate_title,
-                summary=f"{gate_title} for {issue_key}. {summary}. See Linear: {issue_url}",
+                summary=(
+                    f"Vera cannot complete QA until: {summary}. See Linear: {issue_url}"
+                    if qa_result == "ACTION_REQUIRED"
+                    else f"{gate_title} for {issue_key}. {summary}. See Linear: {issue_url}"
+                ),
             )
         )
         return actions
@@ -740,6 +780,7 @@ class LinearBotEngine:
         # At this point the issue has a valid classifier intake + canonical type.
         # Surface routing defaults with minimal safe automation.
         qa_route, pm_route, route_reason = self.classify_route(actual_type, intake)
+        qa_route_display = "override" if qa_route == "skip" else qa_route
         out: List[Action] = [
             Action(
                 "linear",
@@ -748,7 +789,7 @@ class LinearBotEngine:
                 {
                     "body": (
                         "Routing recommendation (from `linear_type_classifier_v1.json`): "
-                        f"QA={qa_route}, PM={pm_route}. Reason: {route_reason}"
+                        f"QA={qa_route_display}, PM={pm_route}. Reason: {route_reason}"
                     )
                 },
             )
@@ -760,7 +801,7 @@ class LinearBotEngine:
                     "linear",
                     "set_label",
                     issue_key,
-                    {"group": self.cfg.qa_gate_group, "value": self.cfg.qa_skipped},
+                    {"group": self.cfg.qa_gate_group, "value": self.cfg.qa_override},
                 ),
             )
         return out
@@ -807,18 +848,14 @@ class LinearBotEngine:
             )
             return actions
 
-        gate_value = self.cfg.qa_skipped if token == "SKIPPED" else self.cfg.qa_passed
-        next_status = self.cfg.delivered_status
-        result_text = "QA SKIPPED" if token == "SKIPPED" else "QA PASSED"
-        next_text = "Delivered"
-        actions = [
-            Action("linear", "set_label", issue_key, {"group": self.cfg.qa_gate_group, "value": gate_value}),
-            Action("linear", "set_status", issue_key, {"status": next_status}),
-        ]
-        actions.extend(
-            self._github_comment(target_pr_url, f"{result_text}. Linear moved to {next_text}. {issue_ref}")
-        )
         if token == "PASSED":
+            actions = [
+                Action("linear", "set_label", issue_key, {"group": self.cfg.qa_gate_group, "value": self.cfg.qa_passed}),
+                Action("linear", "set_status", issue_key, {"status": self.cfg.delivered_status}),
+            ]
+            actions.extend(
+                self._github_comment(target_pr_url, f"QA PASSED. Linear moved to Delivered. {issue_ref}")
+            )
             actions.extend(
                 self._github_check_run(
                     target_pr_url,
@@ -830,19 +867,68 @@ class LinearBotEngine:
                     summary=f"Vera QA passed for {issue_key}. See Linear: {issue_ref}",
                 )
             )
-        elif token == "SKIPPED":
+            return actions
+
+        if token == "OVERRIDE":
+            actions = [
+                Action("linear", "set_label", issue_key, {"group": self.cfg.qa_gate_group, "value": self.cfg.qa_override}),
+                Action("linear", "set_status", issue_key, {"status": self.cfg.delivered_status}),
+            ]
+            actions.extend(
+                self._github_comment(target_pr_url, f"QA OVERRIDE authorized. Linear moved to Delivered. {issue_ref}")
+            )
             actions.extend(
                 self._github_check_run(
                     target_pr_url,
                     repo_full_name,
                     head_sha,
                     "completed",
-                    "action_required",
-                    title="Vera QA skipped requires override",
-                    summary=f"QA_RESULT=SKIPPED does not satisfy {self.cfg.vera_qa_gate_name}; explicit override evidence is required. See Linear: {issue_ref}",
+                    "success",
+                    title="Vera QA override authorized",
+                    summary=f"Authorized QA override for {issue_key}. Reason/evidence: {summary}. See Linear: {issue_ref}",
                 )
             )
-        return actions
+            return actions
+
+        if token == "ACTION_REQUIRED":
+            actions = [
+                Action("linear", "set_label", issue_key, {"group": self.cfg.blocked_group, "value": self.cfg.blocker_action_required}),
+                Action(
+                    "linear",
+                    "comment",
+                    issue_key,
+                    {"body": f"QA_RESULT=ACTION_REQUIRED. Vera cannot complete QA until: {summary}"},
+                ),
+            ]
+            actions.extend(
+                self._github_comment(target_pr_url, f"QA ACTION REQUIRED. Vera cannot complete QA until: {summary}. See Linear: {issue_ref}")
+            )
+            actions.extend(
+                self._github_check_run(
+                    target_pr_url,
+                    repo_full_name,
+                    head_sha,
+                    "completed",
+                    "failure",
+                    title="Vera QA action required",
+                    summary=f"Vera cannot complete QA until: {summary}. See Linear: {issue_ref}",
+                )
+            )
+            return actions
+
+        if token == "SKIPPED":
+            return [
+                Action(
+                    "linear",
+                    "comment",
+                    issue_key,
+                    {
+                        "body": "Deprecated QA_RESULT=SKIPPED ignored. Use QA_RESULT=OVERRIDE with explicit actor, reason, and evidence for an authorized QA bypass."
+                    },
+                )
+            ]
+
+        return []
 
     def on_linear_acceptance_gate_change(
         self,
@@ -906,7 +992,7 @@ class LinearBotEngine:
     def on_github_pr_merged(self, issue: Dict[str, Any], pr_url: str, merge_sha: str) -> List[Action]:
         issue_key = issue.get("identifier", "")
         labels = self._labels(issue.get("labels", []))
-        qa_ok = bool({self.cfg.qa_passed, self.cfg.qa_skipped}.intersection(labels))
+        qa_ok = bool({self.cfg.qa_passed, self.cfg.qa_override}.intersection(labels))
         acceptance_ok = bool({self.cfg.pm_accepted, self.cfg.pm_skipped}.intersection(labels))
         status_ok = issue.get("status", "") == self.cfg.accepted_status
         blocked = self._has_blocker_signal(issue, labels)
@@ -925,7 +1011,7 @@ class LinearBotEngine:
 
         reasons: List[str] = []
         if not qa_ok:
-            reasons.append("missing qa-passed/qa-skipped")
+            reasons.append("missing qa-passed/qa-override")
         if not acceptance_ok:
             reasons.append("missing pm-accepted/pm-skipped")
         if not status_ok:
