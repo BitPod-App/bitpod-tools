@@ -14,6 +14,7 @@ from linear.src.service import (
     collect_vera_qa_completed_events,
     execute_hermes_vera_dispatch,
     execute_github_check_run,
+    load_completed_vera_qa_tasks,
     sync_vera_qa_results_once,
     _github_webhook_secret_from_env,
     _linear_webhook_secret_from_env,
@@ -651,6 +652,27 @@ class RuntimeTests(unittest.TestCase):
 
         self.assertFalse(decision.allowed)
         self.assertEqual(decision.policy_class, "B")
+
+    def test_result_sync_list_uses_configured_hermes_cli_path_under_launchd_path(self):
+        old_cli = os.environ.get("HERMES_CLI_PATH")
+        os.environ["HERMES_CLI_PATH"] = "/tmp/bitpod-hermes-cli"
+        calls = []
+
+        def fake_run(cmd, stdout=None, stderr=None, text=None, check=None):
+            calls.append(cmd)
+            return subprocess.CompletedProcess(cmd, 0, stdout="[]", stderr="")
+
+        try:
+            with patch("linear.src.service.subprocess.run", side_effect=fake_run):
+                tasks = load_completed_vera_qa_tasks()
+        finally:
+            if old_cli is None:
+                os.environ.pop("HERMES_CLI_PATH", None)
+            else:
+                os.environ["HERMES_CLI_PATH"] = old_cli
+
+        self.assertEqual(tasks, [])
+        self.assertEqual(calls[0][0], "/tmp/bitpod-hermes-cli")
 
     def test_vera_dispatch_uses_configured_hermes_cli_path_under_launchd_path(self):
         old_enabled = os.environ.get("VERA_QA_DISPATCH_ENABLED")

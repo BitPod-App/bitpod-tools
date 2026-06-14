@@ -398,7 +398,7 @@ def collect_vera_qa_completed_events(tasks: List[Dict[str, Any]]) -> List[Dict[s
 
 def load_completed_vera_qa_tasks() -> List[Dict[str, Any]]:
     proc = subprocess.run(
-        ["hermes", "kanban", "list", "--assignee", "vera", "--status", "done", "--json"],
+        [_hermes_cli_path(), "kanban", "list", "--assignee", "vera", "--status", "done", "--json"],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
