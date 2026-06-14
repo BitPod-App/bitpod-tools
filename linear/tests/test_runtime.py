@@ -177,7 +177,47 @@ class RuntimeTests(unittest.TestCase):
         self.assertEqual(events[0]["pr_url"], "https://github.com/BitPod-App/taylor01-mind/pull/50")
         self.assertEqual(events[0]["head_sha"], "1a1fb4e8ba14e7374c18740b655148e34579cc2c")
 
-    def test_collects_vera_manifest_aliases_from_current_artifact_shape(self):
+    def test_collector_reads_vera_artifacts_from_artifact_workspace_not_reviewed_repo(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            reviewed_repo = os.path.join(tmp, "reviewed-repo")
+            artifact_workspace = os.path.join(tmp, "qa-artifacts", "BIT-631", "repo", "pr-44", "abc123")
+            os.makedirs(reviewed_repo)
+            os.makedirs(artifact_workspace)
+            with open(os.path.join(artifact_workspace, "verification_report.md"), "w", encoding="utf-8") as fh:
+                fh.write("QA_RESULT=PASSED\n")
+            with open(os.path.join(artifact_workspace, "manifest.json"), "w", encoding="utf-8") as fh:
+                json.dump(
+                    {
+                        "issue": "BIT-631",
+                        "pr_url": "https://github.com/BitPod-App/taylor01-mind/pull/44",
+                        "head": "abc123def456",
+                        "qa_result": "PASSED",
+                    },
+                    fh,
+                )
+
+            events = collect_vera_qa_completed_events(
+                [
+                    {
+                        "id": "t_artifact_workspace",
+                        "title": "Vera QA review: BIT-631",
+                        "body": "Issue: BIT-631\nPR: https://github.com/BitPod-App/taylor01-mind/pull/44\nHead SHA: abc123def456\nArtifact workspace: "
+                        + artifact_workspace,
+                        "assignee": "vera",
+                        "status": "done",
+                        "workspace_path": reviewed_repo,
+                        "result": "Vera passed.",
+                    }
+                ]
+            )
+
+        self.assertEqual(len(events), 1)
+        self.assertEqual(events[0]["issue_key"], "BIT-631")
+        self.assertEqual(events[0]["report_path"], os.path.join(artifact_workspace, "verification_report.md"))
+        self.assertFalse(os.path.exists(os.path.join(reviewed_repo, "manifest.json")))
+        self.assertFalse(os.path.exists(os.path.join(reviewed_repo, "verification_report.md")))
+
+    def test_collector_keeps_legacy_workspace_root_manifest_fallback(self):
         with tempfile.TemporaryDirectory() as tmp:
             with open(os.path.join(tmp, "manifest.json"), "w", encoding="utf-8") as fh:
                 json.dump(
@@ -771,45 +811,152 @@ class RuntimeTests(unittest.TestCase):
 
         self.assertEqual(calls[0][0], "/tmp/bitpod-hermes-cli")
 
-    def test_vera_dispatch_uses_repo_workspace_map(self):
+    def test_vera_dispatch_uses_repo_workspace_map_and_external_artifact_workspace(self):
         old_enabled = os.environ.get("VERA_QA_DISPATCH_ENABLED")
         old_map = os.environ.get("VERA_QA_KANBAN_WORKSPACE_MAP")
         old_workspace = os.environ.get("VERA_QA_KANBAN_WORKSPACE")
-        os.environ["VERA_QA_DISPATCH_ENABLED"] = "true"
-        os.environ["VERA_QA_KANBAN_WORKSPACE_MAP"] = json.dumps(
-            {"BitPod-App/taylor01-mind": "worktree:/Users/taylor01/BitPod-App/taylor01-mind"}
-        )
-        os.environ.pop("VERA_QA_KANBAN_WORKSPACE", None)
+        old_artifact_root = os.environ.get("VERA_QA_ARTIFACT_ROOT")
         calls = []
 
         def fake_run(cmd, stdout=None, stderr=None, text=None, check=None):
             calls.append(cmd)
             return subprocess.CompletedProcess(cmd, 0, stdout='{"id":"t_1"}', stderr="")
 
-        try:
-            action = Action(
-                "hermes",
-                "enqueue_vera_qa",
-                "BIT-619",
-                {"repo_full_name": "BitPod-App/taylor01-mind", "idempotency_key": "vera-qa:BIT-619:sha"},
-            )
-            with patch("linear.src.service.subprocess.run", side_effect=fake_run):
-                execute_hermes_vera_dispatch(action)
-        finally:
-            if old_enabled is None:
-                os.environ.pop("VERA_QA_DISPATCH_ENABLED", None)
-            else:
-                os.environ["VERA_QA_DISPATCH_ENABLED"] = old_enabled
-            if old_map is None:
-                os.environ.pop("VERA_QA_KANBAN_WORKSPACE_MAP", None)
-            else:
-                os.environ["VERA_QA_KANBAN_WORKSPACE_MAP"] = old_map
-            if old_workspace is None:
+        with tempfile.TemporaryDirectory() as tmp:
+            reviewed_repo = os.path.join(tmp, "reviewed-repo")
+            artifact_root = os.path.join(tmp, "qa-artifacts")
+            os.makedirs(reviewed_repo)
+            try:
+                os.environ["VERA_QA_DISPATCH_ENABLED"] = "true"
+                os.environ["VERA_QA_ARTIFACT_ROOT"] = artifact_root
+                os.environ["VERA_QA_KANBAN_WORKSPACE_MAP"] = json.dumps(
+                    {"BitPod-App/taylor01-mind": reviewed_repo}
+                )
                 os.environ.pop("VERA_QA_KANBAN_WORKSPACE", None)
-            else:
-                os.environ["VERA_QA_KANBAN_WORKSPACE"] = old_workspace
+                action = Action(
+                    "hermes",
+                    "enqueue_vera_qa",
+                    "BIT-619",
+                    {
+                        "issue_key": "BIT-619",
+                        "repo_full_name": "BitPod-App/taylor01-mind",
+                        "pr_number": "50",
+                        "head_sha": "1a1fb4e8ba14e7374c18740b655148e34579cc2c",
+                        "idempotency_key": "vera-qa:BIT-619:BitPod-App/taylor01-mind:50:sha",
+                    },
+                )
+                with patch("linear.src.service.subprocess.run", side_effect=fake_run):
+                    execute_hermes_vera_dispatch(action)
+            finally:
+                if old_enabled is None:
+                    os.environ.pop("VERA_QA_DISPATCH_ENABLED", None)
+                else:
+                    os.environ["VERA_QA_DISPATCH_ENABLED"] = old_enabled
+                if old_map is None:
+                    os.environ.pop("VERA_QA_KANBAN_WORKSPACE_MAP", None)
+                else:
+                    os.environ["VERA_QA_KANBAN_WORKSPACE_MAP"] = old_map
+                if old_workspace is None:
+                    os.environ.pop("VERA_QA_KANBAN_WORKSPACE", None)
+                else:
+                    os.environ["VERA_QA_KANBAN_WORKSPACE"] = old_workspace
+                if old_artifact_root is None:
+                    os.environ.pop("VERA_QA_ARTIFACT_ROOT", None)
+                else:
+                    os.environ["VERA_QA_ARTIFACT_ROOT"] = old_artifact_root
 
-        self.assertEqual(calls[0][calls[0].index("--workspace") + 1], "worktree:/Users/taylor01/BitPod-App/taylor01-mind")
+            body = calls[0][calls[0].index("--body") + 1]
+            artifact_line = next(line for line in body.splitlines() if line.startswith("Artifact workspace: "))
+            artifact_workspace = artifact_line.split(": ", 1)[1]
+
+            self.assertEqual(calls[0][calls[0].index("--workspace") + 1], reviewed_repo)
+            self.assertTrue(artifact_workspace.startswith(artifact_root))
+            self.assertFalse(artifact_workspace.startswith(reviewed_repo))
+            self.assertTrue(os.path.isdir(artifact_workspace))
+            self.assertIn("Do not create or modify verification_report.md or manifest.json in the reviewed repo workspace.", body)
+
+    def test_vera_dispatch_fails_closed_when_artifact_root_is_inside_reviewed_repo(self):
+        old_enabled = os.environ.get("VERA_QA_DISPATCH_ENABLED")
+        old_map = os.environ.get("VERA_QA_KANBAN_WORKSPACE_MAP")
+        old_artifact_root = os.environ.get("VERA_QA_ARTIFACT_ROOT")
+        with tempfile.TemporaryDirectory() as tmp:
+            reviewed_repo = os.path.join(tmp, "reviewed-repo")
+            os.makedirs(reviewed_repo)
+            try:
+                os.environ["VERA_QA_DISPATCH_ENABLED"] = "true"
+                os.environ["VERA_QA_ARTIFACT_ROOT"] = os.path.join(reviewed_repo, "qa-artifacts")
+                os.environ["VERA_QA_KANBAN_WORKSPACE_MAP"] = json.dumps(
+                    {"BitPod-App/taylor01-mind": reviewed_repo}
+                )
+                action = Action(
+                    "hermes",
+                    "enqueue_vera_qa",
+                    "BIT-631",
+                    {
+                        "issue_key": "BIT-631",
+                        "repo_full_name": "BitPod-App/taylor01-mind",
+                        "pr_number": "44",
+                        "head_sha": "abc123",
+                    },
+                )
+                with self.assertRaisesRegex(RuntimeError, "artifact workspace resolves inside reviewed repo workspace"):
+                    execute_hermes_vera_dispatch(action)
+            finally:
+                if old_enabled is None:
+                    os.environ.pop("VERA_QA_DISPATCH_ENABLED", None)
+                else:
+                    os.environ["VERA_QA_DISPATCH_ENABLED"] = old_enabled
+                if old_map is None:
+                    os.environ.pop("VERA_QA_KANBAN_WORKSPACE_MAP", None)
+                else:
+                    os.environ["VERA_QA_KANBAN_WORKSPACE_MAP"] = old_map
+                if old_artifact_root is None:
+                    os.environ.pop("VERA_QA_ARTIFACT_ROOT", None)
+                else:
+                    os.environ["VERA_QA_ARTIFACT_ROOT"] = old_artifact_root
+
+    def test_vera_dispatch_fails_closed_when_artifact_root_inside_worktree_reviewed_repo(self):
+        # Regression for BIT-631: the workspace map uses a "worktree:" scheme in
+        # production. The containment guard must strip the scheme and still fail
+        # closed when VERA_QA_ARTIFACT_ROOT resolves inside the reviewed repo.
+        old_enabled = os.environ.get("VERA_QA_DISPATCH_ENABLED")
+        old_map = os.environ.get("VERA_QA_KANBAN_WORKSPACE_MAP")
+        old_artifact_root = os.environ.get("VERA_QA_ARTIFACT_ROOT")
+        with tempfile.TemporaryDirectory() as tmp:
+            reviewed_repo = os.path.join(tmp, "reviewed-repo")
+            os.makedirs(reviewed_repo)
+            try:
+                os.environ["VERA_QA_DISPATCH_ENABLED"] = "true"
+                os.environ["VERA_QA_ARTIFACT_ROOT"] = os.path.join(reviewed_repo, "qa-artifacts")
+                os.environ["VERA_QA_KANBAN_WORKSPACE_MAP"] = json.dumps(
+                    {"BitPod-App/taylor01-mind": f"worktree:{reviewed_repo}"}
+                )
+                action = Action(
+                    "hermes",
+                    "enqueue_vera_qa",
+                    "BIT-631",
+                    {
+                        "issue_key": "BIT-631",
+                        "repo_full_name": "BitPod-App/taylor01-mind",
+                        "pr_number": "44",
+                        "head_sha": "abc123",
+                    },
+                )
+                with self.assertRaisesRegex(RuntimeError, "artifact workspace resolves inside reviewed repo workspace"):
+                    execute_hermes_vera_dispatch(action)
+            finally:
+                if old_enabled is None:
+                    os.environ.pop("VERA_QA_DISPATCH_ENABLED", None)
+                else:
+                    os.environ["VERA_QA_DISPATCH_ENABLED"] = old_enabled
+                if old_map is None:
+                    os.environ.pop("VERA_QA_KANBAN_WORKSPACE_MAP", None)
+                else:
+                    os.environ["VERA_QA_KANBAN_WORKSPACE_MAP"] = old_map
+                if old_artifact_root is None:
+                    os.environ.pop("VERA_QA_ARTIFACT_ROOT", None)
+                else:
+                    os.environ["VERA_QA_ARTIFACT_ROOT"] = old_artifact_root
 
     def test_vera_dispatch_workspace_map_fails_closed_for_unmapped_repo(self):
         old_enabled = os.environ.get("VERA_QA_DISPATCH_ENABLED")

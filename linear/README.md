@@ -181,7 +181,8 @@ Recommended env vars, when inspecting or overriding the generated runtime file:
 - `VERA_QA_RESULT_SYNC_ENABLED=false` (hard kill switch for polling completed Vera Kanban tasks and syncing PASS/FAIL/OVERRIDE/ACTION_REQUIRED to GitHub + Linear; default off)
 - `LINEAR_LIVE_EXECUTOR_ENABLED=false` (hard kill switch; default off)
 - `LINEAR_EXPECTED_ACTOR_ID` / `LINEAR_EXPECTED_ACTOR_NAME` / `LINEAR_EXPECTED_ACTOR_EMAIL` (at least one required before live Linear mutations)
-- `VERA_QA_KANBAN_WORKSPACE_MAP` JSON mapping of GitHub repos to Vera Kanban workspaces; when set, unmapped repos fail closed instead of silently dispatching to `scratch`
+- `VERA_QA_KANBAN_WORKSPACE_MAP` JSON mapping of GitHub repos to Vera Kanban review workspaces; when set, unmapped repos fail closed instead of silently dispatching to `scratch`
+- `VERA_QA_ARTIFACT_ROOT` external runtime artifact root for Vera-generated `manifest.json` / `verification_report.md` files; default `~/.hermes/profiles/vera/qa-artifacts`. This must stay outside reviewed repo workspaces so QA runs do not dirty or litter PR checkouts.
 
 Reference template:
 - `./config.example.env`

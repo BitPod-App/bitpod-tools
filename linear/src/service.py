@@ -296,6 +296,86 @@ def _hermes_cli_path() -> str:
     return "hermes"
 
 
+def _safe_path_segment(value: str, fallback: str = "unknown") -> str:
+    cleaned = re.sub(r"[^A-Za-z0-9_.-]+", "-", str(value or "").strip()).strip(".-")
+    return cleaned or fallback
+
+
+def _path_is_within(child: Path, parent: Path) -> bool:
+    try:
+        child.resolve().relative_to(parent.resolve())
+        return True
+    except ValueError:
+        return False
+
+
+def _normalize_workspace_path(workspace: str) -> str:
+    """Resolve a Vera workspace string to a real filesystem path.
+
+    Workspace-map values may carry a Hermes scheme prefix such as
+    ``worktree:/abs/path`` (the exact shape this repo's Vera review path
+    uses). The scheme must be stripped before any filesystem containment
+    check; otherwise ``Path("worktree:/...")`` never resolves to a real
+    location, ``.exists()`` is false, and safety guards silently no-op.
+    Returns "" for an empty/blank workspace.
+    """
+    raw = str(workspace or "").strip()
+    if not raw:
+        return ""
+    m = re.match(r"^(?P<scheme>[A-Za-z][A-Za-z0-9+.-]*):(?P<rest>.+)$", raw)
+    if m and m.group("scheme").lower() in {"worktree", "worktrees", "repo", "path", "file"}:
+        raw = m.group("rest").strip()
+    return os.path.expanduser(raw)
+
+
+def _extract_github_pr_number(pr_url: str) -> str:
+    _, _, number = parse_pr_url(pr_url)
+    return number
+
+
+def _vera_qa_artifact_workspace_for_action(action: Action, reviewed_workspace: str) -> str:
+    """Return an out-of-repo artifact directory for Vera QA outputs.
+
+    Vera needs a real repo workspace for review, but its generated QA files are
+    runtime artifacts. Keep them outside the reviewed checkout so repeated QA
+    runs cannot litter or dirty the PR worktree with ``manifest.json`` and
+    ``verification_report.md``.
+    """
+
+    root = Path(os.path.expanduser(os.getenv("VERA_QA_ARTIFACT_ROOT", "~/.hermes/profiles/vera/qa-artifacts")))
+    payload = action.payload
+    issue = _safe_path_segment(str(payload.get("issue_key") or action.target), "issue")
+    repo = _safe_path_segment(str(payload.get("repo_full_name") or "unknown-repo").replace("/", "__"), "repo")
+    pr_number = _safe_path_segment(str(payload.get("pr_number") or _extract_github_pr_number(str(payload.get("pr_url") or ""))), "pr")
+    head_sha = _safe_path_segment(str(payload.get("head_sha") or payload.get("idempotency_key") or "unknown-sha"), "sha")[:40]
+    artifact_workspace = root / issue / repo / f"pr-{pr_number}" / head_sha
+
+    reviewed_path = _normalize_workspace_path(reviewed_workspace)
+    if reviewed_path and _path_is_within(artifact_workspace, Path(reviewed_path)):
+        raise RuntimeError(
+            "Vera QA artifact workspace resolves inside reviewed repo workspace; "
+            "set VERA_QA_ARTIFACT_ROOT outside the repo checkout"
+        )
+
+    artifact_workspace.mkdir(parents=True, exist_ok=True)
+    return str(artifact_workspace)
+
+
+def _append_vera_qa_artifact_contract(body: str, artifact_workspace: str, reviewed_workspace: str) -> str:
+    report_path = os.path.join(artifact_workspace, "verification_report.md")
+    manifest_path = os.path.join(artifact_workspace, "manifest.json")
+    contract = [
+        "",
+        "QA artifact contract:",
+        f"Artifact workspace: {artifact_workspace}",
+        f"Reviewed repo workspace: {reviewed_workspace}",
+        f"- Write verification_report.md to: {report_path}",
+        f"- Write manifest.json to: {manifest_path}",
+        "- Do not create or modify verification_report.md or manifest.json in the reviewed repo workspace.",
+    ]
+    return (body.rstrip() + "\n" + "\n".join(contract)).strip()
+
+
 def execute_hermes_vera_dispatch(action: Action) -> str:
     if not env_truthy("VERA_QA_DISPATCH_ENABLED"):
         raise RuntimeError("vera QA dispatch switch is off; set VERA_QA_DISPATCH_ENABLED=true to enqueue Hermes Vera QA tasks")
@@ -304,6 +384,8 @@ def execute_hermes_vera_dispatch(action: Action) -> str:
     assignee = str(action.payload.get("assignee") or "vera")
     idempotency_key = str(action.payload.get("idempotency_key") or f"vera-qa:{action.target}")
     workspace = _vera_qa_workspace_for_action(action)
+    artifact_workspace = _vera_qa_artifact_workspace_for_action(action, workspace)
+    body = _append_vera_qa_artifact_contract(body, artifact_workspace, workspace)
     cmd = [
         _hermes_cli_path(),
         "kanban",
@@ -341,6 +423,14 @@ def _extract_field(text: str, label: str) -> str:
     return m.group(1).strip() if m else ""
 
 
+def _vera_qa_artifact_workspace_for_task(task: Dict[str, Any]) -> str:
+    body = str(task.get("body") or "")
+    artifact_workspace = _extract_field(body, "Artifact workspace")
+    if artifact_workspace:
+        return os.path.expanduser(artifact_workspace)
+    return os.path.expanduser(str(task.get("workspace_path") or ""))
+
+
 def collect_vera_qa_completed_events(tasks: List[Dict[str, Any]]) -> List[Dict[str, str]]:
     events: List[Dict[str, str]] = []
     for task in tasks:
@@ -353,9 +443,10 @@ def collect_vera_qa_completed_events(tasks: List[Dict[str, Any]]) -> List[Dict[s
         if "Vera QA" not in title and "Vera QA" not in body:
             continue
         workspace = str(task.get("workspace_path") or "")
-        if not workspace:
+        artifact_workspace = _vera_qa_artifact_workspace_for_task(task)
+        if not workspace or not artifact_workspace:
             continue
-        manifest_path = os.path.join(os.path.expanduser(workspace), "manifest.json")
+        manifest_path = os.path.join(artifact_workspace, "manifest.json")
         if not os.path.exists(manifest_path):
             continue
         try:
@@ -385,7 +476,7 @@ def collect_vera_qa_completed_events(tasks: List[Dict[str, Any]]) -> List[Dict[s
             continue
         if not (issue_key and pr_url and head_sha):
             continue
-        report_path = os.path.join(os.path.expanduser(workspace), "verification_report.md")
+        report_path = os.path.join(artifact_workspace, "verification_report.md")
         summary = str(task.get("result") or manifest.get("summary") or f"Vera QA {qa_result}.")
         events.append(
             {
