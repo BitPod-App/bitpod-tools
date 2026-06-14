@@ -1,9 +1,15 @@
+import json
 import os
 import subprocess
 import tempfile
 import unittest
 
-from linear.scripts.refresh_vera_qa_gate_runtime_env import build_runtime_env, parse_env_file, render_shell_env
+from linear.scripts.refresh_vera_qa_gate_runtime_env import (
+    DEFAULT_WORKSPACE_MAP,
+    build_runtime_env,
+    parse_env_file,
+    render_shell_env,
+)
 
 
 class VeraRuntimeEnvRefreshTests(unittest.TestCase):
@@ -46,6 +52,38 @@ class VeraRuntimeEnvRefreshTests(unittest.TestCase):
         self.assertNotIn("~", env["TRACE_STORE_PATH"])
         self.assertIn("BitPod-App/taylor01-mind", env["VERA_QA_KANBAN_WORKSPACE_MAP"])
         self.assertNotIn("LINEAR_API_KEY", env)
+
+    def test_default_workspace_map_covers_all_vera_gate_installed_repos(self):
+        expected_repos = {
+            "BitPod-App/.github",
+            "BitPod-App/bitpod-assets",
+            "BitPod-App/bitpod-docs",
+            "BitPod-App/bitpod-taylor-runtime",
+            "BitPod-App/bitpod-tools",
+            "BitPod-App/bitregime-core",
+            "BitPod-App/sector-feeds",
+            "BitPod-App/taylor01-mind",
+            "BitPod-App/taylor01-runtime",
+        }
+
+        env = build_runtime_env(
+            github_fields={
+                "VERA_QA_GATE_GITHUB_APP_ID": "app-id",
+                "VERA_QA_GATE_GITHUB_APP_INSTALLATION_ID": "install-id",
+                "VERA_QA_GATE_GITHUB_APP_PRIVATE_KEY": "private-key",
+                "VERA_QA_GATE_WEBHOOK_SIGNING_SECRET": "webhook-secret",
+            },
+            linear_fields={
+                "CLIENT_ID": "linear-client-id",
+                "CLIENT_SECRET": "linear-client-secret",
+            },
+        )
+        runtime_map = json.loads(env["VERA_QA_KANBAN_WORKSPACE_MAP"])
+
+        self.assertEqual(set(DEFAULT_WORKSPACE_MAP), expected_repos)
+        self.assertEqual(set(runtime_map), expected_repos)
+        for repo, workspace in runtime_map.items():
+            self.assertTrue(workspace.startswith("worktree:/Users/taylor01/BitPod-App/"), repo)
 
     def test_render_shell_env_round_trips_multiline_private_key_without_unquoted_expansion(self):
         source = {

@@ -20,8 +20,15 @@ DEFAULT_VAULT = "Vera Runtime"
 DEFAULT_GITHUB_ITEM = "Vera Runtime - Vera QA Gate GitHub App Private Key"
 DEFAULT_LINEAR_ITEM = "Vera Runtime - Linear OAuth Apps"
 DEFAULT_WORKSPACE_MAP = {
-    "BitPod-App/taylor01-mind": "worktree:/Users/taylor01/BitPod-App/taylor01-mind",
+    "BitPod-App/.github": "worktree:/Users/taylor01/BitPod-App/.github",
+    "BitPod-App/bitpod-assets": "worktree:/Users/taylor01/BitPod-App/bitpod-assets",
+    "BitPod-App/bitpod-docs": "worktree:/Users/taylor01/BitPod-App/bitpod-docs",
+    "BitPod-App/bitpod-taylor-runtime": "worktree:/Users/taylor01/BitPod-App/bitpod-taylor-runtime",
     "BitPod-App/bitpod-tools": "worktree:/Users/taylor01/BitPod-App/bitpod-tools",
+    "BitPod-App/bitregime-core": "worktree:/Users/taylor01/BitPod-App/bitregime-core",
+    "BitPod-App/sector-feeds": "worktree:/Users/taylor01/BitPod-App/sector-feeds",
+    "BitPod-App/taylor01-mind": "worktree:/Users/taylor01/BitPod-App/taylor01-mind",
+    "BitPod-App/taylor01-runtime": "worktree:/Users/taylor01/BitPod-App/taylor01-runtime",
 }
 
 
