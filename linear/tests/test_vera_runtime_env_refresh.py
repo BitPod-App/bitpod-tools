@@ -6,6 +6,7 @@ import unittest
 
 from linear.scripts.refresh_vera_qa_gate_runtime_env import (
     DEFAULT_GITHUB_ITEM,
+    DEFAULT_LINEAR_ITEM,
     DEFAULT_WORKSPACE_MAP,
     build_runtime_env,
     parse_env_file,
@@ -45,6 +46,7 @@ class VeraRuntimeEnvRefreshTests(unittest.TestCase):
         self.assertEqual(env["VERA_QA_GATE_LIVE_ENABLED"], "true")
         self.assertEqual(env["VERA_QA_RESULT_SYNC_ENABLED"], "true")
         self.assertEqual(DEFAULT_GITHUB_ITEM, "GitHub App - Vera QA Gate Private Key")
+        self.assertEqual(DEFAULT_LINEAR_ITEM, "Linear OAuth App - Vera")
         self.assertEqual(env["VERA_QA_GATE_GITHUB_APP_ID"], "app-id")
         self.assertEqual(env["VERA_QA_GATE_GITHUB_CLIENT_ID"], "client-id")
         self.assertEqual(env["VERA_QA_GATE_GITHUB_APP_INSTALLATION_ID"], "install-id")
