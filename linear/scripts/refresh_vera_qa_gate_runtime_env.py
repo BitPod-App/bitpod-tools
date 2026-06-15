@@ -18,7 +18,7 @@ DEFAULT_OUTPUT_ENV = "~/.hermes/profiles/vera/vera-qa-gate-runtime.env"
 DEFAULT_TRACE_STORE = "~/.hermes/profiles/vera/vera-qa-gate-runtime-trace.jsonl"
 DEFAULT_VAULT = "Vera Runtime"
 DEFAULT_GITHUB_ITEM = "GitHub App - Vera QA Gate Private Key"
-DEFAULT_LINEAR_ITEM = "Vera Runtime - Linear OAuth Apps"
+DEFAULT_LINEAR_ITEM = "Linear OAuth App - Vera"
 DEFAULT_WORKSPACE_MAP = {
     "BitPod-App/.github": "worktree:/Users/taylor01/BitPod-App/.github",
     "BitPod-App/bitpod-assets": "worktree:/Users/taylor01/BitPod-App/bitpod-assets",
