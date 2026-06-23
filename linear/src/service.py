@@ -605,6 +605,95 @@ def _vera_qa_artifact_workspace_for_task(task: Dict[str, Any]) -> str:
     return os.path.expanduser(str(task.get("workspace_path") or ""))
 
 
+_VERA_QA_TERMINAL_BAD_STATUSES = {"blocked", "crashed", "failed", "error"}
+_VERA_QA_TERMINAL_BAD_EVENT_KINDS = {"protocol_violation", "gave_up", "crashed", "failed", "error"}
+
+
+def _compact_reason_parts(parts: List[str]) -> str:
+    out: List[str] = []
+    seen = set()
+    for part in parts:
+        text = " ".join(str(part or "").split())
+        if not text or text in seen:
+            continue
+        seen.add(text)
+        out.append(text)
+    return "; ".join(out)
+
+
+def _vera_qa_task_failure_reason(task: Dict[str, Any]) -> str:
+    parts: List[str] = []
+    status = str(task.get("status") or "").strip()
+    if status and status != "done":
+        parts.append(f"task status {status}")
+    for event in task.get("events") or []:
+        if not isinstance(event, dict):
+            continue
+        kind = str(event.get("kind") or "").strip()
+        if kind not in _VERA_QA_TERMINAL_BAD_EVENT_KINDS:
+            continue
+        payload = event.get("payload") if isinstance(event.get("payload"), dict) else {}
+        detail = str(payload.get("error") or payload.get("reason") or payload.get("trigger_outcome") or "").strip()
+        parts.append(f"{kind}: {detail}" if detail else kind)
+    for run in task.get("runs") or []:
+        if not isinstance(run, dict):
+            continue
+        run_status = str(run.get("status") or run.get("outcome") or "").strip()
+        error = str(run.get("error") or run.get("detail") or "").strip()
+        if run_status == "crashed" or error:
+            label = f"run {run_status}" if run_status else "run error"
+            parts.append(f"{label}: {error}" if error else label)
+    return _compact_reason_parts(parts) or "Vera QA worker did not complete cleanly"
+
+
+def _vera_qa_task_is_terminal_bad(task: Dict[str, Any]) -> bool:
+    status = str(task.get("status") or "").strip()
+    if status in _VERA_QA_TERMINAL_BAD_STATUSES:
+        return True
+    for event in task.get("events") or []:
+        if isinstance(event, dict) and str(event.get("kind") or "").strip() in _VERA_QA_TERMINAL_BAD_EVENT_KINDS:
+            return True
+    for run in task.get("runs") or []:
+        if not isinstance(run, dict):
+            continue
+        run_status = str(run.get("status") or run.get("outcome") or "").strip()
+        error = str(run.get("error") or run.get("detail") or "").strip()
+        if run_status == "crashed" or error:
+            return True
+    return False
+
+
+def _load_vera_manifest(manifest_path: str) -> Tuple[Optional[Dict[str, Any]], str]:
+    if not os.path.exists(manifest_path):
+        return None, "manifest.json missing"
+    try:
+        with open(manifest_path, encoding="utf-8") as fh:
+            data = json.load(fh)
+    except (OSError, json.JSONDecodeError) as exc:
+        return None, f"manifest.json unreadable: {exc}"
+    if not isinstance(data, dict):
+        return None, "manifest.json is not an object"
+    return data, ""
+
+
+def _manifest_qa_result(manifest: Dict[str, Any]) -> str:
+    return str(
+        manifest.get("qa_result")
+        or manifest.get("verdict")
+        or manifest.get("qa_verdict")
+        or ""
+    ).upper()
+
+
+def _epoch_value(value: Any) -> int:
+    if value is None or value == "":
+        return 0
+    try:
+        return int(float(str(value)))
+    except (TypeError, ValueError):
+        return 0
+
+
 def _is_syncable_vera_qa_task(task: Dict[str, Any]) -> bool:
     """Return true only for standard auto-dispatched Vera QA gate tasks."""
     title = str(task.get("title") or "")
@@ -614,32 +703,31 @@ def _is_syncable_vera_qa_task(task: Dict[str, Any]) -> bool:
 def collect_vera_qa_completed_events(tasks: List[Dict[str, Any]]) -> List[Dict[str, str]]:
     events: List[Dict[str, str]] = []
     for task in tasks:
-        if str(task.get("status") or "") != "done":
-            continue
         if str(task.get("assignee") or "").casefold() != "vera":
             continue
         if not _is_syncable_vera_qa_task(task):
             continue
         body = str(task.get("body") or "")
+        task_status = str(task.get("status") or "")
+        task_done = task_status == "done"
+        terminal_bad = _vera_qa_task_is_terminal_bad(task)
+        if not task_done and not terminal_bad:
+            continue
         workspace = str(task.get("workspace_path") or "")
         artifact_workspace = _vera_qa_artifact_workspace_for_task(task)
         if not workspace or not artifact_workspace:
             continue
         manifest_path = os.path.join(artifact_workspace, "manifest.json")
-        if not os.path.exists(manifest_path):
-            continue
-        try:
-            with open(manifest_path, encoding="utf-8") as fh:
-                manifest = json.load(fh)
-        except (OSError, json.JSONDecodeError):
+        manifest, manifest_error = _load_vera_manifest(manifest_path)
+        if manifest is None and task_done:
             continue
 
-        qa_result = str(
-            manifest.get("qa_result")
-            or manifest.get("verdict")
-            or manifest.get("qa_verdict")
-            or ""
-        ).upper()
+        manifest = manifest or {}
+        qa_result = _manifest_qa_result(manifest)
+        if terminal_bad and not task_done and not qa_result:
+            qa_result = "ACTION_REQUIRED"
+        if terminal_bad and not task_done and qa_result not in {"FAILED", "ACTION_REQUIRED"}:
+            qa_result = "ACTION_REQUIRED"
         if qa_result not in {"PASSED", "FAILED", "OVERRIDE", "ACTION_REQUIRED"}:
             continue
         issue_key = str(manifest.get("issue") or manifest.get("issue_key") or _extract_field(body, "Issue"))
@@ -656,7 +744,18 @@ def collect_vera_qa_completed_events(tasks: List[Dict[str, Any]]) -> List[Dict[s
         if not (issue_key and pr_url and head_sha):
             continue
         report_path = os.path.join(artifact_workspace, "verification_report.md")
-        summary = str(task.get("result") or manifest.get("summary") or f"Vera QA {qa_result}.")
+        if terminal_bad and not task_done:
+            failure_reason = _vera_qa_task_failure_reason(task)
+            manifest_detail = manifest_error or str(manifest.get("error") or manifest.get("summary") or "").strip()
+            summary_parts = [
+                f"Vera QA worker did not complete cleanly for task {str(task.get('id') or '')}",
+                failure_reason,
+                manifest_detail,
+                f"Artifact verdict: {qa_result}",
+            ]
+            summary = _compact_reason_parts(summary_parts)
+        else:
+            summary = str(task.get("result") or manifest.get("summary") or f"Vera QA {qa_result}.")
         events.append(
             {
                 "type": "vera_qa_completed",
@@ -675,7 +774,7 @@ def collect_vera_qa_completed_events(tasks: List[Dict[str, Any]]) -> List[Dict[s
 
 def load_completed_vera_qa_tasks() -> List[Dict[str, Any]]:
     proc = subprocess.run(
-        [_hermes_cli_path(), "kanban", "list", "--assignee", "vera", "--status", "done", "--json"],
+        [_hermes_cli_path(), "kanban", "list", "--assignee", "vera", "--json"],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
@@ -697,8 +796,13 @@ def _filter_vera_qa_tasks(tasks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         task_id = str(task.get("id") or "")
         if allowed_ids and task_id not in allowed_ids:
             continue
-        completed_at = int(task.get("completed_at") or 0)
-        if after_epoch and completed_at and completed_at < after_epoch:
+        relevant_at = (
+            _epoch_value(task.get("completed_at"))
+            or _epoch_value(task.get("updated_at"))
+            or _epoch_value(task.get("started_at"))
+            or _epoch_value(task.get("created_at"))
+        )
+        if after_epoch and relevant_at and relevant_at < after_epoch:
             continue
         out.append(task)
     return out

@@ -20,6 +20,7 @@ from linear.src.service import (
     sync_vera_qa_results_once,
     _github_webhook_secret_from_env,
     _github_event_may_be_qa_override,
+    _filter_vera_qa_tasks,
     _linear_webhook_secret_from_env,
     _normalize_private_key,
     _verify_github_webhook_signature,
@@ -436,6 +437,116 @@ class RuntimeTests(unittest.TestCase):
 
         self.assertEqual(events, [])
 
+    def test_collector_finalizes_blocked_vera_task_with_failed_manifest(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            reviewed_repo = os.path.join(tmp, "reviewed-repo")
+            artifact_workspace = os.path.join(tmp, "qa-artifacts", "BIT-345", "repo", "pr-11", "66bd304")
+            os.makedirs(reviewed_repo)
+            os.makedirs(artifact_workspace)
+            with open(os.path.join(artifact_workspace, "verification_report.md"), "w", encoding="utf-8") as fh:
+                fh.write("QA_RESULT=FAILED\n")
+            with open(os.path.join(artifact_workspace, "manifest.json"), "w", encoding="utf-8") as fh:
+                json.dump(
+                    {
+                        "issue": "BIT-345",
+                        "pr_url": "https://github.com/BitPod-App/bitregime-core/pull/11",
+                        "head_sha": "66bd304434b7ec9e9d26aad21c9643dfab52de58",
+                        "qa_verdict": "FAILED",
+                        "error": "ModuleNotFoundError: No module named 'typer'",
+                    },
+                    fh,
+                )
+
+            events = collect_vera_qa_completed_events(
+                [
+                    {
+                        "id": "t_blocked_failed",
+                        "title": "Vera QA review: BIT-345",
+                        "body": (
+                            "Issue: BIT-345\n"
+                            "PR: https://github.com/BitPod-App/bitregime-core/pull/11\n"
+                            "Head SHA: 66bd304434b7ec9e9d26aad21c9643dfab52de58\n"
+                            f"Artifact workspace: {artifact_workspace}"
+                        ),
+                        "assignee": "vera",
+                        "status": "blocked",
+                        "workspace_path": reviewed_repo,
+                        "result": "",
+                        "events": [
+                            {
+                                "kind": "gave_up",
+                                "payload": {"error": "worker exited cleanly without kanban_complete or kanban_block"},
+                            }
+                        ],
+                        "runs": [{"status": "crashed", "error": "PID not alive"}],
+                    }
+                ]
+            )
+
+        self.assertEqual(len(events), 1)
+        self.assertEqual(events[0]["task_id"], "t_blocked_failed")
+        self.assertEqual(events[0]["issue_key"], "BIT-345")
+        self.assertEqual(events[0]["qa_result"], "FAILED")
+        self.assertEqual(events[0]["qa_verdict"], "FAILED")
+        self.assertEqual(events[0]["pr_url"], "https://github.com/BitPod-App/bitregime-core/pull/11")
+        self.assertEqual(events[0]["head_sha"], "66bd304434b7ec9e9d26aad21c9643dfab52de58")
+        self.assertIn("blocked", events[0]["summary"])
+        self.assertIn("ModuleNotFoundError", events[0]["summary"])
+
+    def test_collector_finalizes_blocked_vera_task_missing_manifest_as_action_required(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            artifact_workspace = os.path.join(tmp, "qa-artifacts", "BIT-345", "repo", "pr-11", "66bd304")
+            os.makedirs(artifact_workspace)
+
+            events = collect_vera_qa_completed_events(
+                [
+                    {
+                        "id": "t_blocked_missing_manifest",
+                        "title": "Vera QA review: BIT-345",
+                        "body": (
+                            "Issue: BIT-345\n"
+                            "PR: https://github.com/BitPod-App/bitregime-core/pull/11\n"
+                            "Head SHA: 66bd304434b7ec9e9d26aad21c9643dfab52de58\n"
+                            f"Artifact workspace: {artifact_workspace}"
+                        ),
+                        "assignee": "vera",
+                        "status": "blocked",
+                        "workspace_path": tmp,
+                        "events": [{"kind": "protocol_violation", "payload": {"error": "missing completion marker"}}],
+                    }
+                ]
+            )
+
+        self.assertEqual(len(events), 1)
+        self.assertEqual(events[0]["task_id"], "t_blocked_missing_manifest")
+        self.assertEqual(events[0]["issue_key"], "BIT-345")
+        self.assertEqual(events[0]["qa_result"], "ACTION_REQUIRED")
+        self.assertEqual(events[0]["qa_verdict"], "ACTION_REQUIRED")
+        self.assertIn("manifest.json missing", events[0]["summary"])
+        self.assertIn("protocol_violation", events[0]["summary"])
+
+    def test_collector_skips_non_terminal_vera_task_without_result(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            events = collect_vera_qa_completed_events(
+                [
+                    {
+                        "id": "t_queued",
+                        "title": "Vera QA review: BIT-345",
+                        "body": (
+                            "Issue: BIT-345\n"
+                            "PR: https://github.com/BitPod-App/bitregime-core/pull/11\n"
+                            "Head SHA: 66bd304434b7ec9e9d26aad21c9643dfab52de58\n"
+                            f"Artifact workspace: {tmp}"
+                        ),
+                        "assignee": "vera",
+                        "status": "queued",
+                        "workspace_path": tmp,
+                    }
+                ]
+            )
+
+        self.assertEqual(events, [])
+
     def test_sync_vera_qa_results_once_marks_completed_task_after_actions(self):
         with tempfile.TemporaryDirectory() as tmp:
             with open(os.path.join(tmp, "verification_report.md"), "w", encoding="utf-8") as fh:
@@ -554,6 +665,27 @@ class RuntimeTests(unittest.TestCase):
 
         self.assertEqual(count, 1)
         self.assertEqual(len(calls), 1)
+
+    def test_vera_qa_task_filter_tolerates_non_numeric_timestamps(self):
+        old_after = os.environ.get("VERA_QA_RESULT_SYNC_AFTER_EPOCH")
+        os.environ["VERA_QA_RESULT_SYNC_AFTER_EPOCH"] = "100"
+        try:
+            tasks = _filter_vera_qa_tasks(
+                [
+                    {
+                        "id": "t_iso",
+                        "status": "blocked",
+                        "created_at": "2026-06-23T22:25:00Z",
+                    }
+                ]
+            )
+        finally:
+            if old_after is None:
+                os.environ.pop("VERA_QA_RESULT_SYNC_AFTER_EPOCH", None)
+            else:
+                os.environ["VERA_QA_RESULT_SYNC_AFTER_EPOCH"] = old_after
+
+        self.assertEqual([task["id"] for task in tasks], ["t_iso"])
 
     def test_runtime_can_write_durable_trace_store(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -1085,6 +1217,8 @@ class RuntimeTests(unittest.TestCase):
 
         self.assertEqual(tasks, [])
         self.assertEqual(calls[0][0], "/tmp/bitpod-hermes-cli")
+        self.assertNotIn("--status", calls[0])
+        self.assertIn("--json", calls[0])
 
     def test_vera_dispatch_uses_configured_hermes_cli_path_under_launchd_path(self):
         old_enabled = os.environ.get("VERA_QA_DISPATCH_ENABLED")
