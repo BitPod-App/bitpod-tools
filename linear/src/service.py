@@ -581,6 +581,12 @@ def _vera_qa_artifact_workspace_for_task(task: Dict[str, Any]) -> str:
     return os.path.expanduser(str(task.get("workspace_path") or ""))
 
 
+def _is_syncable_vera_qa_task(task: Dict[str, Any]) -> bool:
+    """Return true only for standard auto-dispatched Vera QA gate tasks."""
+    title = str(task.get("title") or "")
+    return title.startswith("Vera QA review:")
+
+
 def collect_vera_qa_completed_events(tasks: List[Dict[str, Any]]) -> List[Dict[str, str]]:
     events: List[Dict[str, str]] = []
     for task in tasks:
@@ -588,10 +594,9 @@ def collect_vera_qa_completed_events(tasks: List[Dict[str, Any]]) -> List[Dict[s
             continue
         if str(task.get("assignee") or "").casefold() != "vera":
             continue
-        title = str(task.get("title") or "")
-        body = str(task.get("body") or "")
-        if "Vera QA" not in title and "Vera QA" not in body:
+        if not _is_syncable_vera_qa_task(task):
             continue
+        body = str(task.get("body") or "")
         workspace = str(task.get("workspace_path") or "")
         artifact_workspace = _vera_qa_artifact_workspace_for_task(task)
         if not workspace or not artifact_workspace:
@@ -690,6 +695,10 @@ def _mark_vera_result_synced(task_id: str, trace_store: JsonlFileStore) -> None:
     )
 
 
+def _vera_result_sync_should_stop_retrying(results: Optional[List[Dict[str, str]]]) -> bool:
+    return any(str(result.get("outcome")) == "executed" for result in (results or []))
+
+
 def sync_vera_qa_results_once(
     tasks: Optional[List[Dict[str, Any]]] = None,
     dry_run: bool = True,
@@ -712,8 +721,7 @@ def sync_vera_qa_results_once(
         if not actions:
             continue
         results = apply_fn(actions, dry_run=dry_run, policy=policy)
-        blocked = any(str(result.get("outcome")) == "blocked" for result in (results or []))
-        if not dry_run and not blocked and task_id:
+        if not dry_run and task_id and _vera_result_sync_should_stop_retrying(results):
             _mark_vera_result_synced(task_id, trace_store)
         synced += 1
     return synced

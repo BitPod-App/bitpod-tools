@@ -78,6 +78,25 @@ class EngineTests(unittest.TestCase):
         self.assertEqual(check.payload["head_sha"], "22cc449")
 
 
+    def test_gh_opened_non_draft_does_not_post_linear_dispatch_noise(self):
+        ev = {
+            "action": "opened",
+            "pull_request": {
+                "number": 50,
+                "title": "BIT-619 Retire CODEOWNERS",
+                "body": "",
+                "draft": False,
+                "html_url": "https://github.com/BitPod-App/taylor01-mind/pull/50",
+                "head": {"ref": "codex/bit-619-retire-codeowners-taylor01-mind", "sha": "22cc449"},
+            },
+        }
+
+        actions = self.bot.on_github_pr_opened(ev)
+
+        comments = [a for a in actions if a.system == "linear" and a.kind == "comment"]
+        self.assertEqual(comments, [])
+
+
     def test_gh_ready_for_review_dispatches_vera_qa_and_queues_gate(self):
         ev = {
             "action": "ready_for_review",
@@ -107,18 +126,8 @@ class EngineTests(unittest.TestCase):
         self.assertEqual(check.payload["repo_full_name"], "BitPod-App/bitpod-tools")
         self.assertEqual(check.payload["head_sha"], "abc123")
 
-        comment = next(
-            a
-            for a in actions
-            if a.system == "linear" and a.kind == "comment" and "VERA_QA_RAN" in a.payload.get("body", "")
-        )
-        self.assertIn("VERA_QA_RAN=false", comment.payload["body"])
-        self.assertIn("GITHUB_NATIVE_GATE_SATISFIED=false", comment.payload["body"])
-        self.assertIn("LINEAR_QA_RESULT_SYNCED=false", comment.payload["body"])
-        self.assertIn("USER_SEAT_REQUIRED=unknown", comment.payload["body"])
-        self.assertIn("QA_VERDICT: PASSED|FAILED|OVERRIDE|ACTION_REQUIRED", comment.payload["body"])
-        self.assertIn("QA_RESULT=PASSED|FAILED|OVERRIDE|ACTION_REQUIRED", comment.payload["body"])
-        self.assertNotIn("NO_VERDICT", comment.payload["body"])
+        comments = [a for a in actions if a.system == "linear" and a.kind == "comment"]
+        self.assertEqual(comments, [])
 
 
     def test_gh_synchronize_non_draft_dispatches_vera_qa_for_latest_head(self):

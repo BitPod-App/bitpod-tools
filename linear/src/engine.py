@@ -632,7 +632,6 @@ class LinearBotEngine:
         }
         actions = [
             Action("hermes", "enqueue_vera_qa", issue_key, dispatch_payload),
-            Action("linear", "comment", issue_key, {"body": "\n".join(body_lines)}),
         ]
         actions.extend(
             self._github_check_run(
@@ -664,12 +663,6 @@ class LinearBotEngine:
             head_sha = str(head.get("sha") or pr.get("head_sha") or "")
             actions = [
                 Action("linear", "set_status", issue_key, {"status": self.cfg.in_review_status}),
-                Action(
-                    "linear",
-                    "comment",
-                    issue_key,
-                    {"body": f"PR opened ready for review: {pr_url}. Auto-dispatching Vera QA."},
-                ),
             ]
             actions.extend(
                 self._vera_dispatch_actions(
@@ -702,12 +695,6 @@ class LinearBotEngine:
         head_sha = str(head.get("sha") or pr.get("head_sha") or "")
         actions = [
             Action("linear", "set_status", issue_key, {"status": self.cfg.in_review_status}),
-            Action(
-                "linear",
-                "comment",
-                issue_key,
-                {"body": f"PR in review: {pr_url}. The current Product Development review gate is now expressed by `In Review`."},
-            ),
         ]
         actions.extend(
             self._vera_dispatch_actions(
@@ -737,12 +724,6 @@ class LinearBotEngine:
         head_sha = str(head.get("sha") or pr.get("head_sha") or "")
         actions = [
             Action("linear", "set_status", issue_key, {"status": self.cfg.in_review_status}),
-            Action(
-                "linear",
-                "comment",
-                issue_key,
-                {"body": f"PR head updated while in review: {pr_url}. Re-dispatching Vera QA for the latest head."},
-            ),
         ]
         actions.extend(
             self._vera_dispatch_actions(
@@ -780,12 +761,6 @@ class LinearBotEngine:
         head_sha = str(head.get("sha") or pr.get("head_sha") or "")
         actions = [
             Action("linear", "set_status", issue_key, {"status": self.cfg.in_review_status}),
-            Action(
-                "linear",
-                "comment",
-                issue_key,
-                {"body": f"VeraQA review requested for PR: {pr_url}. Auto-dispatching Vera QA."},
-            ),
         ]
         actions.extend(
             self._vera_dispatch_actions(
