@@ -39,7 +39,7 @@ class GovernancePolicy:
             return "A"
         if action.system == "hermes" and action.kind == "enqueue_vera_qa":
             return "A"
-        if action.system == "linear" and action.kind == "comment":
+        if action.system == "linear" and action.kind in {"comment", "agent_activity"}:
             return "A"
         if action.system == "linear" and action.kind in {"set_status", "set_label", "set_label_if_empty"}:
             return "B"

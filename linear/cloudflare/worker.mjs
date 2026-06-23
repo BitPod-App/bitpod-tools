@@ -14,28 +14,52 @@ function json(body, status = 200) {
   });
 }
 
-async function verifyGitHubSignature(request, secret) {
-  if (!secret) return true;
-  const sig = request.headers.get("x-hub-signature-256") || "";
-  return sig.startsWith("sha256="); // placeholder, fail-open for scaffold
+async function hmacSha256Hex(secret, body) {
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const signature = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(body));
+  return [...new Uint8Array(signature)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
-async function verifyLinearSignature(request, secret) {
-  if (!secret) return true;
-  const sig = request.headers.get("linear-signature") || "";
-  return sig.length > 0; // placeholder, fail-open for scaffold
+function normalizeSignature(value) {
+  return (value || "").trim().replace(/^sha256=/i, "");
 }
 
-async function forward(request, env, path) {
+async function verifyHmacSignature(body, signatureHeader, secret) {
+  if (!secret) return false;
+  const signature = normalizeSignature(signatureHeader);
+  if (!signature) return false;
+  const expected = await hmacSha256Hex(secret, body);
+  return signature.length === expected.length && signature.toLowerCase() === expected;
+}
+
+async function verifyGitHubSignature(body, signatureHeader, secret) {
+  return verifyHmacSignature(body, signatureHeader, secret);
+}
+
+async function verifyLinearSignature(body, signatureHeader, secret) {
+  return verifyHmacSignature(body, signatureHeader, secret);
+}
+
+async function forward(body, request, env, path) {
   const origin = env.BOT_ORIGIN;
   if (!origin) {
     return json({ ok: false, error: "BOT_ORIGIN missing" }, 500);
   }
 
-  const body = await request.text();
   const res = await fetch(`${origin}${path}`, {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: {
+      "content-type": request.headers.get("content-type") || "application/json",
+      "x-github-event": request.headers.get("x-github-event") || "",
+      "x-hub-signature-256": request.headers.get("x-hub-signature-256") || "",
+      "linear-signature": request.headers.get("linear-signature") || "",
+    },
     body,
   });
 
@@ -54,15 +78,17 @@ export default {
     }
 
     if (request.method === "POST" && url.pathname === "/webhooks/github") {
-      const ok = await verifyGitHubSignature(request, env.GITHUB_WEBHOOK_SECRET);
+      const body = await request.text();
+      const ok = await verifyGitHubSignature(body, request.headers.get("x-hub-signature-256"), env.GITHUB_WEBHOOK_SECRET);
       if (!ok) return json({ ok: false, error: "invalid github signature" }, 401);
-      return forward(request, env, "/github");
+      return forward(body, request, env, "/github");
     }
 
     if (request.method === "POST" && url.pathname === "/webhooks/linear") {
-      const ok = await verifyLinearSignature(request, env.LINEAR_WEBHOOK_SECRET);
+      const body = await request.text();
+      const ok = await verifyLinearSignature(body, request.headers.get("linear-signature"), env.LINEAR_WEBHOOK_SECRET);
       if (!ok) return json({ ok: false, error: "invalid linear signature" }, 401);
-      return forward(request, env, "/linear");
+      return forward(body, request, env, "/linear");
     }
 
     return json({ ok: false, error: "not found" }, 404);

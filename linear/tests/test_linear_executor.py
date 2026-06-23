@@ -47,6 +47,15 @@ class FakeLinearTransport:
                     }
                 }
             }
+        if "LinearExecutorAgentActivityCreate" in query:
+            return {
+                "data": {
+                    "agentActivityCreate": {
+                        "success": True,
+                        "agentActivity": {"id": "activity-1"},
+                    }
+                }
+            }
         if "LinearExecutorWorkflowStates" in query:
             return {
                 "data": {
@@ -156,6 +165,24 @@ class LinearExecutorTests(unittest.TestCase):
         result = executor.execute(Action("linear", "comment", "BIT-505", {"body": "rollout note"}))
         self.assertEqual(result.outcome, "executed")
         self.assertIn("commentCreate BIT-505", result.detail)
+
+
+    def test_agent_activity_supported_for_first_activity_ack(self):
+        transport = FakeLinearTransport()
+        executor = LinearExecutor(enabled_config(), transport=transport)
+        content = {"type": "thought", "body": "AgentSession accepted for BIT-599."}
+        result = executor.execute(Action("linear", "agent_activity", "session-1", {"content": content}))
+
+        self.assertEqual(result.outcome, "executed")
+        self.assertIn("agentActivityCreate session=session-1 activity=activity-1", result.detail)
+        self.assertEqual(transport.last_variables, {"input": {"agentSessionId": "session-1", "content": content}})
+
+    def test_agent_activity_is_safe_autonomous_governance_class(self):
+        action = Action("linear", "agent_activity", "session-1", {"content": {"type": "thought", "body": "accepted"}})
+        policy = GovernancePolicy.default()
+
+        self.assertEqual(policy.classify(action), "A")
+        self.assertTrue(policy.decide(action, dry_run=False).allowed)
 
     def test_set_status_supported_by_executor(self):
         transport = FakeLinearTransport()
