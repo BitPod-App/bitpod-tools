@@ -259,7 +259,7 @@ def _body_has_qa_override_command(body: str) -> bool:
 
 
 def _github_event_may_be_qa_override(event: Dict[str, Any], event_name: str) -> bool:
-    if event_name == "issues" and event.get("action") == "labeled":
+    if event_name in {"issues", "pull_request"} and event.get("action") == "labeled":
         return _is_github_qa_override_label(_label_name(event.get("label")))
     if event_name == "issue_comment" and event.get("action") == "created":
         comment = event.get("comment") if isinstance(event.get("comment"), dict) else {}
@@ -907,7 +907,7 @@ class Handler(BaseHTTPRequestHandler):
                 actions = self.runtime.run_github_event(data)
             elif action == "review_requested":
                 actions = self.runtime.run_github_event(data)
-            elif github_override_event and event_name == "issues" and action == "labeled":
+            elif github_override_event and event_name in {"issues", "pull_request"} and action == "labeled":
                 actions = self.runtime.run_github_event(data)
             elif github_override_event and event_name == "issue_comment" and action == "created":
                 actions = self.runtime.run_github_event(data)

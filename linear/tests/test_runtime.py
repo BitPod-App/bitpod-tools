@@ -19,6 +19,7 @@ from linear.src.service import (
     load_completed_vera_qa_tasks,
     sync_vera_qa_results_once,
     _github_webhook_secret_from_env,
+    _github_event_may_be_qa_override,
     _linear_webhook_secret_from_env,
     _normalize_private_key,
     _verify_github_webhook_signature,
@@ -798,6 +799,48 @@ class RuntimeTests(unittest.TestCase):
         self.assertIn("/qa-override", enriched["override_reason"]["body"])
         self.assertEqual(calls[0][1], "/repos/BitPod-App/sector-feeds/pulls/77")
 
+    def test_github_override_detection_accepts_pull_request_labeled_label_event(self):
+        self.assertTrue(
+            _github_event_may_be_qa_override(
+                {"action": "labeled", "label": {"name": "QA_OVERRIDE"}},
+                "pull_request",
+            )
+        )
+
+    def test_runtime_routes_pull_request_labeled_to_cj_qa_override(self):
+        rt = BotRuntime()
+
+        actions = rt.run_github_event(
+            {
+                "_github_event": "pull_request",
+                "action": "labeled",
+                "sender": {"login": "cjarguello"},
+                "label": {"name": "QA_OVERRIDE"},
+                "override_label_actor": "cjarguello",
+                "head_current_at": "2026-06-23T05:20:00Z",
+                "pull_request": {
+                    "number": 77,
+                    "title": "BIT-708 sector override",
+                    "body": "",
+                    "html_url": "https://github.com/BitPod-App/sector-feeds/pull/77",
+                    "labels": [{"name": "QA_OVERRIDE"}],
+                    "head": {"sha": "abc1234"},
+                },
+                "override_reason": {
+                    "source": "comment",
+                    "actor": "cjarguello",
+                    "reason": "CJ accepts advisory QA evidence.",
+                    "body": "/qa-override CJ accepts advisory QA evidence.",
+                    "html_url": "https://github.com/BitPod-App/sector-feeds/pull/77#issuecomment-1",
+                    "created_at": "2026-06-23T05:21:00Z",
+                },
+            }
+        )
+
+        self.assertTrue(any(a.system == "linear" and a.kind == "set_label" and a.payload["value"] == "qa-override" for a in actions))
+        check = next(a for a in actions if a.system == "github" and a.kind == "check_run")
+        self.assertEqual(check.payload["conclusion"], "success")
+
     def test_governance_blocks_live_linear_mutation_without_approval(self):
         with tempfile.TemporaryDirectory() as tmp:
             trace_path = os.path.join(tmp, "service_trace.jsonl")
@@ -891,6 +934,42 @@ class RuntimeTests(unittest.TestCase):
         self.assertEqual(override_decision.policy_class, "B")
         self.assertTrue(blocker_decision.allowed)
         self.assertEqual(blocker_decision.policy_class, "B")
+
+    def test_governance_allows_cj_github_qa_override_label_and_delivered_sync_without_per_ticket_allowlist(self):
+        policy = GovernancePolicy.default()
+        override_label = Action(
+            "linear",
+            "set_label",
+            "BIT-644",
+            {"group": "In Review - QA Gate", "value": "qa-override", "source_event": "github_cj_qa_override"},
+        )
+        delivered_status = Action(
+            "linear",
+            "set_status",
+            "BIT-644",
+            {"status": "Delivered", "source_event": "github_cj_qa_override"},
+        )
+
+        label_decision = policy.decide(override_label, dry_run=False)
+        status_decision = policy.decide(delivered_status, dry_run=False)
+
+        self.assertTrue(label_decision.allowed)
+        self.assertEqual(label_decision.policy_class, "B")
+        self.assertTrue(status_decision.allowed)
+        self.assertEqual(status_decision.policy_class, "B")
+
+    def test_governance_rejects_cj_github_qa_override_for_non_override_label(self):
+        action = Action(
+            "linear",
+            "set_label",
+            "BIT-644",
+            {"group": "In Review - QA Gate", "value": "qa-passed", "source_event": "github_cj_qa_override"},
+        )
+
+        decision = GovernancePolicy.default().decide(action, dry_run=False)
+
+        self.assertFalse(decision.allowed)
+        self.assertEqual(decision.policy_class, "B")
 
     def test_governance_rejects_non_vera_qa_source_for_same_linear_label_shape(self):
         action = Action(
