@@ -79,6 +79,10 @@
 
 **Required QA artifact:** Every dedicated Vera QA execution must produce `verification_report.md` and `manifest.json`. Verdict/result vocabulary is `PASSED`, `FAILED`, `OVERRIDE`, or `ACTION_REQUIRED`; legacy `SKIPPED` is deprecated/fail-closed.
 
+**CJ QA override V1:** A GitHub-native override may satisfy `vera-qa-gate` for any BitPod repo covered by the GitHub App/webhook, not just this runtime repo. It may pass only when `cjarguello` applies or owns the `QA_OVERRIDE` label (alias `qa-override`) and provides `/qa-override <reason>` in a PR comment or approved PR review for the current head SHA. The sync target in Linear remains `qa-override`. This clears Vera QA only; it is not Vera QA and does not PM-accept the work.
+
+**Expected V2 hardening:** Replace the V1 text/label convention with a stronger GitHub-native bypass path, ruleset audit signal, custom property, or dedicated GitHub Action/App command that must be performed by `cjarguello`.
+
 ---
 
 ## 6. Vera Gate Checklist
@@ -90,6 +94,7 @@ Use this checklist to confirm the custom Vera gate is active and healthy in any 
 - [ ] Vera auto-dispatch creates a task for the current PR head SHA.
 - [ ] Vera produces `verification_report.md` + `manifest.json`.
 - [ ] Result sync updates GitHub `vera-qa-gate` and Linear QA label/status from the Vera result.
+- [ ] Every BitPod repo that allows CJ QA override has the GitHub App/webhook installed, subscribes to `issues`, `issue_comment`, and `pull_request_review`, and has label `QA_OVERRIDE` or alias `qa-override`; missing repo setup is a blocker, not an implicit pass.
 
 ---
 

@@ -492,6 +492,216 @@ class EngineTests(unittest.TestCase):
         self.assertEqual(check.payload["conclusion"], "success")
         self.assertIn("override", check.payload["title"].lower())
 
+    def test_github_qa_override_comment_with_canonical_label_passes_for_any_repo(self):
+        actions = self.bot.on_github_qa_override(
+            {
+                "_github_event": "issue_comment",
+                "action": "created",
+                "sender": {"login": "cjarguello"},
+                "override_label_actor": "cjarguello",
+                "head_current_at": "2026-06-23T05:20:00Z",
+                "issue": {
+                    "number": 77,
+                    "title": "BIT-700 sector override",
+                    "body": "",
+                    "html_url": "https://github.com/BitPod-App/sector-feeds/pull/77",
+                    "labels": [{"name": "QA_OVERRIDE"}],
+                    "pull_request": {},
+                },
+                "pull_request": {
+                    "html_url": "https://github.com/BitPod-App/sector-feeds/pull/77",
+                    "head": {"sha": "abc1234"},
+                },
+                "comment": {
+                    "body": "/qa-override CJ accepts advisory QA evidence for this docs-only change.\nHEAD_SHA=abc1234",
+                    "html_url": "https://github.com/BitPod-App/sector-feeds/pull/77#issuecomment-1",
+                    "created_at": "2026-06-23T05:21:00Z",
+                    "user": {"login": "cjarguello"},
+                },
+            }
+        )
+
+        self.assertTrue(any(a.system == "linear" and a.kind == "set_label" and a.payload["value"] == "qa-override" for a in actions))
+        self.assertTrue(any(a.system == "linear" and a.kind == "set_status" and a.payload["status"] == "Delivered" for a in actions))
+        self.assertFalse(any(a.system == "linear" and a.kind == "set_label" and str(a.payload.get("value", "")).startswith("pm-") for a in actions))
+        linear_comment = next(a for a in actions if a.system == "linear" and a.kind == "comment")
+        self.assertIn("CJ QA override authorized", linear_comment.payload["body"])
+        self.assertIn("not Vera QA", linear_comment.payload["body"])
+        self.assertIn("CJ accepts advisory QA evidence", linear_comment.payload["body"])
+        check = next(a for a in actions if a.system == "github" and a.kind == "check_run")
+        self.assertEqual(check.payload["repo_full_name"], "BitPod-App/sector-feeds")
+        self.assertEqual(check.payload["head_sha"], "abc1234")
+        self.assertEqual(check.payload["conclusion"], "success")
+        self.assertIn("not Vera QA", check.payload["summary"])
+
+    def test_github_qa_override_comment_accepts_lowercase_label_alias(self):
+        actions = self.bot.on_github_qa_override(
+            {
+                "_github_event": "issue_comment",
+                "action": "created",
+                "sender": {"login": "cjarguello"},
+                "override_label_actor": "cjarguello",
+                "head_current_at": "2026-06-23T05:20:00Z",
+                "issue": {
+                    "number": 17,
+                    "title": "BIT-701 tools override",
+                    "body": "",
+                    "html_url": "https://github.com/BitPod-App/bitpod-tools/pull/17",
+                    "labels": [{"name": "qa-override"}],
+                    "pull_request": {},
+                },
+                "pull_request": {
+                    "html_url": "https://github.com/BitPod-App/bitpod-tools/pull/17",
+                    "head": {"sha": "def5678"},
+                },
+                "comment": {
+                    "body": "/qa-override CJ accepts a one-time Vera gate override.",
+                    "html_url": "https://github.com/BitPod-App/bitpod-tools/pull/17#issuecomment-2",
+                    "created_at": "2026-06-23T05:21:00Z",
+                    "user": {"login": "cjarguello"},
+                },
+            }
+        )
+
+        check = next(a for a in actions if a.system == "github" and a.kind == "check_run")
+        self.assertEqual(check.payload["conclusion"], "success")
+        self.assertEqual(check.payload["repo_full_name"], "BitPod-App/bitpod-tools")
+
+    def test_github_qa_override_review_approval_passes_when_review_is_available(self):
+        actions = self.bot.on_github_qa_override(
+            {
+                "_github_event": "pull_request_review",
+                "action": "submitted",
+                "sender": {"login": "cjarguello"},
+                "override_label_actor": "cjarguello",
+                "head_current_at": "2026-06-23T05:20:00Z",
+                "pull_request": {
+                    "number": 31,
+                    "title": "BIT-702 review override",
+                    "body": "",
+                    "html_url": "https://github.com/BitPod-App/bitregime-core/pull/31",
+                    "labels": [{"name": "QA_OVERRIDE"}],
+                    "head": {"sha": "beef123"},
+                },
+                "review": {
+                    "state": "approved",
+                    "body": "/qa-override CJ accepts this QA gate override after reviewing advisory evidence.",
+                    "html_url": "https://github.com/BitPod-App/bitregime-core/pull/31#pullrequestreview-1",
+                    "submitted_at": "2026-06-23T05:21:00Z",
+                    "user": {"login": "cjarguello"},
+                },
+            }
+        )
+
+        check = next(a for a in actions if a.system == "github" and a.kind == "check_run")
+        self.assertEqual(check.payload["repo_full_name"], "BitPod-App/bitregime-core")
+        self.assertEqual(check.payload["head_sha"], "beef123")
+        self.assertEqual(check.payload["conclusion"], "success")
+
+    def test_github_qa_override_fails_closed_for_wrong_actor(self):
+        actions = self.bot.on_github_qa_override(
+            {
+                "_github_event": "issue_comment",
+                "action": "created",
+                "sender": {"login": "not-cj"},
+                "override_label_actor": "cjarguello",
+                "issue": {
+                    "number": 17,
+                    "title": "BIT-703 wrong actor",
+                    "labels": [{"name": "QA_OVERRIDE"}],
+                    "pull_request": {},
+                },
+                "pull_request": {
+                    "html_url": "https://github.com/BitPod-App/bitpod-tools/pull/17",
+                    "head": {"sha": "abc1234"},
+                },
+                "comment": {"body": "/qa-override should not pass", "user": {"login": "not-cj"}},
+            }
+        )
+
+        self.assertFalse(any(a.system == "linear" and a.kind == "set_label" and a.payload.get("value") == "qa-override" for a in actions))
+        check = next(a for a in actions if a.system == "github" and a.kind == "check_run")
+        self.assertEqual(check.payload["conclusion"], "failure")
+        self.assertIn("cjarguello", check.payload["summary"])
+
+    def test_github_qa_override_fails_closed_when_label_actor_is_not_cj(self):
+        actions = self.bot.on_github_qa_override(
+            {
+                "_github_event": "issue_comment",
+                "action": "created",
+                "sender": {"login": "cjarguello"},
+                "override_label_actor": "someone-else",
+                "issue": {
+                    "number": 17,
+                    "title": "BIT-704 label actor",
+                    "labels": [{"name": "QA_OVERRIDE"}],
+                    "pull_request": {},
+                },
+                "pull_request": {
+                    "html_url": "https://github.com/BitPod-App/bitpod-tools/pull/17",
+                    "head": {"sha": "abc1234"},
+                },
+                "comment": {"body": "/qa-override label actor mismatch", "user": {"login": "cjarguello"}},
+            }
+        )
+
+        self.assertFalse(any(a.kind == "set_label" and a.payload.get("value") == "qa-override" for a in actions))
+        check = next(a for a in actions if a.system == "github" and a.kind == "check_run")
+        self.assertEqual(check.payload["conclusion"], "failure")
+        self.assertIn("label", check.payload["summary"].lower())
+
+    def test_github_qa_override_fails_closed_for_head_sha_mismatch(self):
+        actions = self.bot.on_github_qa_override(
+            {
+                "_github_event": "issue_comment",
+                "action": "created",
+                "sender": {"login": "cjarguello"},
+                "override_label_actor": "cjarguello",
+                "issue": {
+                    "number": 17,
+                    "title": "BIT-705 head mismatch",
+                    "labels": [{"name": "QA_OVERRIDE"}],
+                    "pull_request": {},
+                },
+                "pull_request": {
+                    "html_url": "https://github.com/BitPod-App/bitpod-tools/pull/17",
+                    "head": {"sha": "abc1234"},
+                },
+                "comment": {"body": "/qa-override stale\nHEAD_SHA=deadbeef", "user": {"login": "cjarguello"}},
+            }
+        )
+
+        self.assertFalse(any(a.kind == "set_label" and a.payload.get("value") == "qa-override" for a in actions))
+        check = next(a for a in actions if a.system == "github" and a.kind == "check_run")
+        self.assertEqual(check.payload["conclusion"], "failure")
+        self.assertIn("HEAD_SHA", check.payload["summary"])
+
+    def test_github_qa_override_fails_closed_without_linear_issue_key(self):
+        actions = self.bot.on_github_qa_override(
+            {
+                "_github_event": "issue_comment",
+                "action": "created",
+                "sender": {"login": "cjarguello"},
+                "override_label_actor": "cjarguello",
+                "issue": {
+                    "number": 17,
+                    "title": "no issue key",
+                    "labels": [{"name": "QA_OVERRIDE"}],
+                    "pull_request": {},
+                },
+                "pull_request": {
+                    "html_url": "https://github.com/BitPod-App/bitpod-tools/pull/17",
+                    "head": {"sha": "abc1234"},
+                },
+                "comment": {"body": "/qa-override no issue key", "user": {"login": "cjarguello"}},
+            }
+        )
+
+        self.assertFalse(any(a.system == "linear" for a in actions))
+        check = next(a for a in actions if a.system == "github" and a.kind == "check_run")
+        self.assertEqual(check.payload["conclusion"], "failure")
+        self.assertIn("Linear issue key", check.payload["summary"])
+
     def test_linear_comment_action_required_uses_failure_not_github_action_required(self):
         actions = self.bot.on_linear_comment(
             "BIT-45",

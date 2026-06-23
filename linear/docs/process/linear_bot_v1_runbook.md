@@ -66,6 +66,8 @@ Populate only required values for non-Vera modes or controlled overrides:
 GitHub webhook:
 - URL: `POST /github` on bot runtime service, or `POST /webhooks/github` on Cloudflare gateway.
 - Events: `pull_request`; `ready_for_review` and VeraQA `review_requested` enqueue Vera QA and queue `vera-qa-gate` when head SHA is present.
+- Events: `issues.labeled`, `issue_comment.created`, and `pull_request_review.submitted` support CJ QA override V1 for all BitPod GitHub repos where the App/webhook is installed and subscribed. The runtime derives the target repo from the webhook payload; it is not scoped to this repo. Override still requires the PR to have `QA_OVERRIDE` (alias `qa-override`) and `cjarguello` to provide `/qa-override <reason>` for the current head. The result is `vera-qa-gate` success plus Linear `qa-override`; it is not Vera QA or PM acceptance.
+- Future hardening should replace this V1 convention with a GitHub-native bypass/ruleset/custom-property or dedicated GitHub Action/App path performed by `cjarguello`.
 
 Linear webhook:
 - URL: `POST /linear` on runtime service, or `POST /webhooks/linear` on Cloudflare gateway.

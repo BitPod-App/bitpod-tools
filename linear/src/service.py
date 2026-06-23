@@ -21,13 +21,13 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 try:
-    from linear.src.engine import Action, format_actions
+    from linear.src.engine import Action, CJ_OVERRIDE_LOGIN, GITHUB_QA_OVERRIDE_LABELS, QA_OVERRIDE_COMMAND_RE, format_actions
     from linear.src.governance import GovernancePolicy
     from linear.src.linear_executor import LinearExecutionError, LinearExecutor
     from linear.src.memory import JsonlFileStore, MemoryEvent, now_iso
     from linear.src.runtime import BotRuntime
 except ModuleNotFoundError:
-    from engine import Action, format_actions
+    from engine import Action, CJ_OVERRIDE_LOGIN, GITHUB_QA_OVERRIDE_LABELS, QA_OVERRIDE_COMMAND_RE, format_actions
     from governance import GovernancePolicy
     from linear_executor import LinearExecutionError, LinearExecutor
     from memory import JsonlFileStore, MemoryEvent, now_iso
@@ -241,6 +241,156 @@ def execute_github_pr_comment(action: Action) -> str:
         {"body": body},
     )
     return f"github app comment {owner}/{repo}#{num} id={result.get('id', '')}"
+
+
+def _label_name(label: Any) -> str:
+    if isinstance(label, dict):
+        return str(label.get("name") or "")
+    return str(label or "")
+
+
+def _is_github_qa_override_label(name: str) -> bool:
+    return str(name or "").casefold() in GITHUB_QA_OVERRIDE_LABELS
+
+
+def _body_has_qa_override_command(body: str) -> bool:
+    text = body or ""
+    return bool(QA_OVERRIDE_COMMAND_RE.search(text))
+
+
+def _github_event_may_be_qa_override(event: Dict[str, Any], event_name: str) -> bool:
+    if event_name == "issues" and event.get("action") == "labeled":
+        return _is_github_qa_override_label(_label_name(event.get("label")))
+    if event_name == "issue_comment" and event.get("action") == "created":
+        comment = event.get("comment") if isinstance(event.get("comment"), dict) else {}
+        return _body_has_qa_override_command(str(comment.get("body") or ""))
+    if event_name == "pull_request_review" and event.get("action") == "submitted":
+        review = event.get("review") if isinstance(event.get("review"), dict) else {}
+        return _body_has_qa_override_command(str(review.get("body") or ""))
+    return False
+
+
+def _github_repo_and_pr_number(event: Dict[str, Any]) -> Tuple[str, str]:
+    repo = event.get("repository") if isinstance(event.get("repository"), dict) else {}
+    repo_full_name = str(repo.get("full_name") or "")
+    pr = event.get("pull_request") if isinstance(event.get("pull_request"), dict) else {}
+    issue = event.get("issue") if isinstance(event.get("issue"), dict) else {}
+    number = str(pr.get("number") or issue.get("number") or "")
+    if repo_full_name and number:
+        return repo_full_name, number
+    pr_url = str(pr.get("html_url") or issue.get("html_url") or "")
+    owner, repo_name, parsed_number = parse_pr_url(pr_url)
+    return (f"{owner}/{repo_name}" if owner and repo_name else repo_full_name), (parsed_number or number)
+
+
+def _latest_commit_date(commits: Any) -> str:
+    if not isinstance(commits, list) or not commits:
+        return ""
+    latest = commits[-1]
+    commit = latest.get("commit") if isinstance(latest, dict) else {}
+    committer = commit.get("committer") if isinstance(commit.get("committer"), dict) else {}
+    author = commit.get("author") if isinstance(commit.get("author"), dict) else {}
+    return str(committer.get("date") or author.get("date") or "")
+
+
+def _find_override_label_actor(events: Any) -> Tuple[str, str]:
+    if not isinstance(events, list):
+        return "", ""
+    for item in reversed(events):
+        if not isinstance(item, dict) or item.get("event") != "labeled":
+            continue
+        if not _is_github_qa_override_label(_label_name(item.get("label"))):
+            continue
+        actor = item.get("actor") if isinstance(item.get("actor"), dict) else {}
+        return str(actor.get("login") or ""), str(item.get("created_at") or "")
+    return "", ""
+
+
+def _find_override_reason(comments: Any, reviews: Any, head_current_at: str) -> Dict[str, str]:
+    candidates: List[Dict[str, str]] = []
+    if isinstance(comments, list):
+        for item in comments:
+            if not isinstance(item, dict):
+                continue
+            user = item.get("user") if isinstance(item.get("user"), dict) else {}
+            body = str(item.get("body") or "")
+            created = str(item.get("created_at") or "")
+            if user.get("login") == CJ_OVERRIDE_LOGIN and _body_has_qa_override_command(body):
+                candidates.append({
+                    "source": "comment",
+                    "actor": CJ_OVERRIDE_LOGIN,
+                    "body": body,
+                    "html_url": str(item.get("html_url") or ""),
+                    "created_at": created,
+                })
+    if isinstance(reviews, list):
+        for item in reviews:
+            if not isinstance(item, dict) or str(item.get("state") or "").casefold() != "approved":
+                continue
+            user = item.get("user") if isinstance(item.get("user"), dict) else {}
+            body = str(item.get("body") or "")
+            submitted = str(item.get("submitted_at") or "")
+            if user.get("login") == CJ_OVERRIDE_LOGIN and _body_has_qa_override_command(body):
+                candidates.append({
+                    "source": "review",
+                    "actor": CJ_OVERRIDE_LOGIN,
+                    "body": body,
+                    "html_url": str(item.get("html_url") or ""),
+                    "submitted_at": submitted,
+                    "created_at": submitted,
+                })
+    if head_current_at:
+        candidates = [c for c in candidates if str(c.get("created_at") or c.get("submitted_at") or "") >= head_current_at]
+    if not candidates:
+        return {}
+    return sorted(candidates, key=lambda c: str(c.get("created_at") or c.get("submitted_at") or ""))[-1]
+
+
+def enrich_github_override_event(event: Dict[str, Any], event_name: str) -> Dict[str, Any]:
+    """Add PR head, labels, label actor, and prior reason evidence for CJ QA overrides."""
+    if not _github_event_may_be_qa_override(event, event_name):
+        return event
+    repo_full_name, pr_number = _github_repo_and_pr_number(event)
+    if not repo_full_name or not pr_number:
+        event["override_enrichment_error"] = "missing repo or PR number"
+        return event
+    try:
+        token = github_app_installation_token_from_env()
+        pr = _github_json_request("GET", f"/repos/{repo_full_name}/pulls/{pr_number}", token)
+        issue = _github_json_request("GET", f"/repos/{repo_full_name}/issues/{pr_number}", token)
+        events = _github_json_request("GET", f"/repos/{repo_full_name}/issues/{pr_number}/events?per_page=100", token)
+        commits = _github_json_request("GET", f"/repos/{repo_full_name}/pulls/{pr_number}/commits?per_page=100", token)
+        comments = _github_json_request("GET", f"/repos/{repo_full_name}/issues/{pr_number}/comments?per_page=100", token)
+        reviews = _github_json_request("GET", f"/repos/{repo_full_name}/pulls/{pr_number}/reviews?per_page=100", token)
+    except Exception as exc:
+        event["override_enrichment_error"] = str(exc)
+        return event
+
+    existing_pr = event.get("pull_request") if isinstance(event.get("pull_request"), dict) else {}
+    merged_pr = dict(pr)
+    merged_pr.update({k: v for k, v in existing_pr.items() if v not in (None, "", [], {})})
+    event["pull_request"] = merged_pr
+
+    existing_issue = event.get("issue") if isinstance(event.get("issue"), dict) else {}
+    merged_issue = dict(existing_issue)
+    if isinstance(issue, dict) and issue.get("labels") is not None:
+        merged_issue["labels"] = issue.get("labels")
+    event["issue"] = merged_issue
+
+    label_actor, label_created_at = _find_override_label_actor(events)
+    if label_actor:
+        event["override_label_actor"] = label_actor
+        event["override_label_created_at"] = label_created_at
+
+    head_current_at = _latest_commit_date(commits)
+    if head_current_at:
+        event["head_current_at"] = head_current_at
+
+    if not isinstance(event.get("comment"), dict) and not isinstance(event.get("review"), dict):
+        reason = _find_override_reason(comments, reviews, head_current_at)
+        if reason:
+            event["override_reason"] = reason
+    return event
 
 
 def _parse_vera_workspace_map(raw: str) -> Dict[str, str]:
@@ -742,6 +892,12 @@ class Handler(BaseHTTPRequestHandler):
         actions: List[Action] = []
 
         if self.path == "/github":
+            event_name = self.headers.get("X-GitHub-Event", "")
+            github_override_event = False
+            if event_name:
+                data["_github_event"] = event_name
+                github_override_event = _github_event_may_be_qa_override(data, event_name)
+                data = enrich_github_override_event(data, event_name)
             action = data.get("action")
             if action == "opened":
                 actions = self.runtime.run_github_event(data)
@@ -750,6 +906,12 @@ class Handler(BaseHTTPRequestHandler):
             elif action == "synchronize":
                 actions = self.runtime.run_github_event(data)
             elif action == "review_requested":
+                actions = self.runtime.run_github_event(data)
+            elif github_override_event and event_name == "issues" and action == "labeled":
+                actions = self.runtime.run_github_event(data)
+            elif github_override_event and event_name == "issue_comment" and action == "created":
+                actions = self.runtime.run_github_event(data)
+            elif github_override_event and event_name == "pull_request_review" and action == "submitted":
                 actions = self.runtime.run_github_event(data)
             elif action == "closed" and data.get("pull_request", {}).get("merged") is True:
                 actions = self.runtime.run_github_event(data)
