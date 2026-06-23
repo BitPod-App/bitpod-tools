@@ -27,7 +27,7 @@ Critical acceptance criteria evidence:
 1. Open `linear/docs/process/vera_qa_lane_contract_v1.md`.
 2. Confirm the file defines Vera as a dedicated QA lane with verdict-only ownership, required inputs, and required outputs.
 3. Confirm it separates the primary QA path from the temporary BIT-79 merge-governance fallback.
-4. Confirm it points to `/Users/cjarguello/bitpod-app/local-workspace/local-codex/skills/qa-specialist/SKILL.md` as the current canonical local implementation surface, with `~/.agents` only as legacy mirror state under review.
+4. Historical checkpoint check: confirm it pointed to `/Users/cjarguello/bitpod-app/local-workspace/local-codex/skills/qa-specialist/SKILL.md` as the March 2026 canonical local implementation surface, with `~/.agents` only as legacy mirror state under review. Post-BIT-614, this is retained proof context rather than live canon.
 
 Observed result:
 
@@ -35,8 +35,8 @@ Observed result:
   - `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/vera_qa_lane_contract_v1.md`
 - the contract requires explicit QA handoff, structured evidence, and final `PASSED` or `FAILED`
 - the contract states that [BIT-79 — Establish interim AI technical QA + CJ acceptance policy](https://linear.app/bitpod-app/issue/BIT-79/establish-interim-ai-technical-qa-cj-acceptance-policy) remains only as a temporary merge-governance fallback
-- the contract explicitly treats `qa-specialist` as Vera's current implementation scaffold, not the long-term identity of the QA lane
-- the canonical local path is now `local-codex`, not `~/.agents`
+- the contract explicitly treated `qa-specialist` as Vera's implementation scaffold at that checkpoint, not the long-term identity of the QA lane
+- the canonical local path at that checkpoint was `local-codex`, not `~/.agents`; post-BIT-614 live identity canon is `taylor01-mind/agents/vera/SOUL.md`
 
 ### QA-AC-2: one real QA artifact flow exists under the Vera contract
 
