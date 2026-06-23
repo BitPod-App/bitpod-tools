@@ -78,6 +78,25 @@ class EngineTests(unittest.TestCase):
         self.assertEqual(check.payload["head_sha"], "22cc449")
 
 
+    def test_gh_opened_non_draft_does_not_post_linear_dispatch_noise(self):
+        ev = {
+            "action": "opened",
+            "pull_request": {
+                "number": 50,
+                "title": "BIT-619 Retire CODEOWNERS",
+                "body": "",
+                "draft": False,
+                "html_url": "https://github.com/BitPod-App/taylor01-mind/pull/50",
+                "head": {"ref": "codex/bit-619-retire-codeowners-taylor01-mind", "sha": "22cc449"},
+            },
+        }
+
+        actions = self.bot.on_github_pr_opened(ev)
+
+        comments = [a for a in actions if a.system == "linear" and a.kind == "comment"]
+        self.assertEqual(comments, [])
+
+
     def test_gh_ready_for_review_dispatches_vera_qa_and_queues_gate(self):
         ev = {
             "action": "ready_for_review",
@@ -107,18 +126,8 @@ class EngineTests(unittest.TestCase):
         self.assertEqual(check.payload["repo_full_name"], "BitPod-App/bitpod-tools")
         self.assertEqual(check.payload["head_sha"], "abc123")
 
-        comment = next(
-            a
-            for a in actions
-            if a.system == "linear" and a.kind == "comment" and "VERA_QA_RAN" in a.payload.get("body", "")
-        )
-        self.assertIn("VERA_QA_RAN=false", comment.payload["body"])
-        self.assertIn("GITHUB_NATIVE_GATE_SATISFIED=false", comment.payload["body"])
-        self.assertIn("LINEAR_QA_RESULT_SYNCED=false", comment.payload["body"])
-        self.assertIn("USER_SEAT_REQUIRED=unknown", comment.payload["body"])
-        self.assertIn("QA_VERDICT: PASSED|FAILED|OVERRIDE|ACTION_REQUIRED", comment.payload["body"])
-        self.assertIn("QA_RESULT=PASSED|FAILED|OVERRIDE|ACTION_REQUIRED", comment.payload["body"])
-        self.assertNotIn("NO_VERDICT", comment.payload["body"])
+        comments = [a for a in actions if a.system == "linear" and a.kind == "comment"]
+        self.assertEqual(comments, [])
 
 
     def test_gh_synchronize_non_draft_dispatches_vera_qa_for_latest_head(self):
@@ -221,10 +230,13 @@ class EngineTests(unittest.TestCase):
         self.assertEqual(status.payload["source_event"], "vera_qa_completed")
         self.assertTrue(any(a.system == "linear" and a.kind == "set_status" and a.payload["status"] == "Delivered" for a in actions))
         comment = next(a for a in actions if a.system == "linear" and a.kind == "comment")
-        self.assertIn("QA_RESULT=PASSED", comment.payload["body"])
-        self.assertIn("VERA_QA_RAN=true", comment.payload["body"])
-        self.assertIn("GITHUB_NATIVE_GATE_SATISFIED=true", comment.payload["body"])
-        self.assertIn("LINEAR_QA_RESULT_SYNCED=true", comment.payload["body"])
+        self.assertIn("Vera QA passed.", comment.payload["body"])
+        self.assertIn("PR: https://github.com/BitPod-App/taylor01-mind/pull/50", comment.payload["body"])
+        self.assertIn("Report: verification_report.md", comment.payload["body"])
+        self.assertNotIn("QA_RESULT=", comment.payload["body"])
+        self.assertNotIn("QA_VERDICT:", comment.payload["body"])
+        self.assertNotIn("Proof flags", comment.payload["body"])
+        self.assertNotIn("USER_SEAT_REQUIRED", comment.payload["body"])
 
         check = next(a for a in actions if a.system == "github" and a.kind == "check_run")
         self.assertEqual(check.payload["name"], "vera-qa-gate")
@@ -255,10 +267,11 @@ class EngineTests(unittest.TestCase):
         self.assertEqual(status.payload["source_event"], "vera_qa_completed")
         self.assertTrue(any(a.system == "linear" and a.kind == "set_status" and a.payload["status"] == "In Progress" for a in actions))
         comment = next(a for a in actions if a.system == "linear" and a.kind == "comment")
-        self.assertIn("QA_RESULT=FAILED", comment.payload["body"])
-        self.assertIn("VERA_QA_RAN=true", comment.payload["body"])
-        self.assertIn("GITHUB_NATIVE_GATE_SATISFIED=false", comment.payload["body"])
-        self.assertIn("LINEAR_QA_RESULT_SYNCED=true", comment.payload["body"])
+        self.assertIn("Vera QA failed.", comment.payload["body"])
+        self.assertIn("Summary: Test still reads deleted CODEOWNERS.", comment.payload["body"])
+        self.assertNotIn("QA_RESULT=", comment.payload["body"])
+        self.assertNotIn("Proof flags", comment.payload["body"])
+        self.assertNotIn("USER_SEAT_REQUIRED", comment.payload["body"])
 
         check = next(a for a in actions if a.system == "github" and a.kind == "check_run")
         self.assertEqual(check.payload["status"], "completed")
@@ -304,7 +317,10 @@ class EngineTests(unittest.TestCase):
 
         self.assertFalse(any(a.system == "linear" and a.kind == "set_label" and a.payload.get("group") == "In Review - QA Gate" for a in actions))
         self.assertTrue(any(a.system == "linear" and a.kind == "set_label" and a.payload.get("value") == "needs-discussion" for a in actions))
-        self.assertTrue(any(a.system == "linear" and a.kind == "comment" and "ACTION_REQUIRED" in a.payload["body"] for a in actions))
+        comment = next(a for a in actions if a.system == "linear" and a.kind == "comment")
+        self.assertIn("Vera QA needs action.", comment.payload["body"])
+        self.assertNotIn("ACTION_REQUIRED", comment.payload["body"])
+        self.assertNotIn("Proof flags", comment.payload["body"])
         check = next(a for a in actions if a.system == "github" and a.kind == "check_run")
         self.assertEqual(check.payload["status"], "completed")
         self.assertEqual(check.payload["conclusion"], "failure")

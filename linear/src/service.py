@@ -283,7 +283,7 @@ def _body_has_qa_override_command(body: str) -> bool:
 
 
 def _github_event_may_be_qa_override(event: Dict[str, Any], event_name: str) -> bool:
-    if event_name == "issues" and event.get("action") == "labeled":
+    if event_name in {"issues", "pull_request"} and event.get("action") == "labeled":
         return _is_github_qa_override_label(_label_name(event.get("label")))
     if event_name == "issue_comment" and event.get("action") == "created":
         comment = event.get("comment") if isinstance(event.get("comment"), dict) else {}
@@ -605,6 +605,12 @@ def _vera_qa_artifact_workspace_for_task(task: Dict[str, Any]) -> str:
     return os.path.expanduser(str(task.get("workspace_path") or ""))
 
 
+def _is_syncable_vera_qa_task(task: Dict[str, Any]) -> bool:
+    """Return true only for standard auto-dispatched Vera QA gate tasks."""
+    title = str(task.get("title") or "")
+    return title.startswith("Vera QA review:")
+
+
 def collect_vera_qa_completed_events(tasks: List[Dict[str, Any]]) -> List[Dict[str, str]]:
     events: List[Dict[str, str]] = []
     for task in tasks:
@@ -612,10 +618,9 @@ def collect_vera_qa_completed_events(tasks: List[Dict[str, Any]]) -> List[Dict[s
             continue
         if str(task.get("assignee") or "").casefold() != "vera":
             continue
-        title = str(task.get("title") or "")
-        body = str(task.get("body") or "")
-        if "Vera QA" not in title and "Vera QA" not in body:
+        if not _is_syncable_vera_qa_task(task):
             continue
+        body = str(task.get("body") or "")
         workspace = str(task.get("workspace_path") or "")
         artifact_workspace = _vera_qa_artifact_workspace_for_task(task)
         if not workspace or not artifact_workspace:
@@ -714,6 +719,10 @@ def _mark_vera_result_synced(task_id: str, trace_store: JsonlFileStore) -> None:
     )
 
 
+def _vera_result_sync_should_stop_retrying(results: Optional[List[Dict[str, str]]]) -> bool:
+    return any(str(result.get("outcome")) == "executed" for result in (results or []))
+
+
 def sync_vera_qa_results_once(
     tasks: Optional[List[Dict[str, Any]]] = None,
     dry_run: bool = True,
@@ -736,8 +745,7 @@ def sync_vera_qa_results_once(
         if not actions:
             continue
         results = apply_fn(actions, dry_run=dry_run, policy=policy)
-        blocked = any(str(result.get("outcome")) == "blocked" for result in (results or []))
-        if not dry_run and not blocked and task_id:
+        if not dry_run and task_id and _vera_result_sync_should_stop_retrying(results):
             _mark_vera_result_synced(task_id, trace_store)
         synced += 1
     return synced
@@ -1001,7 +1009,7 @@ class Handler(BaseHTTPRequestHandler):
                 actions = self.runtime.run_github_event(data)
             elif action == "review_requested":
                 actions = self.runtime.run_github_event(data)
-            elif github_override_event and event_name == "issues" and action == "labeled":
+            elif github_override_event and event_name in {"issues", "pull_request"} and action == "labeled":
                 actions = self.runtime.run_github_event(data)
             elif github_override_event and event_name == "issue_comment" and action == "created":
                 actions = self.runtime.run_github_event(data)

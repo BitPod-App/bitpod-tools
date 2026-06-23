@@ -19,6 +19,7 @@ from linear.src.service import (
     load_completed_vera_qa_tasks,
     sync_vera_qa_results_once,
     _github_webhook_secret_from_env,
+    _github_event_may_be_qa_override,
     _linear_webhook_secret_from_env,
     _normalize_private_key,
     _verify_github_webhook_signature,
@@ -244,7 +245,7 @@ class RuntimeTests(unittest.TestCase):
                 [
                     {
                         "id": "t_done",
-                        "title": "Vera QA re-review: BIT-619 / PR #50",
+                        "title": "Vera QA review: BIT-619 / PR #50",
                         "body": "Issue: BIT-619\nPR: https://github.com/BitPod-App/taylor01-mind/pull/50\nHead SHA: 1a1fb4e8ba14e7374c18740b655148e34579cc2c",
                         "assignee": "vera",
                         "status": "done",
@@ -261,6 +262,44 @@ class RuntimeTests(unittest.TestCase):
         self.assertEqual(events[0]["qa_result"], "PASSED")
         self.assertEqual(events[0]["pr_url"], "https://github.com/BitPod-App/taylor01-mind/pull/50")
         self.assertEqual(events[0]["head_sha"], "1a1fb4e8ba14e7374c18740b655148e34579cc2c")
+
+    def test_collect_ignores_ad_hoc_vera_smoke_task_without_dispatch_contract(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with open(os.path.join(tmp, "verification_report.md"), "w", encoding="utf-8") as fh:
+                fh.write("QA_RESULT=PASSED\n")
+            with open(os.path.join(tmp, "manifest.json"), "w", encoding="utf-8") as fh:
+                json.dump(
+                    {
+                        "issue": "BIT-653",
+                        "pr": "https://github.com/BitPod-App/bitpod-docs/pull/65",
+                        "head_sha": "b30d121b6cc6a9204940ea56fbe4865c9f08704e",
+                        "qa_verdict": "PASSED",
+                    },
+                    fh,
+                )
+
+            events = collect_vera_qa_completed_events(
+                [
+                    {
+                        "id": "t_smoke",
+                        "title": "Vera QA no-external-memory smoke: BIT-653",
+                        "body": "\n".join(
+                            [
+                                "Vera QA no-external-memory controlled smoke.",
+                                "Issue: BIT-653",
+                                "PR: https://github.com/BitPod-App/bitpod-docs/pull/65",
+                                "Head SHA: b30d121b6cc6a9204940ea56fbe4865c9f08704e",
+                                f"Artifact workspace: {tmp}",
+                            ]
+                        ),
+                        "assignee": "vera",
+                        "status": "done",
+                        "workspace_path": tmp,
+                    }
+                ]
+            )
+
+        self.assertEqual(events, [])
 
     def test_collector_reads_vera_artifacts_from_artifact_workspace_not_reviewed_repo(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -437,6 +476,49 @@ class RuntimeTests(unittest.TestCase):
         self.assertEqual(second, 0)
         self.assertEqual(len(calls), 1)
         self.assertTrue(any(a.system == "github" and a.kind == "check_run" for a in calls[0]))
+
+    def test_sync_vera_qa_results_once_marks_after_partial_apply_success(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with open(os.path.join(tmp, "verification_report.md"), "w", encoding="utf-8") as fh:
+                fh.write("QA_RESULT=PASSED\n")
+            with open(os.path.join(tmp, "manifest.json"), "w", encoding="utf-8") as fh:
+                json.dump(
+                    {
+                        "issue": "BIT-619",
+                        "pr_url": "https://github.com/BitPod-App/taylor01-mind/pull/50",
+                        "head": "1a1fb4e8ba14e7374c18740b655148e34579cc2c",
+                        "qa_result": "PASSED",
+                    },
+                    fh,
+                )
+            trace = JsonlFileStore(os.path.join(tmp, "trace.jsonl"))
+            calls = []
+
+            def fake_apply(actions, dry_run=True, policy=None, linear_executor=None):
+                calls.append(actions)
+                return [
+                    {"outcome": "blocked", "kind": "comment"},
+                    {"outcome": "executed", "kind": "check_run"},
+                ]
+
+            tasks = [
+                {
+                    "id": "t_partial_sync",
+                    "title": "Vera QA review: BIT-619",
+                    "body": "Issue: BIT-619\nPR: https://github.com/BitPod-App/taylor01-mind/pull/50\nHead SHA: 1a1fb4e8ba14e7374c18740b655148e34579cc2c",
+                    "assignee": "vera",
+                    "status": "done",
+                    "workspace_path": tmp,
+                    "result": "Vera passed.",
+                }
+            ]
+
+            first = sync_vera_qa_results_once(tasks=tasks, dry_run=False, trace_store=trace, apply_fn=fake_apply)
+            second = sync_vera_qa_results_once(tasks=tasks, dry_run=False, trace_store=trace, apply_fn=fake_apply)
+
+        self.assertEqual(first, 1)
+        self.assertEqual(second, 0)
+        self.assertEqual(len(calls), 1)
 
     def test_sync_vera_qa_results_once_can_filter_to_one_task_id(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -798,6 +880,48 @@ class RuntimeTests(unittest.TestCase):
         self.assertIn("/qa-override", enriched["override_reason"]["body"])
         self.assertEqual(calls[0][1], "/repos/BitPod-App/sector-feeds/pulls/77")
 
+    def test_github_override_detection_accepts_pull_request_labeled_label_event(self):
+        self.assertTrue(
+            _github_event_may_be_qa_override(
+                {"action": "labeled", "label": {"name": "QA_OVERRIDE"}},
+                "pull_request",
+            )
+        )
+
+    def test_runtime_routes_pull_request_labeled_to_cj_qa_override(self):
+        rt = BotRuntime()
+
+        actions = rt.run_github_event(
+            {
+                "_github_event": "pull_request",
+                "action": "labeled",
+                "sender": {"login": "cjarguello"},
+                "label": {"name": "QA_OVERRIDE"},
+                "override_label_actor": "cjarguello",
+                "head_current_at": "2026-06-23T05:20:00Z",
+                "pull_request": {
+                    "number": 77,
+                    "title": "BIT-708 sector override",
+                    "body": "",
+                    "html_url": "https://github.com/BitPod-App/sector-feeds/pull/77",
+                    "labels": [{"name": "QA_OVERRIDE"}],
+                    "head": {"sha": "abc1234"},
+                },
+                "override_reason": {
+                    "source": "comment",
+                    "actor": "cjarguello",
+                    "reason": "CJ accepts advisory QA evidence.",
+                    "body": "/qa-override CJ accepts advisory QA evidence.",
+                    "html_url": "https://github.com/BitPod-App/sector-feeds/pull/77#issuecomment-1",
+                    "created_at": "2026-06-23T05:21:00Z",
+                },
+            }
+        )
+
+        self.assertTrue(any(a.system == "linear" and a.kind == "set_label" and a.payload["value"] == "qa-override" for a in actions))
+        check = next(a for a in actions if a.system == "github" and a.kind == "check_run")
+        self.assertEqual(check.payload["conclusion"], "success")
+
     def test_governance_blocks_live_linear_mutation_without_approval(self):
         with tempfile.TemporaryDirectory() as tmp:
             trace_path = os.path.join(tmp, "service_trace.jsonl")
@@ -891,6 +1015,42 @@ class RuntimeTests(unittest.TestCase):
         self.assertEqual(override_decision.policy_class, "B")
         self.assertTrue(blocker_decision.allowed)
         self.assertEqual(blocker_decision.policy_class, "B")
+
+    def test_governance_allows_cj_github_qa_override_label_and_delivered_sync_without_per_ticket_allowlist(self):
+        policy = GovernancePolicy.default()
+        override_label = Action(
+            "linear",
+            "set_label",
+            "BIT-644",
+            {"group": "In Review - QA Gate", "value": "qa-override", "source_event": "github_cj_qa_override"},
+        )
+        delivered_status = Action(
+            "linear",
+            "set_status",
+            "BIT-644",
+            {"status": "Delivered", "source_event": "github_cj_qa_override"},
+        )
+
+        label_decision = policy.decide(override_label, dry_run=False)
+        status_decision = policy.decide(delivered_status, dry_run=False)
+
+        self.assertTrue(label_decision.allowed)
+        self.assertEqual(label_decision.policy_class, "B")
+        self.assertTrue(status_decision.allowed)
+        self.assertEqual(status_decision.policy_class, "B")
+
+    def test_governance_rejects_cj_github_qa_override_for_non_override_label(self):
+        action = Action(
+            "linear",
+            "set_label",
+            "BIT-644",
+            {"group": "In Review - QA Gate", "value": "qa-passed", "source_event": "github_cj_qa_override"},
+        )
+
+        decision = GovernancePolicy.default().decide(action, dry_run=False)
+
+        self.assertFalse(decision.allowed)
+        self.assertEqual(decision.policy_class, "B")
 
     def test_governance_rejects_non_vera_qa_source_for_same_linear_label_shape(self):
         action = Action(

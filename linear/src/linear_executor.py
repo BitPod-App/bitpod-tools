@@ -357,7 +357,7 @@ class LinearExecutor:
             raise LinearExecutionError("label value is required")
         issue = self._get_issue(issue_ref)
         label_id = self._find_issue_label_id(issue, label_name, group_name)
-        current_label_ids = self._current_label_ids(issue)
+        current_label_ids = self._current_label_ids(issue, replace_group_name=group_name)
         label_ids = sorted(set(current_label_ids + [label_id]))
         data = self._graphql(
             """
@@ -455,6 +455,14 @@ class LinearExecutor:
         if mismatches:
             raise LinearActorWrong("LINEAR ACTOR WRONG: " + "; ".join(mismatches))
 
-    def _current_label_ids(self, issue: Mapping[str, Any]) -> List[str]:
+    def _current_label_ids(self, issue: Mapping[str, Any], replace_group_name: str = "") -> List[str]:
         labels = (((issue.get("labels") or {}).get("nodes")) or [])
-        return [str(label.get("id")) for label in labels if label.get("id")]
+        ids = []
+        for label in labels:
+            if not label.get("id"):
+                continue
+            parent = label.get("parent") or {}
+            if replace_group_name and str(parent.get("name") or "").casefold() == replace_group_name.casefold():
+                continue
+            ids.append(str(label.get("id")))
+        return ids
