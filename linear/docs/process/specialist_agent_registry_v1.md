@@ -27,7 +27,7 @@ Recommended skill-to-lane mapping:
 
 - Taylor lane: `taylor`, `linear`
 - Engineering lane: `linear`, `gh-fix-ci`, `cloudflare-deploy`, `chatgpt-apps`
-- QA lane: `qa-specialist`
+- QA lane: Vera QA contract (`linear/docs/process/vera_qa_lane_contract_v1.md`) plus Vera identity canon (`taylor01-mind/agents/vera/SOUL.md`)
 - Design/Brand lane: design-specific artifacts under `/assets/brand/**` + process docs
 - Research lane: `notion-research-documentation`, `openai-docs`
 - Browser lane: browser/mcp tools with strict artifact capture

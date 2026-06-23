@@ -16,17 +16,34 @@ import textwrap
 import time
 import urllib.error
 import urllib.request
+from dataclasses import dataclass
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Mapping, Optional, Tuple
 
 try:
+    from linear.src.custom_agent_receiver import (
+        LINEAR_WEBHOOK_SECRET_ENV,
+        ReceiverConfig,
+        ReceiverDecision,
+        ReceiverRequest,
+        plan_receiver_decision,
+        verify_linear_signature,
+    )
     from linear.src.engine import Action, CJ_OVERRIDE_LOGIN, GITHUB_QA_OVERRIDE_LABELS, QA_OVERRIDE_COMMAND_RE, format_actions
     from linear.src.governance import GovernancePolicy
     from linear.src.linear_executor import LinearExecutionError, LinearExecutor
     from linear.src.memory import JsonlFileStore, MemoryEvent, now_iso
     from linear.src.runtime import BotRuntime
 except ModuleNotFoundError:
+    from custom_agent_receiver import (
+        LINEAR_WEBHOOK_SECRET_ENV,
+        ReceiverConfig,
+        ReceiverDecision,
+        ReceiverRequest,
+        plan_receiver_decision,
+        verify_linear_signature,
+    )
     from engine import Action, CJ_OVERRIDE_LOGIN, GITHUB_QA_OVERRIDE_LABELS, QA_OVERRIDE_COMMAND_RE, format_actions
     from governance import GovernancePolicy
     from linear_executor import LinearExecutionError, LinearExecutor
@@ -34,6 +51,13 @@ except ModuleNotFoundError:
     from runtime import BotRuntime
 
 
+
+
+@dataclass(frozen=True)
+class WebhookVerificationResult:
+    ok: bool
+    status_code: int
+    reason: str
 
 
 def env_truthy(name: str) -> bool:
@@ -862,6 +886,75 @@ def apply_actions(
     return results
 
 
+def is_custom_agent_event(data: Dict) -> bool:
+    kind = str(data.get("type", "")).lower()
+    has_agent_session = any(str(key).lower() == "agentsession" for key in data)
+    return has_agent_session or kind in {"agent_session.created", "agentsessionevent", "agent_session_event"}
+
+
+def custom_agent_actions(
+    data: Dict,
+    config: Optional[ReceiverConfig] = None,
+) -> Tuple[ReceiverDecision, List[Action]]:
+    session = data.get("agentSession") or {}
+    issue = data.get("issue") or session.get("issue") or {}
+    request = ReceiverRequest(
+        issue_key=str(data.get("issue_key") or issue.get("identifier") or issue.get("key") or ""),
+        peer_id=str(data.get("peer_id") or data.get("peer") or "codex"),
+        session_id=str(data.get("session_id") or session.get("id") or ""),
+        actor_id=str(data.get("actor_id") or session.get("appUserId") or ""),
+        payload=data,
+    )
+    decision = plan_receiver_decision(request, config)
+    actions: List[Action] = []
+    if decision.first_activity:
+        activity = decision.first_activity
+        if activity["kind"] == "agent_activity":
+            actions.append(
+                Action(
+                    activity["system"],
+                    activity["kind"],
+                    activity["target"],
+                    {"content": {"type": activity["content_type"], "body": activity["body"]}},
+                )
+            )
+        else:
+            actions.append(Action(activity["system"], activity["kind"], activity["target"], {"body": activity["body"]}))
+    return decision, actions
+
+
+def verify_linear_webhook_request(
+    *,
+    raw_body: bytes,
+    headers: Mapping[str, str],
+    signing_secret: Optional[str] = None,
+    now_ms: Optional[int] = None,
+) -> WebhookVerificationResult:
+    secret = _linear_webhook_secret_from_env() if signing_secret is None else signing_secret
+    signature = _header_value(headers, "Linear-Signature")
+    if not secret:
+        return WebhookVerificationResult(True, 200, "signature not configured")
+    result = verify_linear_signature(
+        raw_body=raw_body,
+        header_signature=signature,
+        signing_secret=secret,
+        now_ms=now_ms,
+    )
+    return WebhookVerificationResult(result.ok, 200 if result.ok else 401, result.reason)
+
+
+def _header_value(headers: Mapping[str, str], name: str) -> str:
+    if hasattr(headers, "get"):
+        direct = headers.get(name)  # type: ignore[arg-type]
+        if direct:
+            return str(direct)
+    wanted = name.lower()
+    for key, value in headers.items():
+        if str(key).lower() == wanted:
+            return str(value)
+    return ""
+
+
 class Handler(BaseHTTPRequestHandler):
     runtime = BotRuntime()
     dry_run = True
@@ -898,6 +991,7 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         actions: List[Action] = []
+        receiver_decision: Optional[ReceiverDecision] = None
 
         if self.path == "/github":
             event_name = self.headers.get("X-GitHub-Event", "")
@@ -926,7 +1020,9 @@ class Handler(BaseHTTPRequestHandler):
 
         elif self.path == "/linear":
             kind = data.get("type")
-            if kind == "comment_created":
+            if is_custom_agent_event(data):
+                receiver_decision, actions = custom_agent_actions(data)
+            elif kind == "comment_created":
                 issue_key = data.get("issue_key", "")
                 body = data.get("comment_body", "")
                 pr_url = data.get("pr_url", "")
@@ -946,8 +1042,11 @@ class Handler(BaseHTTPRequestHandler):
             self._json(404, {"ok": False, "error": "unknown-path"})
             return
 
+        payload = {"ok": True, "actions": [a.__dict__ for a in actions], "dry_run": self.dry_run}
+        if receiver_decision is not None:
+            payload["receiver_ack"] = receiver_decision.ack_payload()
         apply_actions(actions, dry_run=self.dry_run, policy=self.policy)
-        self._json(200, {"ok": True, "actions": [a.__dict__ for a in actions], "dry_run": self.dry_run})
+        self._json(200, payload)
 
 
 def main() -> int:

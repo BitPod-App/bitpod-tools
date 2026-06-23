@@ -30,14 +30,9 @@ That gap was documented in:
 - [specialist_operating_lanes_proof_v1.md](./specialist_operating_lanes_proof_v1.md)
 - [interim_ai_technical_qa_cj_acceptance_policy_v1.md](./interim_ai_technical_qa_cj_acceptance_policy_v1.md)
 
-The stronger QA behavior now lives in Vera's dedicated QA contract and is currently implemented through the local skill surface:
+At the time of this March 2026 proof, the stronger QA behavior lived in Vera's dedicated QA contract and was backed by the local `qa-specialist` skill surface. That surface is now historical: BIT-614 deleted the old skill/core path from canonical `main`, and current Vera identity canon lives in `taylor01-mind/agents/vera/SOUL.md`.
 
-- canonical local surface:
-  - `$WORKSPACE/local-workspace/local-codex/skills/qa-specialist/SKILL.md`
-
-Taylor's current skill now explicitly delegates final QA verification execution to `qa-specialist`, which is why BIT-90 should anchor to Vera's artifact contract rather than Taylor-style review behavior.
-
-That does not mean Vera should remain only a skill long-term. The skill is an acceptable transitional backing for the QA lane while a fuller Vera agent/runtime is still missing.
+This retained proof should be read as evidence for the Vera QA lane contract and artifact discipline, not as a live pointer to the deleted `qa-specialist` implementation.
 
 ## Real Execution Record Used For Proof
 
