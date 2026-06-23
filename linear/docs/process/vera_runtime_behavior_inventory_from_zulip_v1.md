@@ -5,7 +5,7 @@ Linked issue: [BIT-94 — Preserve Vera QA runtime behaviors from Zulip-era impl
 
 ## Objective
 
-Capture the Zulip-era Taylor QA/runtime behaviors that should not get lost while QA authority migrates toward Vera / `qa-specialist`.
+Capture the Zulip-era Taylor QA/runtime behaviors that should not get lost while QA authority migrates toward Vera. Historical references to `qa-specialist` describe the retired transitional scaffold only.
 
 This is not a claim that Vera already implements all of these behaviors. It is a preservation map so we can separate:
 
@@ -24,14 +24,16 @@ Current Vera contract surface:
 
 - `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/vera_qa_lane_contract_v1.md`
 - `/Users/cjarguello/bitpod-app/bitpod-tools/linear/docs/process/vera_qa_lane_operational_proof_v1.md`
-- canonical local surface:
+- post-BIT-614 identity canon:
+  - `$WORKSPACE/taylor01-mind/agents/vera/SOUL.md`
+- historical transitional scaffold, no longer live canon:
   - `/Users/cjarguello/bitpod-app/local-workspace/local-codex/skills/qa-specialist/SKILL.md`
   - `/Users/cjarguello/bitpod-app/local-workspace/local-codex/skills/qa-specialist/references/QA_OUTPUT_CONTRACTS_v1.md`
   - `/Users/cjarguello/bitpod-app/local-workspace/local-codex/skills/qa-specialist/references/QA_REVIEW_CHECKLIST_v1.md`
 
 ## Verified behavior inventory
 
-### Already preserved in Vera contract or skill
+### Already preserved in Vera contract or historical skill scaffold
 
 These behaviors are already clearly preserved in the current Vera lane:
 

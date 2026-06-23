@@ -74,10 +74,10 @@ class LinearExecutor:
     OAuth app-actor client credential pair (preferred), short-lived OAuth bearer
     token, or legacy API key is present, and at least one expected actor field
     is configured and matches the authenticated Linear viewer. Only the first
-    rollout actions are supported: comment, set_status, and set_label.
+    rollout actions are supported: comment, agent_activity, set_status, and set_label.
     """
 
-    ALLOWED_KINDS = {"comment", "set_status", "set_label"}
+    ALLOWED_KINDS = {"comment", "agent_activity", "set_status", "set_label"}
 
     def __init__(
         self,
@@ -99,6 +99,8 @@ class LinearExecutor:
 
         if action.kind == "comment":
             detail = self._create_comment(action.target, str(action.payload.get("body", "")))
+        elif action.kind == "agent_activity":
+            detail = self._create_agent_activity(action.target, action.payload.get("content", {}))
         elif action.kind == "set_status":
             detail = self._set_status(
                 action.target,
@@ -294,6 +296,29 @@ class LinearExecutor:
         self._verify_mutation_actor(((result.get("comment") or {}).get("user") or None))
         comment = result.get("comment") or {}
         return f"linear commentCreate {issue.get('identifier', issue_ref)} comment={comment.get('id', '')}"
+
+    def _create_agent_activity(self, agent_session_id: str, content: Any) -> str:
+        session_id = str(agent_session_id or "").strip()
+        if not session_id:
+            raise LinearExecutionError("agentSessionId is required for agent activity")
+        if not isinstance(content, Mapping) or not str(content.get("type") or "").strip():
+            raise LinearExecutionError("agent activity content with type is required")
+        data = self._graphql(
+            """
+            mutation LinearExecutorAgentActivityCreate($input: AgentActivityCreateInput!) {
+              agentActivityCreate(input: $input) {
+                success
+                agentActivity { id }
+              }
+            }
+            """,
+            {"input": {"agentSessionId": session_id, "content": dict(content)}},
+        )
+        result = ((data.get("data") or {}).get("agentActivityCreate") or {})
+        if not result.get("success"):
+            raise LinearExecutionError(f"Linear agentActivityCreate failed for session {session_id}")
+        activity = result.get("agentActivity") or {}
+        return f"linear agentActivityCreate session={session_id} activity={activity.get('id', '')}"
 
     def _set_status(self, issue_ref: str, status_name: str, source_event: str = "") -> str:
         if not status_name.strip():

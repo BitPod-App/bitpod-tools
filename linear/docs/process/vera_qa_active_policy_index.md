@@ -58,20 +58,23 @@
 
 | File | Status | What it covers |
 |---|---|---|
-| [`vera_runtime_minimum_v1.md`](./vera_runtime_minimum_v1.md) | 🎯 Working baseline (future target, not current operating policy) | Defines the minimum Vera runtime/agent surface needed to fully replace the transitional `qa-specialist` skill. Describes required output artifacts (`verification_report.md`, `manifest.json`). Not a claim about current behavior. |
+| [`vera_runtime_minimum_v1.md`](./vera_runtime_minimum_v1.md) | 🎯 Working baseline (future target, not current operating policy) | Defines the minimum Vera runtime/agent surface needed to preserve the retired transitional `qa-specialist` behavior without depending on the deleted skill path. Describes required output artifacts (`verification_report.md`, `manifest.json`). Not a claim about current behavior. |
 
 ---
 
 ## 5. Current Vera Implementation Surface
 
-**As of 2026-05-28:**
+**As of 2026-06-23 / BIT-614 cleanup:**
 
 | Surface | Status |
 |---|---|
-| Vera as Hermes agent | ✅ Running — 63+ sessions logged under `~/.hermes/profiles/vera/` |
-| `qa-specialist` skill (transitional scaffold) | `bitpod-tools/tools/taylor01/core/agents/vera/skills/qa-specialist/` — installed artifact; repo is the source of truth |
-| `vera-qa` GitHub identity | Retiring compatibility identity — do not rely on for merge gating; BIT-619 owns seat removal |
-| Honcho memory | ✅ Restored (Option A broker) — Vera broker at `127.0.0.1:8787` |
+| Vera identity canon | `taylor01-mind/agents/vera/SOUL.md` is the source of truth for Vera identity. |
+| Vera as Hermes agent | Live profile state is outside this repo; this repo must not claim profile health without fresh runtime verification. |
+| Vera QA gate mechanics | `bitpod-tools/linear/src/service.py` and the `vera-qa-gate` GitHub App/bot sync path own the current gate mechanics. |
+| `qa-specialist` skill (transitional scaffold) | ❌ Retired from canonical `main`; the old `bitpod-tools/tools/taylor01/core/agents/vera/skills/qa-specialist/` path was deleted by BIT-614 and must not be used as a live source of truth. Historical references are audit-only. |
+| Custom-agent @mention dispatch | ⚠️ Not a dependable runtime surface until `linear/src/custom_agent_receiver.py`, receiver tests, and actor canary tests are committed and verified on `main`. |
+| `vera-qa` GitHub identity | Retiring compatibility identity — do not rely on for merge gating; BIT-619 owns seat removal. |
+| Honcho memory | Not an active Vera QA gate dependency; Honcho decommission is tracked outside this contract. |
 
 **What Vera does NOT own:** product priority, scope reshaping, implementation, merge approval authority, rewriting acceptance criteria after work is complete.
 

@@ -9,7 +9,7 @@ Define the smallest future Vera runtime/agent surface that preserves the useful 
 
 This is a target minimum for Vera evolution.
 
-It is not a claim that the current `qa-specialist` skill already implements everything below.
+It is not a claim that any current or historical `qa-specialist` skill implements everything below. BIT-614 retired the old `qa-specialist` path from canonical `main`.
 
 ## v1 embodiment rule
 
@@ -166,23 +166,29 @@ The following may remain transitional and do not need to be part of the durable 
 
 Those can survive temporarily, but they should not define Vera's long-term runtime boundary.
 
-## Relationship to current `qa-specialist` skill
+## Relationship to historical `qa-specialist` skill
 
-Current skill truth:
+Historical skill truth:
 
-- the `qa-specialist` skill is still useful as the live minimal verdict contract
-- it preserves independent QA authority and evidence-first `verification_report.md`
-- it can still be a valid part of Vera v1
+- the retired `qa-specialist` skill preserved independent QA authority and evidence-first `verification_report.md`
+- it remains useful as migration/audit context for the minimum verdict contract
+- it is not a live source of truth on canonical `main` after BIT-614
+
+Current source-of-truth split:
+
+- identity canon: `taylor01-mind/agents/vera/SOUL.md`
+- lane contract and runtime minimum: this `linear/docs/process/` document family
+- gate mechanics: `bitpod-tools/linear/src/service.py` and the `vera-qa-gate` result-sync path
 
 Current gap:
 
-- the skill does not yet preserve the fuller machine-readable runtime behavior defined here
+- the active runtime path does not yet preserve the fuller machine-readable runtime behavior defined here
 
-So the current skill is acceptable as a transitional interface, but not as the full Vera runtime minimum by itself.
+So the historical skill is acceptable as migration context, but not as the full Vera runtime minimum or a live dependency.
 
 ## Recommended implementation order
 
-1. keep current skill contract active
+1. keep the Vera lane contract active without depending on the retired skill path
 2. add `NO_VERDICT` semantics to Vera runtime design while preserving compatibility with the old `DEGRADED` concept
 3. add `manifest.json`
 4. add high-risk PR metadata

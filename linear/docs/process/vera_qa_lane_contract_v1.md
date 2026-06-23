@@ -11,21 +11,29 @@ This contract is the target operating model for technical QA in BitPod Phase 4. 
 
 ## Current implementation reference
 
-This repo contract is implemented through the repo-backed `qa-specialist` skill source:
+Post-BIT-614, this contract is no longer implemented by a repo-backed
+`qa-specialist` skill under `bitpod-tools/tools/taylor01/core/agents/vera/`.
+That transitional path was deleted from canonical `main` and must not be used as
+a live source of truth.
 
-- canonical repo source:
-  - `$WORKSPACE/bitpod-tools/tools/taylor01/core/agents/vera/skills/qa-specialist/SKILL.md`
-  - `$WORKSPACE/bitpod-tools/tools/taylor01/core/agents/vera/skills/qa-specialist/references/QA_OUTPUT_CONTRACTS_v1.md`
-  - `$WORKSPACE/bitpod-tools/tools/taylor01/core/agents/vera/skills/qa-specialist/references/QA_REVIEW_CHECKLIST_v1.md`
+Current source-of-truth split:
 
-If this skill is installed into a local Codex or Hermes runtime, the runtime copy is an installed artifact. The repo source above remains the reviewable source of truth.
+- Vera identity canon: `$WORKSPACE/taylor01-mind/agents/vera/SOUL.md`
+- Vera QA lane contract: this file and the companion Vera runtime/process docs in `bitpod-tools/linear/docs/process/`
+- Vera gate mechanics: `bitpod-tools/linear/src/service.py` and the `vera-qa-gate` GitHub App/bot result-sync path
 
-That skill should be treated as a transitional implementation surface for Vera while the dedicated QA lane is still being operationalized as a fuller agent/runtime.
+Custom-agent @mention dispatch is not a dependable runtime surface on canonical
+`main` until `linear/src/custom_agent_receiver.py`, receiver tests, and actor
+canary tests are committed and verified.
 
-The durable intent is:
+Historical `qa-specialist` references in retained proof documents describe the
+pre-BIT-614 transitional scaffold only. They are audit context, not live canon.
+
+The durable intent remains:
 
 - Vera = QA specialist role/lane
-- `qa-specialist` = current implementation scaffold for that role
+- the implementation surface may be a Hermes/runtime gate, installed skill, or later fuller agent/runtime
+- no implementation surface may override the canonical identity in `taylor01-mind/agents/vera/SOUL.md`
 
 The long-term role should not be constrained to remaining only a skill.
 
@@ -177,7 +185,7 @@ Current rule:
 - do not use Linear Agent workspace guidance as the active VeraQA gate
 - do not ask the built-in Linear Agent to impersonate Vera
 - do not treat a Linear Agent response as an independent VeraQA verdict
-- keep the dedicated Vera core/runtime artifacts as the preserved path for real
+- keep Vera identity canon in `taylor01-mind/agents/vera/` and Vera QA runtime/gate artifacts in the current Hermes/Linear path as the preserved path for real
   VeraQA evolution
 
 Manual workspace cleanup paired with this repo change:
@@ -196,10 +204,7 @@ Dedicated Vera/Hermes follow-up remains tracked through:
 
 ### What remains valid
 
-The portable Vera contract and bridge/runtime code remain valid if they are used
-as a dedicated Vera execution path that emits evidence-bound artifacts. The
-retirement here applies to the old Linear Agent prompt, not to VeraQA as a
-concept or to CODEOWNERS reviewer routing.
+The portable Vera contract remains valid when used through a dedicated Vera execution path that emits evidence-bound artifacts. The retired OpenAI bridge and old `tools/taylor01/core/agents/vera/` paths are not live implementation sources on canonical `main`. The retirement here applies to the old Linear Agent prompt and deleted bridge paths, not to VeraQA as a concept or to the GitHub-native `vera-qa-gate` result-sync model.
 
 ## Independence Rules
 
