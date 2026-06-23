@@ -199,6 +199,7 @@ GitHub webhook events:
   - Canonical GitHub label: `QA_OVERRIDE`; alias accepted: `qa-override`.
   - Required CJ evidence: `/qa-override <reason>` in a PR comment or approved PR review by `cjarguello`.
   - The runtime verifies the label is attributable to `cjarguello`, the reason is for the current head, and any `HEAD_SHA=` token matches before completing `vera-qa-gate`.
+  - Linear sync uses one primary issue key. If the PR title contains exactly one issue key, that key is authoritative and body issue keys are treated as related references. If the title has multiple keys, the override fails closed until the primary issue is clarified. Live Linear execution may move the issue to `Delivered` only when the issue is currently `In Review`.
   - V1 is an interim convention-based path. V2 should use GitHub-native bypass/ruleset audit signals, custom properties, or a dedicated GitHub Action/App command by `cjarguello`.
 
 Linear webhook events:

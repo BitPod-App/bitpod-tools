@@ -81,6 +81,8 @@
 
 **CJ QA override V1:** A GitHub-native override may satisfy `vera-qa-gate` for any BitPod repo covered by the GitHub App/webhook, not just this runtime repo. It may pass only when `cjarguello` applies or owns the `QA_OVERRIDE` label (alias `qa-override`) and provides `/qa-override <reason>` in a PR comment or approved PR review for the current head SHA. The sync target in Linear remains `qa-override`. This clears Vera QA only; it is not Vera QA and does not PM-accept the work.
 
+**Linear sync guard:** Auto-sync chooses one primary Linear issue. A single issue key in the PR title is authoritative; issue keys in the PR body are related references. Multiple title keys fail closed until the primary issue is clarified. Live movement to `Delivered` is allowed only when the current Linear issue state is `In Review`.
+
 **Expected V2 hardening:** Replace the V1 text/label convention with a stronger GitHub-native bypass path, ruleset audit signal, custom property, or dedicated GitHub Action/App command that must be performed by `cjarguello`.
 
 ---

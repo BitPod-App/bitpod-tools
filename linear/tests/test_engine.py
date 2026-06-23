@@ -598,6 +598,60 @@ class EngineTests(unittest.TestCase):
         self.assertEqual(check.payload["head_sha"], "beef123")
         self.assertEqual(check.payload["conclusion"], "success")
 
+    def test_github_qa_override_uses_single_title_key_as_primary_when_body_mentions_related_tickets(self):
+        actions = self.bot.on_github_qa_override(
+            {
+                "_github_event": "issue_comment",
+                "action": "created",
+                "sender": {"login": "cjarguello"},
+                "override_label_actor": "cjarguello",
+                "head_current_at": "2026-06-23T06:00:00Z",
+                "pull_request": {
+                    "number": 54,
+                    "title": "BIT-644: Honcho early-warning monitor + t01-agent canon-awareness",
+                    "body": "Parent BIT-544. Ledger BIT-642. Follow-up from BIT-641.",
+                    "html_url": "https://github.com/BitPod-App/taylor01-mind/pull/54",
+                    "labels": [{"name": "QA_OVERRIDE"}],
+                    "head": {"sha": "7ae6e514cda14e9c9e47897cdad953ed3b80ce2f"},
+                },
+                "comment": {
+                    "body": "/qa-override CJ accepts PR 54 QA gate override.\nHEAD_SHA=7ae6e514cda14e9c9e47897cdad953ed3b80ce2f",
+                    "html_url": "https://github.com/BitPod-App/taylor01-mind/pull/54#issuecomment-1",
+                    "created_at": "2026-06-23T06:01:00Z",
+                    "user": {"login": "cjarguello"},
+                },
+            }
+        )
+
+        linear_targets = {a.target for a in actions if a.system == "linear"}
+        self.assertEqual(linear_targets, {"BIT-644"})
+        check = next(a for a in actions if a.system == "github" and a.kind == "check_run")
+        self.assertEqual(check.payload["repo_full_name"], "BitPod-App/taylor01-mind")
+        self.assertEqual(check.payload["conclusion"], "success")
+
+    def test_github_qa_override_fails_closed_when_pr_title_has_multiple_issue_keys(self):
+        actions = self.bot.on_github_qa_override(
+            {
+                "_github_event": "issue_comment",
+                "action": "created",
+                "sender": {"login": "cjarguello"},
+                "override_label_actor": "cjarguello",
+                "pull_request": {
+                    "title": "BIT-644 / BIT-641 shared override",
+                    "body": "",
+                    "html_url": "https://github.com/BitPod-App/taylor01-mind/pull/55",
+                    "labels": [{"name": "QA_OVERRIDE"}],
+                    "head": {"sha": "abc1234"},
+                },
+                "comment": {"body": "/qa-override ambiguous ticket", "user": {"login": "cjarguello"}},
+            }
+        )
+
+        self.assertFalse(any(a.system == "linear" for a in actions))
+        check = next(a for a in actions if a.system == "github" and a.kind == "check_run")
+        self.assertEqual(check.payload["conclusion"], "failure")
+        self.assertIn("ambiguous", check.payload["summary"])
+
     def test_github_qa_override_fails_closed_for_wrong_actor(self):
         actions = self.bot.on_github_qa_override(
             {

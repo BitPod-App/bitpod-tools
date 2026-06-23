@@ -107,6 +107,11 @@ class LinearBotEngine:
         m = ISSUE_KEY_RE.search(text)
         return m.group(1) if m else None
 
+    def _issue_keys(self, text: str) -> List[str]:
+        if not text:
+            return []
+        return list(dict.fromkeys(ISSUE_KEY_RE.findall(text)))
+
     def has_required_headings(self, description: str) -> bool:
         if not description:
             return False
@@ -244,6 +249,28 @@ class LinearBotEngine:
             "created_at": str(source.get("created_at") or source.get("submitted_at") or ""),
         }
 
+    def _github_override_issue_key(self, pr: Dict[str, Any], issue: Dict[str, Any]) -> Tuple[str, str]:
+        title_keys: List[str] = []
+        for title in (str(pr.get("title") or ""), str(issue.get("title") or "")):
+            for key in self._issue_keys(title):
+                if key not in title_keys:
+                    title_keys.append(key)
+        if len(title_keys) == 1:
+            return title_keys[0], ""
+        if len(title_keys) > 1:
+            return "", "ambiguous Linear issue keys in PR title"
+
+        body_keys: List[str] = []
+        for body in (str(pr.get("body") or ""), str(issue.get("body") or "")):
+            for key in self._issue_keys(body):
+                if key not in body_keys:
+                    body_keys.append(key)
+        if len(body_keys) == 1:
+            return body_keys[0], ""
+        if len(body_keys) > 1:
+            return "", "ambiguous Linear issue keys; put the primary issue key in the PR title"
+        return "", "missing Linear issue key"
+
     def _github_override_failure_actions(
         self,
         *,
@@ -273,12 +300,7 @@ class LinearBotEngine:
         pr_url = self._github_override_pr_url(event)
         repo_full_name, _pr_number = self._parse_github_pr_url(pr_url)
         head_sha = self._github_override_head_sha(event)
-        issue_key = (
-            self.find_issue_key(str(pr.get("title") or ""))
-            or self.find_issue_key(str(pr.get("body") or ""))
-            or self.find_issue_key(str(issue.get("title") or ""))
-            or self.find_issue_key(str(issue.get("body") or ""))
-        )
+        issue_key, issue_key_error = self._github_override_issue_key(pr, issue)
         sender = self._event_sender_login(event)
         label_actor = str(event.get("override_label_actor") or "")
         labels = self._github_override_labels(event)
@@ -305,8 +327,8 @@ class LinearBotEngine:
         head_time = self._parse_iso_datetime(str(event.get("head_current_at") or ""))
         if reason_time and head_time and reason_time < head_time:
             missing.append("override reason is stale for current PR head")
-        if not issue_key:
-            missing.append("missing Linear issue key")
+        if issue_key_error:
+            missing.append(issue_key_error)
 
         if missing:
             return self._github_override_failure_actions(

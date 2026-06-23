@@ -15,8 +15,9 @@ from linear.src.service import apply_actions
 
 
 class FakeLinearTransport:
-    def __init__(self, viewer=None):
+    def __init__(self, viewer=None, issue_state_name="Backlog"):
         self.viewer = viewer or {"id": "actor-1", "name": "BitPod Linear Bot", "email": "bot@example.com"}
+        self.issue_state_name = issue_state_name
         self.calls = []
         self.last_variables = {}
 
@@ -32,7 +33,7 @@ class FakeLinearTransport:
                         "id": "issue-uuid",
                         "identifier": variables["id"],
                         "team": {"id": "team-1", "key": "BIT", "name": "Product Development"},
-                        "state": {"id": "state-old", "name": "Backlog"},
+                            "state": {"id": "state-old", "name": self.issue_state_name},
                         "labels": {"nodes": [{"id": "label-existing", "name": "Feature", "parent": None}]},
                     }
                 }
@@ -163,6 +164,19 @@ class LinearExecutorTests(unittest.TestCase):
         self.assertEqual(result.outcome, "executed")
         self.assertIn("status BIT-505 -> In Progress", result.detail)
         self.assertEqual(transport.last_variables, {"id": "issue-uuid", "stateId": "state-new"})
+
+    def test_cj_qa_override_delivered_requires_issue_currently_in_review(self):
+        executor = LinearExecutor(enabled_config(), transport=FakeLinearTransport(issue_state_name="In Progress"))
+        with self.assertRaises(LinearExecutionError) as ctx:
+            executor.execute(
+                Action(
+                    "linear",
+                    "set_status",
+                    "BIT-644",
+                    {"status": "Delivered", "source_event": "github_cj_qa_override"},
+                )
+            )
+        self.assertIn("currently In Review", str(ctx.exception))
 
     def test_set_label_supported_by_executor_and_preserves_existing_labels(self):
         transport = FakeLinearTransport()
