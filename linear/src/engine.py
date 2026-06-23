@@ -809,45 +809,37 @@ class LinearBotEngine:
             next_status = self.cfg.delivered_status
             gate_conclusion = "success"
             gate_title = "Vera QA passed"
-            gate_satisfied = "true"
-            result_text = "QA PASSED"
+            result_text = "Vera QA passed"
+            comment_title = "Vera QA passed."
         elif qa_result == "FAILED":
             label_value = self.cfg.qa_failed
             next_status = self.cfg.in_progress_status
             gate_conclusion = "failure"
             gate_title = "Vera QA failed"
-            gate_satisfied = "false"
-            result_text = "QA FAILED"
+            result_text = "Vera QA failed"
+            comment_title = "Vera QA failed."
         elif qa_result == "OVERRIDE":
             label_value = self.cfg.qa_override
             next_status = self.cfg.delivered_status
             gate_conclusion = "success"
             gate_title = "Vera QA override authorized"
-            gate_satisfied = "true"
-            result_text = "QA OVERRIDE"
+            result_text = "Vera QA override authorized"
+            comment_title = "Vera QA override authorized."
         else:
             label_value = ""
             next_status = ""
             gate_conclusion = "failure"
             gate_title = "Vera QA action required"
-            gate_satisfied = "false"
-            result_text = "QA ACTION REQUIRED"
+            result_text = "Vera QA needs action"
+            comment_title = "Vera QA needs action."
 
         body = "\n".join(
             [
-                "Vera QA completed.",
-                f"QA_RESULT={qa_result}",
-                f"QA_VERDICT: {qa_result}",
-                f"PR_URL={pr_url}",
-                f"HEAD_SHA={head_sha}",
+                comment_title,
+                f"PR: {pr_url}",
+                f"Head: {head_sha}",
                 f"Report: {report_path}",
                 f"Summary: {summary}",
-                "",
-                "Proof flags after sync request:",
-                "VERA_QA_RAN=true",
-                f"GITHUB_NATIVE_GATE_SATISFIED={gate_satisfied}",
-                "LINEAR_QA_RESULT_SYNCED=true",
-                "USER_SEAT_REQUIRED=unknown",
             ]
         )
 
@@ -883,7 +875,7 @@ class LinearBotEngine:
         actions.extend(
             self._github_comment(
                 pr_url,
-                f"{result_text}. Summary: {summary}. Report: {report_path}. See Linear: {issue_url}",
+                f"{result_text} for {issue_key}. Summary: {summary}. Report: {report_path}. See Linear: {issue_url}",
             )
         )
         actions.extend(
