@@ -40,7 +40,7 @@ class BotRuntime:
             or "UNLINKED"
         )
 
-        if github_event == "issues" and action == "labeled":
+        if github_event in {"issues", "pull_request"} and action == "labeled":
             out = self.engine.on_github_qa_override(event)
         elif github_event == "issue_comment" and action == "created":
             out = self.engine.on_github_qa_override(event)

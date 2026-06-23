@@ -15,9 +15,14 @@ from linear.src.service import apply_actions
 
 
 class FakeLinearTransport:
-    def __init__(self, viewer=None, issue_state_name="Backlog"):
+    def __init__(self, viewer=None, issue_state_name="Backlog", issue_label_nodes=None, available_label_nodes=None):
         self.viewer = viewer or {"id": "actor-1", "name": "BitPod Linear Bot", "email": "bot@example.com"}
         self.issue_state_name = issue_state_name
+        self.issue_label_nodes = issue_label_nodes or [{"id": "label-existing", "name": "Feature", "parent": None}]
+        self.available_label_nodes = available_label_nodes or [
+            {"id": "label-target", "name": "qa-passed", "team": {"id": "team-1", "key": "BIT"}, "parent": {"id": "parent-1", "name": "In Review - QA Gate"}},
+            {"id": "wrong-team", "name": "qa-passed", "team": {"id": "team-2", "key": "OPS"}, "parent": {"id": "parent-2", "name": "In Review - QA Gate"}},
+        ]
         self.calls = []
         self.last_variables = {}
 
@@ -34,7 +39,7 @@ class FakeLinearTransport:
                         "identifier": variables["id"],
                         "team": {"id": "team-1", "key": "BIT", "name": "Product Development"},
                             "state": {"id": "state-old", "name": self.issue_state_name},
-                        "labels": {"nodes": [{"id": "label-existing", "name": "Feature", "parent": None}]},
+                        "labels": {"nodes": self.issue_label_nodes},
                     }
                 }
             }
@@ -64,10 +69,7 @@ class FakeLinearTransport:
             return {
                 "data": {
                     "issueLabels": {
-                        "nodes": [
-                            {"id": "label-target", "name": "qa-passed", "team": {"id": "team-1", "key": "BIT"}, "parent": {"id": "parent-1", "name": "In Review - QA Gate"}},
-                            {"id": "wrong-team", "name": "qa-passed", "team": {"id": "team-2", "key": "OPS"}, "parent": {"id": "parent-2", "name": "In Review - QA Gate"}},
-                        ]
+                        "nodes": self.available_label_nodes
                     }
                 }
             }
@@ -185,6 +187,25 @@ class LinearExecutorTests(unittest.TestCase):
         self.assertEqual(result.outcome, "executed")
         self.assertIn("label BIT-559 += In Review - QA Gate/qa-passed", result.detail)
         self.assertEqual(transport.last_variables, {"id": "issue-uuid", "labelIds": ["label-existing", "label-target"]})
+
+    def test_set_label_replaces_existing_label_in_same_group(self):
+        transport = FakeLinearTransport(
+            issue_label_nodes=[
+                {"id": "label-existing", "name": "Feature", "parent": None},
+                {"id": "label-qa-passed", "name": "qa-passed", "parent": {"id": "parent-1", "name": "In Review - QA Gate"}},
+            ],
+            available_label_nodes=[
+                {"id": "label-qa-override", "name": "qa-override", "team": {"id": "team-1", "key": "BIT"}, "parent": {"id": "parent-1", "name": "In Review - QA Gate"}},
+                {"id": "label-qa-passed", "name": "qa-passed", "team": {"id": "team-1", "key": "BIT"}, "parent": {"id": "parent-1", "name": "In Review - QA Gate"}},
+            ],
+        )
+        executor = LinearExecutor(enabled_config(), transport=transport)
+
+        result = executor.execute(Action("linear", "set_label", "BIT-644", {"group": "In Review - QA Gate", "value": "qa-override"}))
+
+        self.assertEqual(result.outcome, "executed")
+        self.assertIn("label BIT-559 += In Review - QA Gate/qa-override", result.detail)
+        self.assertEqual(transport.last_variables, {"id": "issue-uuid", "labelIds": ["label-existing", "label-qa-override"]})
 
     def test_unsupported_linear_action_fails_closed(self):
         executor = LinearExecutor(enabled_config(), transport=FakeLinearTransport())
