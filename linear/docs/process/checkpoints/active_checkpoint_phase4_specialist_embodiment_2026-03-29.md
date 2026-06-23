@@ -14,7 +14,7 @@ Supporting issues:
   - Vera should not be embodied before OpenClaw exists.
   - Vera will be created via OpenClaw rather than as a pre-OpenClaw side lane.
 - Minimum-team proof already established Vera as a real QA lane at working-baseline level, but not yet as an embodied specialist runtime.
-- Existing docs explicitly treat the current `qa-specialist` / Vera surface as transitional rather than the final embodied-runtime proof.
+- Existing docs at this checkpoint treated the then-current `qa-specialist` / Vera surface as transitional rather than the final embodied-runtime proof. Post-BIT-614, that skill path is retained only as historical migration context.
 - [BIT-98 — Prove real multi-agent team loop with Taylor plus embodied specialist agent(s)](https://linear.app/bitpod-app/issue/BIT-98/prove-real-multi-agent-team-loop-with-taylor-plus-embodied-specialist) should follow first-specialist embodiment, not replace it.
 
 ## Current implication

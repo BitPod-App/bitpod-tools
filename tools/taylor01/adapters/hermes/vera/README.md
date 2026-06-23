@@ -2,14 +2,16 @@
 
 This directory defines the preferred Hermes-first execution path for Vera.
 
-Canonical Vera home:
-- `tools/taylor01/core/agents/vera`
+Canonical Vera identity home:
+- `taylor01-mind/agents/vera/SOUL.md`
+
+> Deprecated BIT-614 path: the legacy Vera core/adapter files under `tools/taylor01/core/agents/vera/` and `tools/taylor01/adapters/openai/vera/` were removed from canonical `main`. Current Vera identity canon lives in `taylor01-mind/agents/vera/SOUL.md`. Current operational gating belongs to the Hermes/Linear runtime, not the retired OpenAI bridge.
 
 ## Current truth
 
 - Hermes is the preferred execution-path owner for Vera.
-- Vera's portable core remains the source of truth for identity, verdicts, artifacts, and guardrails.
-- The currently checked-in executable Vera adapters still live under `../openai/vera/`.
+- Vera's identity canon lives in `taylor01-mind/agents/vera/SOUL.md`; this repo keeps Linear/Hermes gate contracts and historical adapter notes.
+- The old checked-in OpenAI-native Vera adapters were removed from canonical `main` by BIT-614.
 - This directory is a contract surface until a verified Hermes runner or adapter is checked in.
 - OpenClaw is not a fallback or alternate runtime for Vera.
 
@@ -36,4 +38,4 @@ A managed code-review product may be additional evidence, but it must not replac
 
 ## Bridge rule
 
-Until a verified Hermes runner exists in this repo, Hermes-first dispatch may bridge to the current OpenAI-native adapters only if the bridge preserves the portable Vera contract and does not claim Hermes-native execution that did not happen.
+Until a verified Hermes runner exists in this repo, Hermes-first dispatch must not claim support from the retired OpenAI-native adapters. Any future bridge must preserve the Vera contract and identify its real runtime provenance.
