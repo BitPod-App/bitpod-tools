@@ -10,6 +10,9 @@ QA_TOKEN_RE = re.compile(r"QA_RESULT=(PASSED|FAILED|OVERRIDE|ACTION_REQUIRED|SKI
 PR_URL_TOKEN_RE = re.compile(r"PR_URL=(https?://[^\s]+)")
 HEAD_SHA_TOKEN_RE = re.compile(r"HEAD_SHA=([0-9a-fA-F]{7,64})")
 GITHUB_PR_URL_RE = re.compile(r"https://github\.com/([^/]+)/([^/]+)/pull/(\d+)")
+QA_OVERRIDE_COMMAND_RE = re.compile(r"(?im)^/qa-override(?:\s+(.+))?$")
+GITHUB_QA_OVERRIDE_LABELS = {"qa_override", "qa-override"}
+CJ_OVERRIDE_LOGIN = "cjarguello"
 
 REQUIRED_HEADINGS = [
     "Objective",
@@ -104,6 +107,11 @@ class LinearBotEngine:
         m = ISSUE_KEY_RE.search(text)
         return m.group(1) if m else None
 
+    def _issue_keys(self, text: str) -> List[str]:
+        if not text:
+            return []
+        return list(dict.fromkeys(ISSUE_KEY_RE.findall(text)))
+
     def has_required_headings(self, description: str) -> bool:
         if not description:
             return False
@@ -132,6 +140,241 @@ class LinearBotEngine:
         if not m:
             return "", ""
         return f"{m.group(1)}/{m.group(2)}", m.group(3)
+
+    def _label_name(self, label: Any) -> str:
+        if isinstance(label, dict):
+            return str(label.get("name") or "")
+        return str(label or "")
+
+    def _has_github_qa_override_label(self, labels: Any) -> bool:
+        if not isinstance(labels, list):
+            return False
+        return any(self._label_name(label).casefold() in GITHUB_QA_OVERRIDE_LABELS for label in labels)
+
+    def _event_sender_login(self, event: Dict[str, Any]) -> str:
+        sender = event.get("sender") or {}
+        return str(sender.get("login") or sender.get("name") or "")
+
+    def _github_override_pr(self, event: Dict[str, Any]) -> Dict[str, Any]:
+        pr = event.get("pull_request") if isinstance(event.get("pull_request"), dict) else {}
+        issue = event.get("issue") if isinstance(event.get("issue"), dict) else {}
+        if pr:
+            return pr
+        if issue.get("pull_request") is not None:
+            return {
+                "number": issue.get("number"),
+                "title": issue.get("title"),
+                "body": issue.get("body"),
+                "html_url": issue.get("html_url"),
+                "labels": issue.get("labels", []),
+            }
+        return {}
+
+    def _github_override_pr_url(self, event: Dict[str, Any]) -> str:
+        pr = self._github_override_pr(event)
+        return str(pr.get("html_url") or event.get("pr_url") or "")
+
+    def _github_override_labels(self, event: Dict[str, Any]) -> List[Any]:
+        labels: List[Any] = []
+        pr = self._github_override_pr(event)
+        issue = event.get("issue") if isinstance(event.get("issue"), dict) else {}
+        for source in (pr.get("labels"), issue.get("labels")):
+            if isinstance(source, list):
+                labels.extend(source)
+        return labels
+
+    def _github_override_head_sha(self, event: Dict[str, Any]) -> str:
+        pr = self._github_override_pr(event)
+        head = pr.get("head") if isinstance(pr.get("head"), dict) else {}
+        return str(head.get("sha") or pr.get("head_sha") or event.get("head_sha") or "")
+
+    def _parse_iso_datetime(self, value: str) -> Optional[datetime]:
+        if not value:
+            return None
+        normalized = value.replace("Z", "+00:00")
+        try:
+            parsed = datetime.fromisoformat(normalized)
+        except ValueError:
+            return None
+        if parsed.tzinfo is None:
+            return parsed.replace(tzinfo=timezone.utc)
+        return parsed
+
+    def _extract_override_reason_from_body(self, body: str) -> Tuple[str, str]:
+        text = body or ""
+        command = QA_OVERRIDE_COMMAND_RE.search(text)
+        if command:
+            reason = (command.group(1) or "").strip()
+            if reason:
+                return reason, "slash-command"
+            lines = text[command.end():].splitlines()
+            for line in lines:
+                stripped = line.strip()
+                if stripped and not stripped.upper().startswith("HEAD_SHA="):
+                    return stripped, "slash-command"
+            return "", "slash-command"
+
+        return "", ""
+
+    def _github_override_reason(self, event: Dict[str, Any]) -> Dict[str, str]:
+        source: Dict[str, Any] = {}
+        source_name = ""
+        if isinstance(event.get("comment"), dict):
+            source = event["comment"]
+            source_name = "comment"
+        elif isinstance(event.get("review"), dict):
+            review = event["review"]
+            if str(review.get("state") or "").casefold() != "approved":
+                return {}
+            source = review
+            source_name = "review"
+        elif isinstance(event.get("override_reason"), dict):
+            source = event["override_reason"]
+            source_name = str(source.get("source") or "discovered")
+
+        if not source:
+            return {}
+
+        user = source.get("user") if isinstance(source.get("user"), dict) else {}
+        actor = str(source.get("actor") or user.get("login") or self._event_sender_login(event))
+        body = str(source.get("body") or "")
+        reason, format_name = self._extract_override_reason_from_body(body)
+        return {
+            "actor": actor,
+            "body": body,
+            "reason": reason,
+            "format": format_name,
+            "source": source_name,
+            "url": str(source.get("html_url") or ""),
+            "created_at": str(source.get("created_at") or source.get("submitted_at") or ""),
+        }
+
+    def _github_override_issue_key(self, pr: Dict[str, Any], issue: Dict[str, Any]) -> Tuple[str, str]:
+        title_keys: List[str] = []
+        for title in (str(pr.get("title") or ""), str(issue.get("title") or "")):
+            for key in self._issue_keys(title):
+                if key not in title_keys:
+                    title_keys.append(key)
+        if len(title_keys) == 1:
+            return title_keys[0], ""
+        if len(title_keys) > 1:
+            return "", "ambiguous Linear issue keys in PR title"
+
+        body_keys: List[str] = []
+        for body in (str(pr.get("body") or ""), str(issue.get("body") or "")):
+            for key in self._issue_keys(body):
+                if key not in body_keys:
+                    body_keys.append(key)
+        if len(body_keys) == 1:
+            return body_keys[0], ""
+        if len(body_keys) > 1:
+            return "", "ambiguous Linear issue keys; put the primary issue key in the PR title"
+        return "", "missing Linear issue key"
+
+    def _github_override_failure_actions(
+        self,
+        *,
+        pr_url: str,
+        repo_full_name: str,
+        head_sha: str,
+        summary: str,
+    ) -> List[Action]:
+        actions: List[Action] = []
+        if repo_full_name and head_sha:
+            actions.extend(
+                self._github_check_run(
+                    pr_url,
+                    repo_full_name,
+                    head_sha,
+                    "completed",
+                    "failure",
+                    title="Vera QA override action required",
+                    summary=summary,
+                )
+            )
+        return actions
+
+    def on_github_qa_override(self, event: Dict[str, Any]) -> List[Action]:
+        pr = self._github_override_pr(event)
+        issue = event.get("issue") if isinstance(event.get("issue"), dict) else {}
+        pr_url = self._github_override_pr_url(event)
+        repo_full_name, _pr_number = self._parse_github_pr_url(pr_url)
+        head_sha = self._github_override_head_sha(event)
+        issue_key, issue_key_error = self._github_override_issue_key(pr, issue)
+        sender = self._event_sender_login(event)
+        label_actor = str(event.get("override_label_actor") or "")
+        labels = self._github_override_labels(event)
+        reason = self._github_override_reason(event)
+        missing: List[str] = []
+
+        if sender != CJ_OVERRIDE_LOGIN:
+            missing.append(f"override actor must be {CJ_OVERRIDE_LOGIN}")
+        if not self._has_github_qa_override_label(labels):
+            missing.append("missing GitHub QA_OVERRIDE label")
+        if label_actor != CJ_OVERRIDE_LOGIN:
+            missing.append("QA_OVERRIDE label must be attributable to cjarguello")
+        if reason.get("actor") != CJ_OVERRIDE_LOGIN:
+            missing.append("override reason must be authored by cjarguello")
+        if not reason.get("reason"):
+            missing.append("missing /qa-override <reason>")
+        explicit_head = self._extract_head_sha_token(reason.get("body", ""))
+        if explicit_head and head_sha:
+            explicit = explicit_head.casefold()
+            actual = head_sha.casefold()
+            if not (actual.startswith(explicit) or explicit.startswith(actual)):
+                missing.append("HEAD_SHA does not match current PR head")
+        reason_time = self._parse_iso_datetime(reason.get("created_at", ""))
+        head_time = self._parse_iso_datetime(str(event.get("head_current_at") or ""))
+        if reason_time and head_time and reason_time < head_time:
+            missing.append("override reason is stale for current PR head")
+        if issue_key_error:
+            missing.append(issue_key_error)
+
+        if missing:
+            return self._github_override_failure_actions(
+                pr_url=pr_url,
+                repo_full_name=repo_full_name,
+                head_sha=head_sha,
+                summary="CJ QA override not accepted: " + "; ".join(missing),
+            )
+
+        body = "\n".join(
+            [
+                "CJ QA override authorized — not Vera QA.",
+                f"QA_RESULT=OVERRIDE",
+                f"PR_URL={pr_url}",
+                f"HEAD_SHA={head_sha}",
+                f"Actor: @{CJ_OVERRIDE_LOGIN}",
+                f"Reason: {reason['reason']}",
+                f"GitHub evidence: {reason.get('url') or 'unavailable'}",
+                "",
+                "Proof flags after sync request:",
+                "VERA_QA_RAN=false",
+                "GITHUB_NATIVE_GATE_SATISFIED=true",
+                "LINEAR_QA_RESULT_SYNCED=true",
+            ]
+        )
+
+        actions: List[Action] = [
+            Action("linear", "set_label", issue_key, {"group": self.cfg.qa_gate_group, "value": self.cfg.qa_override, "source_event": "github_cj_qa_override"}),
+            Action("linear", "set_status", issue_key, {"status": self.cfg.delivered_status, "source_event": "github_cj_qa_override"}),
+            Action("linear", "comment", issue_key, {"body": body}),
+        ]
+        actions.extend(
+            self._github_check_run(
+                pr_url,
+                repo_full_name,
+                head_sha,
+                "completed",
+                "success",
+                title="CJ QA override authorized — not Vera QA",
+                summary=(
+                    f"CJ QA override authorized for {issue_key}; this is not Vera QA. "
+                    f"Reason: {reason['reason']}. Evidence: {reason.get('url') or 'unavailable'}"
+                ),
+            )
+        )
+        return actions
 
     def _extract_issue_pr_url(self, issue: Dict[str, Any]) -> str:
         direct = str(issue.get("pr_url") or issue.get("prUrl") or issue.get("pullRequestUrl") or "")

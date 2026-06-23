@@ -100,7 +100,11 @@ class LinearExecutor:
         if action.kind == "comment":
             detail = self._create_comment(action.target, str(action.payload.get("body", "")))
         elif action.kind == "set_status":
-            detail = self._set_status(action.target, str(action.payload.get("status", "")))
+            detail = self._set_status(
+                action.target,
+                str(action.payload.get("status", "")),
+                str(action.payload.get("source_event", "")),
+            )
         elif action.kind == "set_label":
             detail = self._set_label(
                 action.target,
@@ -291,10 +295,20 @@ class LinearExecutor:
         comment = result.get("comment") or {}
         return f"linear commentCreate {issue.get('identifier', issue_ref)} comment={comment.get('id', '')}"
 
-    def _set_status(self, issue_ref: str, status_name: str) -> str:
+    def _set_status(self, issue_ref: str, status_name: str, source_event: str = "") -> str:
         if not status_name.strip():
             raise LinearExecutionError("status is required")
         issue = self._get_issue(issue_ref)
+        current_status = str(((issue.get("state") or {}).get("name")) or "")
+        if (
+            source_event == "github_cj_qa_override"
+            and status_name.casefold() == "delivered"
+            and current_status.casefold() != "in review"
+        ):
+            raise LinearExecutionError(
+                f"CJ QA override may move an issue to Delivered only when it is currently In Review; "
+                f"{issue_ref} is currently {current_status or 'unknown'}"
+            )
         state_id = self._find_workflow_state_id(issue, status_name)
         data = self._graphql(
             """
