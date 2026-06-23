@@ -28,10 +28,25 @@ class BotRuntime:
 
     def run_github_event(self, event: Dict[str, Any]) -> List[Action]:
         action = event.get("action")
+        github_event = str(event.get("_github_event") or "")
         pr = event.get("pull_request", {})
-        issue_key = self.engine.find_issue_key(pr.get("title", "")) or self.engine.find_issue_key(pr.get("body", "")) or self.engine.find_issue_key(pr.get("head", {}).get("ref", "")) or "UNLINKED"
+        issue = event.get("issue", {}) if isinstance(event.get("issue", {}), dict) else {}
+        issue_key = (
+            self.engine.find_issue_key(pr.get("title", ""))
+            or self.engine.find_issue_key(pr.get("body", ""))
+            or self.engine.find_issue_key(pr.get("head", {}).get("ref", ""))
+            or self.engine.find_issue_key(issue.get("title", ""))
+            or self.engine.find_issue_key(issue.get("body", ""))
+            or "UNLINKED"
+        )
 
-        if action == "opened":
+        if github_event == "issues" and action == "labeled":
+            out = self.engine.on_github_qa_override(event)
+        elif github_event == "issue_comment" and action == "created":
+            out = self.engine.on_github_qa_override(event)
+        elif github_event == "pull_request_review" and action == "submitted":
+            out = self.engine.on_github_qa_override(event)
+        elif action == "opened":
             out = self.engine.on_github_pr_opened(event)
         elif action == "ready_for_review":
             out = self.engine.on_github_pr_ready_for_review(event)

@@ -110,6 +110,7 @@ Implemented in engine/service:
   - `pull_request.opened`
   - `pull_request.ready_for_review`
   - `pull_request.review_requested` for legacy/manual VeraQA review requests (compatibility trigger, not the required merge gate)
+  - CJ-authored QA override intake from `issues.labeled`, `issue_comment.created`, and `pull_request_review.submitted`
   - `pull_request.closed` with merged=true (gate-completeness check + merge record)
 - Linear events:
   - `Ready` / `In Progress` readiness enforcement trigger
@@ -133,6 +134,7 @@ The canonical operating model is:
 - engineering moves work into `In Review`
 - pending QA is expressed by the status itself
 - `qa-passed`, `qa-failed`, and `qa-override` are terminal/authority-bearing QA labels only
+- `qa-override` may be synced from a CJ-authorized GitHub `QA_OVERRIDE` / `qa-override` label plus `/qa-override <reason>` evidence; this is not Vera QA and does not imply PM acceptance
 - review-cleared work moves from `In Review` to `Delivered`
 - `pm-accepted`, `pm-rejected`, and `pm-skipped` are result labels only
 - work moves from `Delivered` to `Accepted`, then to `Done`
@@ -192,6 +194,13 @@ Reference template:
 GitHub webhook events:
 - `pull_request` (opened, ready_for_review, review_requested, closed)
   - non-draft `opened`, `ready_for_review`, and VeraQA `review_requested` now plan Vera QA dispatch and a queued `vera-qa-gate` check when the event includes a head SHA.
+- `issues` (`labeled`), `issue_comment` (`created`), and `pull_request_review` (`submitted`) for CJ-approved QA override intake.
+  - Scope is all BitPod GitHub repos where the GitHub App/webhook is installed and subscribed to these events; the runtime uses the webhook `repository.full_name` / PR URL and does not hard-code a single repo.
+  - Canonical GitHub label: `QA_OVERRIDE`; alias accepted: `qa-override`.
+  - Required CJ evidence: `/qa-override <reason>` in a PR comment or approved PR review by `cjarguello`.
+  - The runtime verifies the label is attributable to `cjarguello`, the reason is for the current head, and any `HEAD_SHA=` token matches before completing `vera-qa-gate`.
+  - Linear sync uses one primary issue key. If the PR title contains exactly one issue key, that key is authoritative and body issue keys are treated as related references. If the title has multiple keys, the override fails closed until the primary issue is clarified. Live Linear execution may move the issue to `Delivered` only when the issue is currently `In Review`.
+  - V1 is an interim convention-based path. V2 should use GitHub-native bypass/ruleset audit signals, custom properties, or a dedicated GitHub Action/App command by `cjarguello`.
 
 Linear webhook events:
 - issue updated (state and labels), including `In Review` transitions for Vera QA dispatch

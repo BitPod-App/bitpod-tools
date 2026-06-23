@@ -14,6 +14,7 @@ from linear.src.service import (
     collect_vera_qa_completed_events,
     execute_hermes_vera_dispatch,
     execute_github_check_run,
+    enrich_github_override_event,
     github_app_installation_token_from_env,
     load_completed_vera_qa_tasks,
     sync_vera_qa_results_once,
@@ -101,6 +102,90 @@ class RuntimeTests(unittest.TestCase):
 
         self.assertTrue(any(a.system == "hermes" and a.kind == "enqueue_vera_qa" for a in actions))
         self.assertTrue(any(a.system == "github" and a.kind == "check_run" and a.payload.get("head_sha") == "feed617" for a in actions))
+
+    def test_runtime_routes_github_issue_comment_override_to_vera_gate(self):
+        rt = BotRuntime()
+        actions = rt.run_github_event(
+            {
+                "_github_event": "issue_comment",
+                "action": "created",
+                "sender": {"login": "cjarguello"},
+                "override_label_actor": "cjarguello",
+                "issue": {
+                    "number": 17,
+                    "title": "BIT-706 override comment",
+                    "labels": [{"name": "QA_OVERRIDE"}],
+                    "pull_request": {},
+                },
+                "pull_request": {
+                    "html_url": "https://github.com/BitPod-App/bitpod-tools/pull/17",
+                    "head": {"sha": "abc1234"},
+                },
+                "comment": {"body": "/qa-override runtime route proof", "user": {"login": "cjarguello"}},
+            }
+        )
+
+        self.assertTrue(any(a.system == "github" and a.kind == "check_run" and a.payload.get("conclusion") == "success" for a in actions))
+        self.assertTrue(any(a.system == "linear" and a.kind == "set_label" and a.payload.get("value") == "qa-override" for a in actions))
+
+    def test_runtime_routes_github_labeled_override_with_discovered_reason_to_vera_gate(self):
+        rt = BotRuntime()
+        actions = rt.run_github_event(
+            {
+                "_github_event": "issues",
+                "action": "labeled",
+                "sender": {"login": "cjarguello"},
+                "label": {"name": "QA_OVERRIDE"},
+                "override_label_actor": "cjarguello",
+                "head_current_at": "2026-06-23T05:20:00Z",
+                "issue": {
+                    "number": 77,
+                    "title": "BIT-708 labeled override",
+                    "labels": [{"name": "QA_OVERRIDE"}],
+                    "pull_request": {},
+                },
+                "pull_request": {
+                    "html_url": "https://github.com/BitPod-App/sector-feeds/pull/77",
+                    "head": {"sha": "abc1234"},
+                },
+                "override_reason": {
+                    "source": "comment",
+                    "actor": "cjarguello",
+                    "body": "/qa-override discovered reason",
+                    "created_at": "2026-06-23T05:21:00Z",
+                    "html_url": "https://github.com/BitPod-App/sector-feeds/pull/77#issuecomment-1",
+                },
+            }
+        )
+
+        self.assertTrue(any(a.system == "github" and a.kind == "check_run" and a.payload.get("conclusion") == "success" for a in actions))
+        self.assertTrue(any(a.system == "linear" and a.kind == "set_label" and a.payload.get("value") == "qa-override" for a in actions))
+
+    def test_runtime_routes_github_review_override_to_vera_gate(self):
+        rt = BotRuntime()
+        actions = rt.run_github_event(
+            {
+                "_github_event": "pull_request_review",
+                "action": "submitted",
+                "sender": {"login": "cjarguello"},
+                "override_label_actor": "cjarguello",
+                "pull_request": {
+                    "number": 17,
+                    "title": "BIT-707 override review",
+                    "labels": [{"name": "QA_OVERRIDE"}],
+                    "html_url": "https://github.com/BitPod-App/bitpod-tools/pull/17",
+                    "head": {"sha": "abc1234"},
+                },
+                "review": {
+                    "state": "approved",
+                    "body": "/qa-override runtime review proof",
+                    "user": {"login": "cjarguello"},
+                },
+            }
+        )
+
+        self.assertTrue(any(a.system == "github" and a.kind == "check_run" and a.payload.get("conclusion") == "success" for a in actions))
+        self.assertTrue(any(a.system == "linear" and a.kind == "set_label" and a.payload.get("value") == "qa-override" for a in actions))
 
     def test_runtime_routes_linear_issue_in_review_to_vera_dispatch(self):
         rt = BotRuntime()
@@ -655,6 +740,63 @@ class RuntimeTests(unittest.TestCase):
         self.assertEqual(calls[0][1], "/repos/BitPod-App/taylor01-mind/issues/50/comments")
         self.assertEqual(calls[0][2], "installation-token")
         self.assertEqual(calls[0][3]["body"], "QA_RESULT=PASSED")
+
+    def test_github_override_enrichment_collects_repo_agnostic_label_actor_head_and_reason(self):
+        calls = []
+
+        def fake_github_request(method, path, token, body=None):
+            calls.append((method, path, token, body))
+            if path == "/repos/BitPod-App/sector-feeds/pulls/77":
+                return {
+                    "number": 77,
+                    "title": "BIT-708 sector override",
+                    "body": "",
+                    "html_url": "https://github.com/BitPod-App/sector-feeds/pull/77",
+                    "head": {"sha": "abc1234"},
+                }
+            if path == "/repos/BitPod-App/sector-feeds/issues/77":
+                return {"labels": [{"name": "QA_OVERRIDE"}]}
+            if path == "/repos/BitPod-App/sector-feeds/issues/77/events?per_page=100":
+                return [
+                    {
+                        "event": "labeled",
+                        "label": {"name": "QA_OVERRIDE"},
+                        "actor": {"login": "cjarguello"},
+                        "created_at": "2026-06-23T05:20:30Z",
+                    }
+                ]
+            if path == "/repos/BitPod-App/sector-feeds/pulls/77/commits?per_page=100":
+                return [{"commit": {"committer": {"date": "2026-06-23T05:20:00Z"}}}]
+            if path == "/repos/BitPod-App/sector-feeds/issues/77/comments?per_page=100":
+                return [
+                    {
+                        "body": "/qa-override CJ accepts advisory QA evidence.",
+                        "html_url": "https://github.com/BitPod-App/sector-feeds/pull/77#issuecomment-1",
+                        "created_at": "2026-06-23T05:21:00Z",
+                        "user": {"login": "cjarguello"},
+                    }
+                ]
+            if path == "/repos/BitPod-App/sector-feeds/pulls/77/reviews?per_page=100":
+                return []
+            raise AssertionError(f"unexpected path {path}")
+
+        event = {
+            "action": "labeled",
+            "repository": {"full_name": "BitPod-App/sector-feeds"},
+            "sender": {"login": "cjarguello"},
+            "label": {"name": "QA_OVERRIDE"},
+            "issue": {"number": 77, "title": "BIT-708 sector override", "pull_request": {}},
+        }
+        with patch("linear.src.service.github_app_installation_token_from_env", return_value="installation-token"):
+            with patch("linear.src.service._github_json_request", side_effect=fake_github_request):
+                enriched = enrich_github_override_event(event, "issues")
+
+        self.assertEqual(enriched["pull_request"]["head"]["sha"], "abc1234")
+        self.assertEqual(enriched["issue"]["labels"][0]["name"], "QA_OVERRIDE")
+        self.assertEqual(enriched["override_label_actor"], "cjarguello")
+        self.assertEqual(enriched["head_current_at"], "2026-06-23T05:20:00Z")
+        self.assertIn("/qa-override", enriched["override_reason"]["body"])
+        self.assertEqual(calls[0][1], "/repos/BitPod-App/sector-feeds/pulls/77")
 
     def test_governance_blocks_live_linear_mutation_without_approval(self):
         with tempfile.TemporaryDirectory() as tmp:
