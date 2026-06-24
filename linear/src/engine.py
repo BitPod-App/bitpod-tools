@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-ISSUE_KEY_RE = re.compile(r"\b([A-Z]{2,}-\d+)\b")
+ISSUE_KEY_RE = re.compile(r"\b(BIT-\d+)\b")
 QA_TOKEN_RE = re.compile(r"QA_RESULT=(PASSED|FAILED|OVERRIDE|ACTION_REQUIRED|SKIPPED)")
 PR_URL_TOKEN_RE = re.compile(r"PR_URL=(https?://[^\s]+)")
 VERA_QA_GATE_REQUEST_RE = re.compile(r"(?:^|\b)(?:ready\s+for\s+)?vera-qa-gate(?:\b|$)", re.IGNORECASE)
@@ -135,12 +135,18 @@ class LinearBotEngine:
         )
 
     def _is_linear_issue_key(self, value: str) -> bool:
-        return bool(re.fullmatch(r"[A-Z]{2,}-\d+", str(value or "")))
+        return bool(ISSUE_KEY_RE.fullmatch(str(value or "")))
 
     def _ticketless_pr_qa_target(self, repo_full_name: str, pr_number: str) -> str:
         if not repo_full_name or not pr_number:
             return ""
         return f"github-pr:{repo_full_name}#{pr_number}"
+
+    def _normalize_qa_result_issue_key(self, issue_key: str, pr_url: str) -> str:
+        if self._is_linear_issue_key(issue_key) or str(issue_key or "").startswith("github-pr:"):
+            return issue_key
+        repo_full_name, pr_number = self._parse_github_pr_url(pr_url)
+        return self._ticketless_pr_qa_target(repo_full_name, pr_number) or issue_key
 
     def _extract_pr_url_token(self, comment_body: str) -> str:
         m = PR_URL_TOKEN_RE.search(comment_body or "")
@@ -855,10 +861,11 @@ class LinearBotEngine:
         qa_result = str(event.get("qa_result") or event.get("qa_verdict") or "").upper()
         pr_url = str(event.get("pr_url") or "")
         head_sha = str(event.get("head_sha") or "")
-        issue_url = str(event.get("issue_url") or issue_key)
         report_path = str(event.get("report_path") or "verification_report.md")
         summary = str(event.get("summary") or "Vera QA completed.")
         repo_full_name, _pr_number = self._parse_github_pr_url(pr_url)
+        issue_key = self._normalize_qa_result_issue_key(issue_key, pr_url)
+        issue_url = str(event.get("issue_url") or issue_key)
 
         if not issue_key or qa_result not in {"PASSED", "FAILED", "OVERRIDE", "ACTION_REQUIRED"}:
             return []
