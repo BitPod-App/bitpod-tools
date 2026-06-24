@@ -134,6 +134,14 @@ class LinearBotEngine:
             or self.find_issue_key(pr.get("head", {}).get("ref", ""))
         )
 
+    def _is_linear_issue_key(self, value: str) -> bool:
+        return bool(re.fullmatch(r"[A-Z]{2,}-\d+", str(value or "")))
+
+    def _ticketless_pr_qa_target(self, repo_full_name: str, pr_number: str) -> str:
+        if not repo_full_name or not pr_number:
+            return ""
+        return f"github-pr:{repo_full_name}#{pr_number}"
+
     def _extract_pr_url_token(self, comment_body: str) -> str:
         m = PR_URL_TOKEN_RE.search(comment_body or "")
         return m.group(1) if m else ""
@@ -764,16 +772,18 @@ class LinearBotEngine:
             return []
         pr = event.get("pull_request", {})
         issue_key = self._linked_issue_from_pr(pr)
+        pr_url = str(pr.get("html_url", ""))
+        repo_full_name, pr_number = self._parse_github_pr_url(pr_url)
+        if not issue_key:
+            issue_key = self._ticketless_pr_qa_target(repo_full_name, pr_number)
         if not issue_key:
             return self._missing_issue_key_actions(pr)
 
-        pr_url = str(pr.get("html_url", ""))
-        repo_full_name, pr_number = self._parse_github_pr_url(pr_url)
         head = pr.get("head", {}) if isinstance(pr.get("head", {}), dict) else {}
         head_sha = str(head.get("sha") or pr.get("head_sha") or "")
-        actions = [
-            Action("linear", "set_status", issue_key, {"status": self.cfg.in_review_status}),
-        ]
+        actions = []
+        if self._is_linear_issue_key(issue_key):
+            actions.append(Action("linear", "set_status", issue_key, {"status": self.cfg.in_review_status}))
         actions.extend(
             self._vera_dispatch_actions(
                 issue_key=issue_key,
@@ -799,16 +809,18 @@ class LinearBotEngine:
             return []
         pr = event.get("pull_request", {})
         issue_key = self._linked_issue_from_pr(pr)
+        pr_url = str(pr.get("html_url", ""))
+        repo_full_name, pr_number = self._parse_github_pr_url(pr_url)
+        if not issue_key:
+            issue_key = self._ticketless_pr_qa_target(repo_full_name, pr_number)
         if not issue_key:
             return self._missing_issue_key_actions(pr)
 
-        pr_url = str(pr.get("html_url", ""))
-        repo_full_name, pr_number = self._parse_github_pr_url(pr_url)
         head = pr.get("head", {}) if isinstance(pr.get("head", {}), dict) else {}
         head_sha = str(head.get("sha") or pr.get("head_sha") or "")
-        actions = [
-            Action("linear", "set_status", issue_key, {"status": self.cfg.in_review_status}),
-        ]
+        actions = []
+        if self._is_linear_issue_key(issue_key):
+            actions.append(Action("linear", "set_status", issue_key, {"status": self.cfg.in_review_status}))
         actions.extend(
             self._vera_dispatch_actions(
                 issue_key=issue_key,
@@ -891,7 +903,8 @@ class LinearBotEngine:
         )
 
         actions = []
-        if label_value:
+        has_linear_issue = self._is_linear_issue_key(issue_key)
+        if has_linear_issue and label_value:
             actions.append(
                 Action(
                     "linear",
@@ -900,7 +913,7 @@ class LinearBotEngine:
                     {"group": self.cfg.qa_gate_group, "value": label_value, "source_event": "vera_qa_completed"},
                 )
             )
-        if next_status:
+        if has_linear_issue and next_status:
             actions.append(
                 Action(
                     "linear",
@@ -909,7 +922,7 @@ class LinearBotEngine:
                     {"status": next_status, "source_event": "vera_qa_completed"},
                 )
             )
-        if qa_result == "ACTION_REQUIRED":
+        if has_linear_issue and qa_result == "ACTION_REQUIRED":
             actions.append(
                 Action(
                     "linear",
@@ -918,11 +931,13 @@ class LinearBotEngine:
                     {"group": self.cfg.blocked_group, "value": self.cfg.blocker_action_required, "source_event": "vera_qa_completed"},
                 )
             )
-        actions.append(Action("linear", "comment", issue_key, {"body": body}))
+        if has_linear_issue:
+            actions.append(Action("linear", "comment", issue_key, {"body": body}))
+        linear_suffix = f" See Linear: {issue_url}" if has_linear_issue else ""
         actions.extend(
             self._github_comment(
                 pr_url,
-                f"{result_text} for {issue_key}. Summary: {summary}. Report: {report_path}. See Linear: {issue_url}",
+                f"{result_text} for {issue_key}. Summary: {summary}. Report: {report_path}.{linear_suffix}",
             )
         )
         actions.extend(
@@ -934,9 +949,9 @@ class LinearBotEngine:
                 gate_conclusion,
                 title=gate_title,
                 summary=(
-                    f"Vera cannot complete QA until: {summary}. See Linear: {issue_url}"
+                    f"Vera cannot complete QA until: {summary}.{linear_suffix}"
                     if qa_result == "ACTION_REQUIRED"
-                    else f"{gate_title} for {issue_key}. {summary}. See Linear: {issue_url}"
+                    else f"{gate_title} for {issue_key}. {summary}.{linear_suffix}"
                 ),
             )
         )
