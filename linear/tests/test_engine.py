@@ -173,6 +173,52 @@ class EngineTests(unittest.TestCase):
         self.assertEqual(dispatch.payload["source_event"], "github_pr_review_requested")
         self.assertEqual(dispatch.payload["pr_url"], "https://github.com/BitPod-App/bitpod-tools/pull/18")
 
+
+    def test_gh_review_body_ready_for_vera_gate_dispatches_vera_qa(self):
+        ev = {
+            "_github_event": "pull_request_review",
+            "action": "submitted",
+            "sender": {"login": "cjarguello"},
+            "review": {"state": "commented", "body": "Ready for vera-qa-gate"},
+            "pull_request": {
+                "number": 68,
+                "title": "BIT-617 dispatcher proof",
+                "body": "",
+                "html_url": "https://github.com/BitPod-App/bitpod-docs/pull/68",
+                "head": {"ref": "codex/bit-617-proof", "sha": "f9619c0"},
+            },
+        }
+
+        actions = self.bot.on_github_pr_review_gate_requested(ev)
+
+        dispatch = next(a for a in actions if a.system == "hermes" and a.kind == "enqueue_vera_qa")
+        self.assertEqual(dispatch.target, "BIT-617")
+        self.assertEqual(dispatch.payload["source_event"], "github_pr_review_gate_requested")
+        self.assertEqual(dispatch.payload["pr_url"], "https://github.com/BitPod-App/bitpod-docs/pull/68")
+        self.assertEqual(dispatch.payload["repo_full_name"], "BitPod-App/bitpod-docs")
+        self.assertEqual(dispatch.payload["head_sha"], "f9619c0")
+        check = next(a for a in actions if a.system == "github" and a.kind == "check_run")
+        self.assertEqual(check.payload["status"], "queued")
+
+    def test_gh_review_ready_missing_issue_comments_on_pr_url(self):
+        ev = {
+            "action": "ready_for_review",
+            "pull_request": {
+                "number": 68,
+                "title": "Refresh GPT project sources brief and repo maps",
+                "body": "",
+                "html_url": "https://github.com/BitPod-App/bitpod-docs/pull/68",
+                "head": {"ref": "codex/project-sources-brief-refresh-2026-06-24", "sha": "f9619c0"},
+            },
+        }
+
+        actions = self.bot.on_github_pr_ready_for_review(ev)
+
+        self.assertEqual(actions[0].system, "github")
+        self.assertEqual(actions[0].kind, "comment")
+        self.assertEqual(actions[0].target, "https://github.com/BitPod-App/bitpod-docs/pull/68")
+        self.assertIn("Missing Linear issue key", actions[0].payload["body"])
+
     def test_linear_issue_in_review_dispatches_vera_qa_from_attached_pr(self):
         issue = {
             "identifier": "BIT-612",

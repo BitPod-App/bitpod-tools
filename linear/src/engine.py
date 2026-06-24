@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 ISSUE_KEY_RE = re.compile(r"\b([A-Z]{2,}-\d+)\b")
 QA_TOKEN_RE = re.compile(r"QA_RESULT=(PASSED|FAILED|OVERRIDE|ACTION_REQUIRED|SKIPPED)")
 PR_URL_TOKEN_RE = re.compile(r"PR_URL=(https?://[^\s]+)")
+VERA_QA_GATE_REQUEST_RE = re.compile(r"(?:^|\b)(?:ready\s+for\s+)?vera-qa-gate(?:\b|$)", re.IGNORECASE)
 HEAD_SHA_TOKEN_RE = re.compile(r"HEAD_SHA=([0-9a-fA-F]{7,64})")
 GITHUB_PR_URL_RE = re.compile(r"https://github\.com/([^/]+)/([^/]+)/pull/(\d+)")
 QA_OVERRIDE_COMMAND_RE = re.compile(r"(?im)^/qa-override(?:\s+(.+))?$")
@@ -119,6 +120,12 @@ class LinearBotEngine:
 
     def _issue_linking_comment(self) -> str:
         return "Missing Linear issue key; cannot automate."
+
+    def _pr_comment_target(self, pr: Dict[str, Any]) -> str:
+        return str(pr.get("html_url") or pr.get("url") or pr.get("number") or "")
+
+    def _missing_issue_key_actions(self, pr: Dict[str, Any]) -> List[Action]:
+        return [Action("github", "comment", self._pr_comment_target(pr), {"body": self._issue_linking_comment()})]
 
     def _linked_issue_from_pr(self, pr: Dict[str, Any]) -> Optional[str]:
         return (
@@ -652,9 +659,7 @@ class LinearBotEngine:
         pr = event.get("pull_request", {})
         issue_key = self._linked_issue_from_pr(pr)
         if not issue_key:
-            return [
-                Action("github", "comment", str(pr.get("number", "")), {"body": self._issue_linking_comment()})
-            ]
+            return self._missing_issue_key_actions(pr)
 
         pr_url = str(pr.get("html_url", ""))
         if pr.get("draft") is False:
@@ -685,9 +690,7 @@ class LinearBotEngine:
         pr = event.get("pull_request", {})
         issue_key = self._linked_issue_from_pr(pr)
         if not issue_key:
-            return [
-                Action("github", "comment", str(pr.get("number", "")), {"body": self._issue_linking_comment()})
-            ]
+            return self._missing_issue_key_actions(pr)
 
         pr_url = str(pr.get("html_url", ""))
         repo_full_name, pr_number = self._parse_github_pr_url(pr_url)
@@ -714,9 +717,7 @@ class LinearBotEngine:
             return []
         issue_key = self._linked_issue_from_pr(pr)
         if not issue_key:
-            return [
-                Action("github", "comment", str(pr.get("number", "")), {"body": self._issue_linking_comment()})
-            ]
+            return self._missing_issue_key_actions(pr)
 
         pr_url = str(pr.get("html_url", ""))
         repo_full_name, pr_number = self._parse_github_pr_url(pr_url)
@@ -729,6 +730,54 @@ class LinearBotEngine:
             self._vera_dispatch_actions(
                 issue_key=issue_key,
                 source_event="github_pr_synchronize_review_ready",
+                pr_url=pr_url,
+                repo_full_name=repo_full_name,
+                pr_number=pr_number,
+                head_sha=head_sha,
+            )
+        )
+        return actions
+
+
+    def is_vera_gate_review_request(self, event: Dict[str, Any]) -> bool:
+        if str(event.get("_github_event") or "") != "pull_request_review":
+            return False
+        if event.get("action") != "submitted":
+            return False
+        review = event.get("review") if isinstance(event.get("review"), dict) else {}
+        return bool(VERA_QA_GATE_REQUEST_RE.search(str(review.get("body") or "")))
+
+    def is_github_qa_override_request(self, event: Dict[str, Any]) -> bool:
+        event_name = str(event.get("_github_event") or "")
+        if event_name in {"issues", "pull_request"} and event.get("action") == "labeled":
+            return self._has_github_qa_override_label(self._github_override_labels(event))
+        if event_name == "issue_comment" and event.get("action") == "created":
+            comment = event.get("comment") if isinstance(event.get("comment"), dict) else {}
+            return bool(QA_OVERRIDE_COMMAND_RE.search(str(comment.get("body") or "")))
+        if event_name == "pull_request_review" and event.get("action") == "submitted":
+            review = event.get("review") if isinstance(event.get("review"), dict) else {}
+            return bool(QA_OVERRIDE_COMMAND_RE.search(str(review.get("body") or "")))
+        return False
+
+    def on_github_pr_review_gate_requested(self, event: Dict[str, Any]) -> List[Action]:
+        if not self.is_vera_gate_review_request(event):
+            return []
+        pr = event.get("pull_request", {})
+        issue_key = self._linked_issue_from_pr(pr)
+        if not issue_key:
+            return self._missing_issue_key_actions(pr)
+
+        pr_url = str(pr.get("html_url", ""))
+        repo_full_name, pr_number = self._parse_github_pr_url(pr_url)
+        head = pr.get("head", {}) if isinstance(pr.get("head", {}), dict) else {}
+        head_sha = str(head.get("sha") or pr.get("head_sha") or "")
+        actions = [
+            Action("linear", "set_status", issue_key, {"status": self.cfg.in_review_status}),
+        ]
+        actions.extend(
+            self._vera_dispatch_actions(
+                issue_key=issue_key,
+                source_event="github_pr_review_gate_requested",
                 pr_url=pr_url,
                 repo_full_name=repo_full_name,
                 pr_number=pr_number,
@@ -751,9 +800,7 @@ class LinearBotEngine:
         pr = event.get("pull_request", {})
         issue_key = self._linked_issue_from_pr(pr)
         if not issue_key:
-            return [
-                Action("github", "comment", str(pr.get("number", "")), {"body": self._issue_linking_comment()})
-            ]
+            return self._missing_issue_key_actions(pr)
 
         pr_url = str(pr.get("html_url", ""))
         repo_full_name, pr_number = self._parse_github_pr_url(pr_url)

@@ -1117,7 +1117,7 @@ class Handler(BaseHTTPRequestHandler):
                 actions = self.runtime.run_github_event(data)
             elif github_override_event and event_name == "issue_comment" and action == "created":
                 actions = self.runtime.run_github_event(data)
-            elif github_override_event and event_name == "pull_request_review" and action == "submitted":
+            elif event_name == "pull_request_review" and action == "submitted":
                 actions = self.runtime.run_github_event(data)
             elif action == "closed" and data.get("pull_request", {}).get("merged") is True:
                 actions = self.runtime.run_github_event(data)

@@ -44,7 +44,9 @@ class BotRuntime:
             out = self.engine.on_github_qa_override(event)
         elif github_event == "issue_comment" and action == "created":
             out = self.engine.on_github_qa_override(event)
-        elif github_event == "pull_request_review" and action == "submitted":
+        elif github_event == "pull_request_review" and action == "submitted" and self.engine.is_vera_gate_review_request(event):
+            out = self.engine.on_github_pr_review_gate_requested(event)
+        elif github_event == "pull_request_review" and action == "submitted" and self.engine.is_github_qa_override_request(event):
             out = self.engine.on_github_qa_override(event)
         elif action == "opened":
             out = self.engine.on_github_pr_opened(event)

@@ -189,6 +189,51 @@ class RuntimeTests(unittest.TestCase):
         self.assertTrue(any(a.system == "github" and a.kind == "check_run" and a.payload.get("conclusion") == "success" for a in actions))
         self.assertTrue(any(a.system == "linear" and a.kind == "set_label" and a.payload.get("value") == "qa-override" for a in actions))
 
+
+    def test_runtime_routes_pull_request_review_ready_for_vera_gate_to_dispatch(self):
+        rt = BotRuntime()
+        actions = rt.run_github_event(
+            {
+                "_github_event": "pull_request_review",
+                "action": "submitted",
+                "sender": {"login": "cjarguello"},
+                "review": {"state": "commented", "body": "Ready for vera-qa-gate"},
+                "pull_request": {
+                    "number": 68,
+                    "title": "BIT-617 dispatcher proof",
+                    "body": "",
+                    "html_url": "https://github.com/BitPod-App/bitpod-docs/pull/68",
+                    "head": {"ref": "codex/bit-617-proof", "sha": "f9619c0"},
+                },
+            }
+        )
+
+        self.assertTrue(any(a.system == "hermes" and a.kind == "enqueue_vera_qa" for a in actions))
+        check = next(a for a in actions if a.system == "github" and a.kind == "check_run")
+        self.assertEqual(check.payload["status"], "queued")
+        self.assertEqual(check.payload["head_sha"], "f9619c0")
+
+
+    def test_runtime_ignores_plain_pull_request_review_without_gate_or_override_command(self):
+        rt = BotRuntime()
+        actions = rt.run_github_event(
+            {
+                "_github_event": "pull_request_review",
+                "action": "submitted",
+                "sender": {"login": "cjarguello"},
+                "review": {"state": "approved", "body": "Looks good."},
+                "pull_request": {
+                    "number": 68,
+                    "title": "BIT-617 dispatcher proof",
+                    "body": "",
+                    "html_url": "https://github.com/BitPod-App/bitpod-docs/pull/68",
+                    "head": {"ref": "codex/bit-617-proof", "sha": "f9619c0"},
+                },
+            }
+        )
+
+        self.assertEqual(actions, [])
+
     def test_runtime_routes_linear_issue_in_review_to_vera_dispatch(self):
         rt = BotRuntime()
         actions = rt.run_linear_event(
