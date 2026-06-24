@@ -17,6 +17,7 @@ import time
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
+from datetime import datetime
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 from typing import Any, Dict, List, Mapping, Optional, Tuple
@@ -808,16 +809,76 @@ def _filter_vera_qa_tasks(tasks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     return out
 
 
-def _vera_result_synced(task_id: str, trace_store: JsonlFileStore) -> bool:
-    return any(event.kind == "vera_qa_result_synced" for event in trace_store.list_for(task_id))
+def _vera_result_sync_key(event: Dict[str, str]) -> str:
+    payload = {
+        "head_sha": str(event.get("head_sha") or ""),
+        "issue_key": str(event.get("issue_key") or ""),
+        "pr_url": str(event.get("pr_url") or ""),
+        "qa_result": str(event.get("qa_result") or ""),
+        "qa_verdict": str(event.get("qa_verdict") or ""),
+        "report_path": str(event.get("report_path") or ""),
+        "summary": str(event.get("summary") or ""),
+    }
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
 
 
-def _mark_vera_result_synced(task_id: str, trace_store: JsonlFileStore) -> None:
+def _iso_timestamp(value: str) -> float:
+    text = str(value or "").strip()
+    if not text:
+        return 0.0
+    try:
+        return datetime.fromisoformat(text.replace("Z", "+00:00")).timestamp()
+    except ValueError:
+        return 0.0
+
+
+def _vera_result_artifact_is_newer_than_marker(event: Dict[str, str], marker: MemoryEvent) -> bool:
+    report_path = str(event.get("report_path") or "")
+    marker_at = _iso_timestamp(marker.at)
+    if not report_path or not marker_at or not os.path.exists(report_path):
+        return False
+    try:
+        return os.path.getmtime(report_path) > marker_at
+    except OSError:
+        return False
+
+
+def _vera_result_synced(
+    task_id: str,
+    trace_store: JsonlFileStore,
+    sync_key: str = "",
+    event: Optional[Dict[str, str]] = None,
+) -> bool:
+    for marker in trace_store.list_for(task_id):
+        if marker.kind != "vera_qa_result_synced":
+            continue
+        marker_key = str((marker.payload or {}).get("sync_key") or "")
+        if sync_key:
+            if marker_key:
+                if marker_key == sync_key:
+                    return True
+                continue
+            if event and _vera_result_artifact_is_newer_than_marker(event, marker):
+                continue
+            return True
+        return True
+    return False
+
+
+def _mark_vera_result_synced(task_id: str, trace_store: JsonlFileStore, event: Dict[str, str], sync_key: str) -> None:
     trace_store.append(
         MemoryEvent(
             key=task_id,
             kind="vera_qa_result_synced",
-            payload={"outcome": "synced"},
+            payload={
+                "outcome": "synced",
+                "sync_key": sync_key,
+                "qa_result": str(event.get("qa_result") or ""),
+                "qa_verdict": str(event.get("qa_verdict") or ""),
+                "pr_url": str(event.get("pr_url") or ""),
+                "head_sha": str(event.get("head_sha") or ""),
+            },
             at=now_iso(),
         )
     )
@@ -843,14 +904,15 @@ def sync_vera_qa_results_once(
     synced = 0
     for event in collect_vera_qa_completed_events(task_list):
         task_id = event.get("task_id", "")
-        if task_id and _vera_result_synced(task_id, trace_store):
+        sync_key = _vera_result_sync_key(event)
+        if task_id and _vera_result_synced(task_id, trace_store, sync_key=sync_key, event=event):
             continue
         actions = runtime.run_linear_event(event)
         if not actions:
             continue
         results = apply_fn(actions, dry_run=dry_run, policy=policy)
         if not dry_run and task_id and _vera_result_sync_should_stop_retrying(results):
-            _mark_vera_result_synced(task_id, trace_store)
+            _mark_vera_result_synced(task_id, trace_store, event, sync_key)
         synced += 1
     return synced
 

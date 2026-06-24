@@ -8,7 +8,7 @@ from unittest.mock import patch
 from linear.src.engine import Action
 from linear.src.governance import GovernancePolicy
 from linear.src.runtime import BotRuntime
-from linear.src.memory import InMemoryStore, JsonlFileStore
+from linear.src.memory import InMemoryStore, JsonlFileStore, MemoryEvent
 from linear.src.service import (
     apply_actions,
     collect_vera_qa_completed_events,
@@ -632,6 +632,106 @@ class RuntimeTests(unittest.TestCase):
         self.assertEqual(second, 0)
         self.assertEqual(len(calls), 1)
         self.assertTrue(any(a.system == "github" and a.kind == "check_run" for a in calls[0]))
+
+    def test_sync_vera_qa_results_once_resyncs_retry_with_new_result(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            trace = JsonlFileStore(os.path.join(tmp, "trace.jsonl"))
+            calls = []
+
+            def fake_apply(actions, dry_run=True, policy=None, linear_executor=None):
+                calls.append(actions)
+                return [{"outcome": "executed", "kind": a.kind} for a in actions]
+
+            base_task = {
+                "id": "t_retry_same_id",
+                "title": "Vera QA review: BIT-619",
+                "body": (
+                    "Issue: BIT-619\n"
+                    "PR: https://github.com/BitPod-App/taylor01-mind/pull/50\n"
+                    "Head SHA: 1a1fb4e8ba14e7374c18740b655148e34579cc2c"
+                ),
+                "assignee": "vera",
+                "workspace_path": tmp,
+            }
+            failed_task = dict(
+                base_task,
+                status="blocked",
+                events=[{"kind": "protocol_violation", "payload": {"error": "manifest.json missing"}}],
+            )
+
+            first = sync_vera_qa_results_once(tasks=[failed_task], dry_run=False, trace_store=trace, apply_fn=fake_apply)
+
+            with open(os.path.join(tmp, "verification_report.md"), "w", encoding="utf-8") as fh:
+                fh.write("QA_RESULT=PASSED\n")
+            with open(os.path.join(tmp, "manifest.json"), "w", encoding="utf-8") as fh:
+                json.dump(
+                    {
+                        "issue": "BIT-619",
+                        "pr_url": "https://github.com/BitPod-App/taylor01-mind/pull/50",
+                        "head": "1a1fb4e8ba14e7374c18740b655148e34579cc2c",
+                        "qa_result": "PASSED",
+                    },
+                    fh,
+                )
+            retried_task = dict(base_task, status="done", result="Vera passed after retry.")
+
+            second = sync_vera_qa_results_once(tasks=[retried_task], dry_run=False, trace_store=trace, apply_fn=fake_apply)
+            third = sync_vera_qa_results_once(tasks=[retried_task], dry_run=False, trace_store=trace, apply_fn=fake_apply)
+
+        self.assertEqual(first, 1)
+        self.assertEqual(second, 1)
+        self.assertEqual(third, 0)
+        self.assertEqual(len(calls), 2)
+
+    def test_sync_vera_qa_results_once_legacy_marker_allows_newer_artifact(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            trace = JsonlFileStore(os.path.join(tmp, "trace.jsonl"))
+            trace.append(
+                MemoryEvent(
+                    key="t_legacy_retry",
+                    kind="vera_qa_result_synced",
+                    payload={"outcome": "synced"},
+                    at="2000-01-01T00:00:00+00:00",
+                )
+            )
+            with open(os.path.join(tmp, "verification_report.md"), "w", encoding="utf-8") as fh:
+                fh.write("QA_RESULT=PASSED\n")
+            with open(os.path.join(tmp, "manifest.json"), "w", encoding="utf-8") as fh:
+                json.dump(
+                    {
+                        "issue": "BIT-619",
+                        "pr_url": "https://github.com/BitPod-App/taylor01-mind/pull/50",
+                        "head": "1a1fb4e8ba14e7374c18740b655148e34579cc2c",
+                        "qa_result": "PASSED",
+                    },
+                    fh,
+                )
+            calls = []
+
+            def fake_apply(actions, dry_run=True, policy=None, linear_executor=None):
+                calls.append(actions)
+                return [{"outcome": "executed", "kind": a.kind} for a in actions]
+
+            tasks = [
+                {
+                    "id": "t_legacy_retry",
+                    "title": "Vera QA review: BIT-619",
+                    "body": (
+                        "Issue: BIT-619\n"
+                        "PR: https://github.com/BitPod-App/taylor01-mind/pull/50\n"
+                        "Head SHA: 1a1fb4e8ba14e7374c18740b655148e34579cc2c"
+                    ),
+                    "assignee": "vera",
+                    "status": "done",
+                    "workspace_path": tmp,
+                    "result": "Vera passed after retry.",
+                }
+            ]
+
+            count = sync_vera_qa_results_once(tasks=tasks, dry_run=False, trace_store=trace, apply_fn=fake_apply)
+
+        self.assertEqual(count, 1)
+        self.assertEqual(len(calls), 1)
 
     def test_sync_vera_qa_results_once_marks_after_partial_apply_success(self):
         with tempfile.TemporaryDirectory() as tmp:
