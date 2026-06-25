@@ -19,6 +19,9 @@ class EngineTests(unittest.TestCase):
     def test_find_issue_key(self):
         self.assertEqual(self.bot.find_issue_key("foo BIT-45 bar"), "BIT-45")
 
+    def test_find_issue_key_ignores_non_linear_hyphenated_terms(self):
+        self.assertIsNone(self.bot.find_issue_key("Fix favicon; verify SHA-256 checksum"))
+
     def test_gh_opened_sets_in_progress(self):
         ev = {
             "pull_request": {
@@ -172,6 +175,142 @@ class EngineTests(unittest.TestCase):
         self.assertEqual(dispatch.target, "BIT-617")
         self.assertEqual(dispatch.payload["source_event"], "github_pr_review_requested")
         self.assertEqual(dispatch.payload["pr_url"], "https://github.com/BitPod-App/bitpod-tools/pull/18")
+
+
+    def test_gh_review_body_ready_for_vera_gate_dispatches_vera_qa(self):
+        ev = {
+            "_github_event": "pull_request_review",
+            "action": "submitted",
+            "sender": {"login": "cjarguello"},
+            "review": {"state": "commented", "body": "Ready for vera-qa-gate"},
+            "pull_request": {
+                "number": 68,
+                "title": "BIT-617 dispatcher proof",
+                "body": "",
+                "html_url": "https://github.com/BitPod-App/bitpod-docs/pull/68",
+                "head": {"ref": "codex/bit-617-proof", "sha": "f9619c0"},
+            },
+        }
+
+        actions = self.bot.on_github_pr_review_gate_requested(ev)
+
+        dispatch = next(a for a in actions if a.system == "hermes" and a.kind == "enqueue_vera_qa")
+        self.assertEqual(dispatch.target, "BIT-617")
+        self.assertEqual(dispatch.payload["source_event"], "github_pr_review_gate_requested")
+        self.assertEqual(dispatch.payload["pr_url"], "https://github.com/BitPod-App/bitpod-docs/pull/68")
+        self.assertEqual(dispatch.payload["repo_full_name"], "BitPod-App/bitpod-docs")
+        self.assertEqual(dispatch.payload["head_sha"], "f9619c0")
+        check = next(a for a in actions if a.system == "github" and a.kind == "check_run")
+        self.assertEqual(check.payload["status"], "queued")
+
+    def test_gh_review_ready_missing_issue_comments_on_pr_url(self):
+        ev = {
+            "action": "ready_for_review",
+            "pull_request": {
+                "number": 68,
+                "title": "Refresh GPT project sources brief and repo maps",
+                "body": "",
+                "html_url": "https://github.com/BitPod-App/bitpod-docs/pull/68",
+                "head": {"ref": "codex/project-sources-brief-refresh-2026-06-24", "sha": "f9619c0"},
+            },
+        }
+
+        actions = self.bot.on_github_pr_ready_for_review(ev)
+
+        self.assertEqual(actions[0].system, "github")
+        self.assertEqual(actions[0].kind, "comment")
+        self.assertEqual(actions[0].target, "https://github.com/BitPod-App/bitpod-docs/pull/68")
+        self.assertIn("Missing Linear issue key", actions[0].payload["body"])
+
+    def test_gh_review_body_ready_for_vera_gate_dispatches_ticketless_pr_qa(self):
+        ev = {
+            "_github_event": "pull_request_review",
+            "action": "submitted",
+            "sender": {"login": "cjarguello"},
+            "review": {"state": "commented", "body": "Ready for vera-qa-gate"},
+            "pull_request": {
+                "number": 68,
+                "title": "Refresh GPT project sources brief and repo maps",
+                "body": "",
+                "html_url": "https://github.com/BitPod-App/bitpod-docs/pull/68",
+                "head": {"ref": "codex/project-sources-brief-refresh-2026-06-24", "sha": "f9619c0"},
+            },
+        }
+
+        actions = self.bot.on_github_pr_review_gate_requested(ev)
+
+        self.assertFalse(any(a.system == "linear" for a in actions))
+        dispatch = next(a for a in actions if a.system == "hermes" and a.kind == "enqueue_vera_qa")
+        self.assertEqual(dispatch.target, "github-pr:BitPod-App/bitpod-docs#68")
+        self.assertEqual(dispatch.payload["issue_key"], "github-pr:BitPod-App/bitpod-docs#68")
+        self.assertEqual(dispatch.payload["source_event"], "github_pr_review_gate_requested")
+        self.assertEqual(dispatch.payload["pr_url"], "https://github.com/BitPod-App/bitpod-docs/pull/68")
+        self.assertEqual(dispatch.payload["repo_full_name"], "BitPod-App/bitpod-docs")
+        self.assertEqual(dispatch.payload["head_sha"], "f9619c0")
+        self.assertIn("vera-qa:github-pr:BitPod-App/bitpod-docs#68:BitPod-App/bitpod-docs:68:f9619c0", dispatch.payload["idempotency_key"])
+        check = next(a for a in actions if a.system == "github" and a.kind == "check_run")
+        self.assertEqual(check.payload["status"], "queued")
+
+    def test_gh_review_body_ready_for_vera_gate_does_not_treat_sha256_as_issue(self):
+        ev = {
+            "_github_event": "pull_request_review",
+            "action": "submitted",
+            "sender": {"login": "cjarguello"},
+            "review": {"state": "commented", "body": "Ready for vera-qa-gate"},
+            "pull_request": {
+                "number": 20,
+                "title": "Fix T01 favicon source filename",
+                "body": "Regenerate the SHA-256 manifest entry.",
+                "html_url": "https://github.com/BitPod-App/bitpod-assets/pull/20",
+                "head": {"ref": "codex/fix-favicon-sha-256", "sha": "9ffd195"},
+            },
+        }
+
+        actions = self.bot.on_github_pr_review_gate_requested(ev)
+
+        self.assertFalse(any(a.system == "linear" for a in actions))
+        dispatch = next(a for a in actions if a.system == "hermes" and a.kind == "enqueue_vera_qa")
+        self.assertEqual(dispatch.target, "github-pr:BitPod-App/bitpod-assets#20")
+        self.assertEqual(dispatch.payload["issue_key"], "github-pr:BitPod-App/bitpod-assets#20")
+
+    def test_vera_completion_normalizes_bogus_non_linear_issue_to_ticketless_pr(self):
+        actions = self.bot.on_vera_qa_completed(
+            {
+                "issue_key": "SHA-256",
+                "qa_result": "PASSED",
+                "qa_verdict": "PASSED",
+                "pr_url": "https://github.com/BitPod-App/bitpod-assets/pull/20",
+                "head_sha": "9ffd195",
+                "report_path": "verification_report.md",
+                "summary": "Asset metadata verified.",
+            }
+        )
+
+        self.assertFalse(any(a.system == "linear" for a in actions))
+        comment = next(a for a in actions if a.system == "github" and a.kind == "comment")
+        self.assertIn("github-pr:BitPod-App/bitpod-assets#20", comment.payload["body"])
+        self.assertNotIn("SHA-256", comment.payload["body"])
+
+    def test_ticketless_vera_completion_updates_github_without_linear_sync(self):
+        actions = self.bot.on_vera_qa_completed(
+            {
+                "issue_key": "github-pr:BitPod-App/bitpod-docs#68",
+                "qa_result": "PASSED",
+                "qa_verdict": "PASSED",
+                "pr_url": "https://github.com/BitPod-App/bitpod-docs/pull/68",
+                "head_sha": "f9619c0",
+                "report_path": "verification_report.md",
+                "summary": "Cron-generated Project Sources refresh verified.",
+            }
+        )
+
+        self.assertFalse(any(a.system == "linear" for a in actions))
+        comment = next(a for a in actions if a.system == "github" and a.kind == "comment")
+        self.assertIn("Vera QA passed for github-pr:BitPod-App/bitpod-docs#68", comment.payload["body"])
+        self.assertNotIn("See Linear", comment.payload["body"])
+        check = next(a for a in actions if a.system == "github" and a.kind == "check_run")
+        self.assertEqual(check.payload["conclusion"], "success")
+        self.assertNotIn("See Linear", check.payload["summary"])
 
     def test_linear_issue_in_review_dispatches_vera_qa_from_attached_pr(self):
         issue = {
